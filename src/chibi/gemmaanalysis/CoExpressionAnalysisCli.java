@@ -54,6 +54,7 @@ import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionV
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -211,26 +212,27 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @return
      */
     @SuppressWarnings("unchecked")
-    private Map<DesignElementDataVector, Collection<Gene>> getDesignElementDataVector(
+    private Map<DoubleVectorValueObject, Collection<Gene>> getDesignElementDataVector(
             Map<Long, Collection<Gene>> cs2gene, QuantitationType qt, ExpressionExperiment ee ) {
-        Map<DesignElementDataVector, Collection<Gene>> dedv2genes = eeService.getDesignElementDataVectors( cs2gene, qt );
-        for ( DesignElementDataVector dedv : dedv2genes.keySet() ) {
-            dedv.setExpressionExperiment( ee ); // FIXME why do we need this?
+        Map<DesignElementDataVector, Collection<Gene>> raw = eeService.getDesignElementDataVectors( cs2gene, qt );
+        Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();
+        for ( DesignElementDataVector dedv : raw.keySet() ) {
+            dedv2genes.put( new DoubleVectorValueObject( dedv ), raw.get( dedv ) );
         }
         return dedv2genes;
     }
 
     // For small number of queryGenes.
     @SuppressWarnings("unchecked")
-    Map<DesignElementDataVector, Collection<Gene>> getDedv2GenesMap( Collection<Gene> queryGenes,
+    Map<DoubleVectorValueObject, Collection<Gene>> getDedv2GenesMap( Collection<Gene> queryGenes,
             Collection<Gene> coExpressedGenes, Collection<ExpressionExperiment> allEEs ) {
         StopWatch qWatch = new StopWatch();
         qWatch.start();
-        Map<DesignElementDataVector, Collection<Gene>> dedv2queryGenes = new HashMap<DesignElementDataVector, Collection<Gene>>();
-        Map<DesignElementDataVector, Collection<Gene>> dedv2coExpressedGenes = new HashMap<DesignElementDataVector, Collection<Gene>>();
+        Map<DoubleVectorValueObject, Collection<Gene>> dedv2queryGenes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();
+        Map<DoubleVectorValueObject, Collection<Gene>> dedv2coExpressedGenes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();
         // ArrayList<Object> saved = new ArrayList<Object>();
         log.info( "Start the Query for " + queryGenes.size() + " query genes" );
-        dedv2queryGenes.putAll( dedvService.getVectors( allEEs, queryGenes ) );
+        dedv2queryGenes.putAll( dedvService.getMaskedPreferredDataArrays( allEEs, queryGenes ) );
 
         Map<Long, Collection<Gene>> cs2gene = getCsId2GeneMap( queryGenes, coExpressedGenes );
 
@@ -238,12 +240,12 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         Collection<Long> eeIds = new HashSet<Long>();
         log.info( "loading designElementDataVector from expression experiments" );
         int count = 0;
-        for ( DesignElementDataVector dedv : dedv2queryGenes.keySet() ) {
+        for ( DoubleVectorValueObject dedv : dedv2queryGenes.keySet() ) {
             ExpressionExperiment ee = dedv.getExpressionExperiment();
             QuantitationType qt = dedv.getQuantitationType();
 
             if ( !eeIds.contains( ee.getId() ) ) {
-                Map<DesignElementDataVector, Collection<Gene>> dedvs = getDesignElementDataVector( cs2gene, qt, ee );
+                Map<DoubleVectorValueObject, Collection<Gene>> dedvs = getDesignElementDataVector( cs2gene, qt, ee );
                 dedv2coExpressedGenes.putAll( dedvs );
                 count = count + dedvs.keySet().size();
                 eeIds.add( ee.getId() );
@@ -372,7 +374,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
             coExpressedGenes = this.getCoExpressedGenes( queryGenes );
         }
         log.info( "Start the Query for " + queryGenes.size() + " genes" );
-        Map<DesignElementDataVector, Collection<Gene>> dedv2genes = getDedv2GenesMap( queryGenes, coExpressedGenes,
+        Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes = getDedv2GenesMap( queryGenes, coExpressedGenes,
                 allEEs );
         if ( dedv2genes.size() == 0 || queryGenes.size() == 0 || coExpressedGenes.size() == 0 || allEEs.size() == 0 )
             return null;
