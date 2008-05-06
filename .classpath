@@ -31,8 +31,8 @@
 	<classpathentry kind="var" path="M2_REPO/prefuse/prefuse/beta/prefuse-beta.jar"/>
 	<classpathentry kind="var" path="M2_REPO/colt/colt/1.2.0/colt-1.2.0.jar" sourcepath="/JAR_SOURCE/colt-1.2.0/src"/>
 	<classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.1/commons-logging-1.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/junit/junit/3.8.2/junit-3.8.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring/2.0.7/spring-2.0.7.jar" sourcepath="/JAR_SOURCE/spring-framework-2.0.5/dist/spring-src.zip"/>
+	<classpathentry kind="var" path="M2_REPO/junit/junit/3.8.1/junit-3.8.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring/2.0.8/spring-2.0.8.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Gemma"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
