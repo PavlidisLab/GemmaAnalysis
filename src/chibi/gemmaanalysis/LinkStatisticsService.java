@@ -70,13 +70,6 @@ public class LinkStatisticsService {
 
     private ExpressionExperimentService eeService = null;
     
-    public LinkStatisticsService(GeneService geneService, Probe2ProbeCoexpressionService p2pService, ExpressionExperimentService eeService) {
-        this.geneService = geneService;
-        this.p2pService = p2pService;
-        this.eeService = eeService;
-    }
-    
-
     /**
      * @param ees ExpressionExperiments to use
      * @param genes Genes to consider

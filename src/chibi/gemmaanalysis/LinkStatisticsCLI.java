@@ -34,7 +34,6 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGene;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
@@ -114,8 +113,6 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
 
     private boolean filterNonSpecific = true;
     
-    private Probe2ProbeCoexpressionService p2pService;
-
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
@@ -145,7 +142,6 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         // .withDescription( "Link Stringency " ).withLongOpt( "linkStringency" ).create( 'l' );
         // addOption( linkStringency );
         
-        p2pService = (Probe2ProbeCoexpressionService) getBean("probe2ProbeCoexpressionService");
     }
 
     @SuppressWarnings("unchecked")
@@ -157,7 +153,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         }
 
         
-        LinkStatisticsService lss = new LinkStatisticsService(geneService, p2pService, eeService);
+        LinkStatisticsService lss = (LinkStatisticsService) getBean("linkStatisticsService");
 
         if ( !prepared ) {
             lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
@@ -270,7 +266,12 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         if (hasOption('r')) {
             this.doRealAnalysis = true;
         }
+        
 
     }
-
+    
+    protected String[] getAdditionalSpringConfigLocations() {
+        return new String[] {"classpath*:/ubc/chibi/gemmaanalysis/beans.xml"};
+    }
+    
 }
