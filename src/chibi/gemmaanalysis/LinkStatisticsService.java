@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Set;
 import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+
 
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
@@ -67,6 +69,13 @@ public class LinkStatisticsService {
     private Probe2ProbeCoexpressionService p2pService = null;
 
     private ExpressionExperimentService eeService = null;
+    
+    public LinkStatisticsService(GeneService geneService, Probe2ProbeCoexpressionService p2pService, ExpressionExperimentService eeService) {
+        this.geneService = geneService;
+        this.p2pService = p2pService;
+        this.eeService = eeService;
+    }
+    
 
     /**
      * @param ees ExpressionExperiments to use
@@ -229,19 +238,16 @@ public class LinkStatisticsService {
         }
 
         List<Long> geneIdList = new ArrayList<Long>( geneIds );
-        List<Long> geneIdListForShuffle = new ArrayList<Long>();
-        for ( Long id : geneIdList ) {
-            geneIdListForShuffle.add( id );
-        }
+        List<Long> shuffledGeneIdList = new ArrayList<Long>( geneIdList );
 
-        // shuffle the genes.
-        shuffleList( geneIdListForShuffle );
-        shuffleList( geneIdListForShuffle );
-        shuffleList( geneIdListForShuffle );
+        Collections.shuffle( shuffledGeneIdList );
+        Collections.shuffle( shuffledGeneIdList );
+        Collections.shuffle( shuffledGeneIdList );
+
         log.debug( geneIdList.size() + " genes to shuffle" );
         Map<Long, Long> shuffleMap = new HashMap<Long, Long>();
         for ( int i = 0, j = geneIdList.size(); i < j; i++ ) {
-            shuffleMap.put( geneIdList.get( i ), geneIdListForShuffle.get( i ) );
+            shuffleMap.put( geneIdList.get( i ), shuffledGeneIdList.get( i ) );
         }
 
         geneLinks = getGeneLinks( filteredLinks, stats );

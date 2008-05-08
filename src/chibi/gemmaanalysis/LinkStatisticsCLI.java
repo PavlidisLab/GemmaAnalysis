@@ -34,6 +34,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGene;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
@@ -90,17 +91,16 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         }
     }
 
+    /**
+     * Working table is created
+     */
     private boolean prepared = true;
 
     /*
      * How many shuffled runs to do. 2 or 3 is enough to get a quick idea of what the results will look like; 100 is
      * better for final analysis.
      */
-    private int numIterationsToDo = 0;
-
-    private int currentIteration = 0;
-
-    private int linkStringency = 0;
+    private int numIterations = 0;
 
     /*
      * Print out the link details for shuffled data sets. This is only useful for debugging (big files).
@@ -110,16 +110,18 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
     /*
      * If false, just do shuffling. This is primarily for debugging.
      */
-    private boolean doRealAnalysis = true;
+    private boolean doRealAnalysis = false;
 
     private boolean filterNonSpecific = true;
+    
+    private Probe2ProbeCoexpressionService p2pService;
 
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
         Option startPreparing = OptionBuilder.withArgName( "Prepare only" ).withDescription(
-                "Prepare temorary table for analysis" ).withLongOpt( "prepare" ).create( 's' );
+                "Prepare temporary table for analysis" ).withLongOpt( "prepare" ).create( 's' );
         addOption( startPreparing );
 
         Option iterationNum = OptionBuilder.hasArg().withArgName( " The number of iteration for shuffling " )
@@ -127,12 +129,23 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
                 .withLongOpt( "iterationNum" ).create( 'i' );
         addOption( iterationNum );
 
+        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" ).withDescription(
+                "Print out link details for shuffled data sets" ).create( "outputShuffledData" );
+        addOption( outputShuffledLinks );
+
+        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" ).withDescription(
+                "Perform a real link analysis and output it to link-data.txt" ).withLongOpt( "realAnalysis" ).create(
+                'r' );
+        addOption( realAnalysis );
+
         /*
-         * Not sure exactly what this is for.
+         * Not supported
          */
-        Option linkStringency = OptionBuilder.hasArg().withArgName( "Link support threshold (stringency)" )
-                .withDescription( "Link Stringency " ).withLongOpt( "linkStringency" ).create( 'l' );
-        addOption( linkStringency );
+        // Option linkStringency = OptionBuilder.hasArg().withArgName( "Link support threshold (stringency)" )
+        // .withDescription( "Link Stringency " ).withLongOpt( "linkStringency" ).create( 'l' );
+        // addOption( linkStringency );
+        
+        p2pService = (Probe2ProbeCoexpressionService) getBean("probe2ProbeCoexpressionService");
     }
 
     @SuppressWarnings("unchecked")
@@ -143,7 +156,8 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             return err;
         }
 
-        LinkStatisticsService lss = ( LinkStatisticsService ) this.getBean( "linkStatisticsService" );
+        
+        LinkStatisticsService lss = new LinkStatisticsService(geneService, p2pService, eeService);
 
         if ( !prepared ) {
             lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
@@ -151,69 +165,67 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         }
         Collection<Gene> genes = getKnownGenes();
 
-        if ( linkStringency != 0 ) {
-            //
-            // // not sure I understand what this is for.
-            // totalLinks = 0;
-            // linkCount = lss.getMatrix( ees, genes );
-            // negativeLinkCount = lss.getMatrix( ees, genes );
-            // System.gc();
-            // // doShuffling( candidates );
-            // lss.doGeneLevelShuffling( currentIteration, candidates );
-            // if ( doShuffledOutput ) {
-            // String fileName = "shuffledLinks_" + linkStringency + ".txt";
-            // Writer w = new FileWriter( new File( fileName ) );
-            // lss.saveMatrix( linkCount, negativeLinkCount, w, genes, this.linkStringency );
-            // }
-            // log.info( "Total Links " + totalLinks );
-            // log.info( "Covered Gene " + geneCoverage.size() );
-        } else {
+        // not supported
+        // if ( linkStringency != 0 ) {
+        //
+        // // not sure I understand what this is for.
+        // totalLinks = 0;
+        // linkCount = lss.getMatrix( ees, genes );
+        // negativeLinkCount = lss.getMatrix( ees, genes );
+        // System.gc();
+        // // doShuffling( candidates );
+        // lss.doGeneLevelShuffling( currentIteration, candidates );
+        // if ( doShuffledOutput ) {
+        // String fileName = "shuffledLinks_" + linkStringency + ".txt";
+        // Writer w = new FileWriter( new File( fileName ) );
+        // lss.saveMatrix( linkCount, negativeLinkCount, w, genes, this.linkStringency );
+        // }
+        // log.info( "Total Links " + totalLinks );
+        // log.info( "Covered Gene " + geneCoverage.size() );
+        // } else {
 
-            LinkConfirmationStatistics confStats = null;
+        LinkConfirmationStatistics confStats = null;
 
-            if ( doRealAnalysis ) { // Currently this is really just for debugging purposes, though reading in from a
-                // file might be useful.
-                LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), false,
-                        filterNonSpecific );
-                log.info( realStats.getTotalLinkCount() + " gene links in total" );
-                confStats = realStats.getLinkConfirmationStats();
+        if ( doRealAnalysis ) { // Currently this is really just for debugging purposes, though reading in from a
+            // file might be useful.
+            LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), false,
+                    filterNonSpecific );
+            log.info( realStats.getTotalLinkCount() + " gene links in total" );
+            confStats = realStats.getLinkConfirmationStats();
 
+            try {
+                Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data.txt" ) ) );
+                realStats.writeLinks( linksOut, 0 );
+            } catch ( IOException e ) {
+                return e;
+            }
+        }
+
+        List<LinkConfirmationStatistics> shuffleRuns = new ArrayList<LinkConfirmationStatistics>();
+        log.info( "Running shuffled runs" );
+        for ( int i = 0; i < numIterations; i++ ) {
+            log.info( "*** Iteration " + i + " ****" );
+
+            LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), true,
+                    filterNonSpecific );
+            log.info( sr.getTotalLinkCount() + " gene links in total" );
+
+            shuffleRuns.add( sr.getLinkConfirmationStats() );
+
+            if ( doShuffledOutput ) {
                 try {
-                    Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data.txt" ) ) );
-                    realStats.writeLinks( linksOut, 0 );
+                    Writer linksOut = new BufferedWriter(
+                            new FileWriter( new File( "shuffled-link-data-" + i + ".txt" ) ) );
+                    sr.writeLinks( linksOut, 2 );
                 } catch ( IOException e ) {
                     return e;
                 }
             }
 
-            List<LinkConfirmationStatistics> shuffleRuns = new ArrayList<LinkConfirmationStatistics>();
-            if ( this.numIterationsToDo > 0 ) {
-                log.info( "Running shuffled runs" );
-                for ( currentIteration = 1; currentIteration < numIterationsToDo + 1; currentIteration++ ) {
-                    log.info( "*** Iteration " + currentIteration + " ****" );
-
-                    LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), true,
-                            filterNonSpecific );
-                    log.info( sr.getTotalLinkCount() + " gene links in total" );
-
-                    shuffleRuns.add( sr.getLinkConfirmationStats() );
-
-                    if ( doShuffledOutput ) {
-                        try {
-                            Writer linksOut = new BufferedWriter( new FileWriter( new File( "shuffled-link-data-"
-                                    + currentIteration + ".txt" ) ) );
-                            sr.writeLinks( linksOut, 2 );
-                        } catch ( IOException e ) {
-                            return e;
-                        }
-                    }
-
-                }
-            }
-
-            Writer out = new PrintWriter( System.out );
-            lss.writeStats( out, confStats, shuffleRuns );
         }
+
+        Writer out = new PrintWriter( System.out );
+        lss.writeStats( out, confStats, shuffleRuns );
 
         return null;
     }
@@ -248,10 +260,15 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             this.prepared = false;
         }
         if ( hasOption( 'i' ) ) {
-            this.numIterationsToDo = Integer.valueOf( getOptionValue( 'i' ) );
+            this.numIterations = getIntegerOptionValue( 'i' );
         }
-        if ( hasOption( 'l' ) ) {
-            this.linkStringency = Integer.valueOf( getOptionValue( 'l' ) );
+
+        if ( hasOption( "outputShuffledData" ) ) {
+            this.doShuffledOutput = true;
+        }
+        
+        if (hasOption('r')) {
+            this.doRealAnalysis = true;
         }
 
     }
