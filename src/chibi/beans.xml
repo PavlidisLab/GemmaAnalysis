@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE beans PUBLIC
+    "-//SPRING//DTD BEAN//EN"
+    "http://www.springframework.org/dtd/spring-beans.dtd">
+<beans>
+	<bean id="linkStatisticsService" class="chibi.gemmaanalysis.LinkStatististicsService">
+		<property name="geneService">
+			<ref bean="geneService" />
+		</property>
+		<property name="p2pService">
+			<ref bean="probe2ProbeCoexpressionService" />
+		</property>
+		<property name="eeService">
+			<ref bean="expressionExperimentService" />
+		</property>
+	</bean>
+</beans>

@@ -271,7 +271,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
     }
     
     protected String[] getAdditionalSpringConfigLocations() {
-        return new String[] {"classpath*:/ubc/chibi/gemmaanalysis/beans.xml"};
+        return new String[] {"classpath*:chibi/gemmaanalysis/beans.xml"};
     }
     
 }

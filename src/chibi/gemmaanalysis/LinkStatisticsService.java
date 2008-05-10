@@ -35,7 +35,6 @@ import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -50,10 +49,6 @@ import ubic.gemma.model.genome.gene.GeneService;
  * @author paul
  * @author xwan
  * @version $Id$
- * @spring.bean id="linkStatisticsService"
- * @spring.property name="geneService" ref="geneService"
- * @spring.property name="p2pService" ref="probe2ProbeCoexpressionService"
- * @spring.property name="eeService" ref="expressionExperimentService"
  */
 public class LinkStatisticsService {
 
@@ -69,7 +64,7 @@ public class LinkStatisticsService {
     private Probe2ProbeCoexpressionService p2pService = null;
 
     private ExpressionExperimentService eeService = null;
-    
+
     /**
      * @param ees ExpressionExperiments to use
      * @param genes Genes to consider
