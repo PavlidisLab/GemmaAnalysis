@@ -3,7 +3,7 @@
     "-//SPRING//DTD BEAN//EN"
     "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
-	<bean id="linkStatisticsService" class="chibi.gemmaanalysis.LinkStatististicsService">
+	<bean id="linkStatisticsService" class="chibi.gemmaanalysis.LinkStatisticsService">
 		<property name="geneService">
 			<ref bean="geneService" />
 		</property>
