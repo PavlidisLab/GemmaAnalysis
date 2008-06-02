@@ -18,9 +18,6 @@
  */
 package chibi.gemmaanalysis;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
@@ -62,13 +59,12 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
     private static Log log = LogFactory.getLog( SummaryStatistics.class.getName() );
 
-    private ExpressionExperimentService expressionExperimentService;
+    ExpressionExperimentService expressionExperimentService;
 
     private String taxonName;
-    private TaxonService taxonService;
-    private ArrayDesignService arrayDesignService;
-    private CompositeSequenceService compositeSequenceService;
-    private String outFileName;
+    TaxonService taxonService;
+    ArrayDesignService arrayDesignService;
+    CompositeSequenceService compositeSequenceService;
 
     /**
      * For each gene, count how many expression experiments it appears in.
@@ -157,27 +153,15 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     @SuppressWarnings("unchecked")
     public void genesPerProbe( Taxon taxon ) {
         ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
-        Collection<ArrayDesign> allAds = adService.loadAll();
-        // Collection<ArrayDesign> allAds = new HashSet<ArrayDesign>();
-        // allAds.add(adService.findByShortName("GPL86"));
-        // allAds.add(adService.load(164L));
-        Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
-        for ( ArrayDesign ad : allAds ) {
-            Taxon t = adService.getTaxon( ad.getId() );
-            if ( t != null && t.equals( taxon ) ) {
-                ads.add( ad );
-            }
-        }
+        Collection<ArrayDesign> ads = adService.loadAll();
 
-        Map<ArrayDesign, Map<Integer, Integer>> countMap = new HashMap<ArrayDesign, Map<Integer, Integer>>();
-        Collection<Long> seenSeqs = new HashSet<Long>();
-        int count = 0;
+        Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
+        int i = 0;
+        Collection<BioSequence> seenSeqs = new HashSet<BioSequence>();
         for ( ArrayDesign design : ads ) {
-            log.info( design + " : " + ++count + " of " + ads.size() );
+            log.info( design );
             adService.thawLite( design );
-            Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
 
-            int i = 0;
             for ( CompositeSequence cs : design.getCompositeSequences() ) {
 
                 BioSequence bs = cs.getBiologicalCharacteristic();
@@ -203,59 +187,14 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
                     log.info( "Processed " + i + " compositeSequences" );
                 }
 
-                seenSeqs.add( bs.getId() );
+                seenSeqs.add( bs );
             }
-            countMap.put( design, counts );
 
         }
 
-        try {
-            printGenesPerProbeCountMap( countMap );
-        } catch ( IOException e ) {
-            e.printStackTrace();
+        for ( Integer l : counts.keySet() ) {
+            System.out.println( l + "\t" + counts.get( l ) );
         }
-
-    }
-
-    private void printGenesPerProbeCountMap( Map<ArrayDesign, Map<Integer, Integer>> countMap ) throws IOException {
-        PrintWriter out;
-        if ( outFileName == null ) {
-            out = new PrintWriter( System.out );
-        } else {
-            out = new PrintWriter( new FileWriter( outFileName ) );
-        }
-
-        // get max number of genes
-        int maxNumGenes = 0;
-        for ( Map<Integer, Integer> counts : countMap.values() ) {
-            for ( Integer n : counts.keySet() ) {
-                int count = counts.get( n );
-                if ( count > 0 && n > maxNumGenes ) maxNumGenes = n;
-            }
-        }
-
-        StringBuffer buf = new StringBuffer( "Count\t" );
-        for ( ArrayDesign ad : countMap.keySet() ) {
-            buf.append( ad.getShortName() + "\t" );
-        }
-        buf.deleteCharAt( buf.length() - 1 );
-        out.println( buf );
-
-        for ( int numGenes = 0; numGenes <= maxNumGenes; numGenes++ ) {
-            buf = new StringBuffer();
-            buf.append( numGenes + "\t" );
-            for ( ArrayDesign ad : countMap.keySet() ) {
-                Map<Integer, Integer> counts = countMap.get( ad );
-                if ( counts.get( numGenes ) != null )
-                    buf.append( counts.get( numGenes ) );
-                else
-                    buf.append( "0" );
-                buf.append( "\t" );
-            }
-            buf.deleteCharAt( buf.length() - 1 );
-            out.println( buf );
-        }
-        out.close();
     }
 
     /**
@@ -379,10 +318,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     protected void buildOptions() {
         Option taxonOption = OptionBuilder.hasArg().withArgName( "taxon" ).withDescription(
                 "Taxon common name (e.g., human)" ).create( 't' );
-        Option outFileOption = OptionBuilder.hasArg().withArgName( "outFile" ).withDescription( "Output file" ).create(
-                'o' );
 
-        addOption( outFileOption );
         addOption( taxonOption );
 
     }
@@ -406,10 +342,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         if ( this.hasOption( 't' ) ) {
             this.taxonName = this.getOptionValue( 't' );
         }
-        if ( this.hasOption( 'o' ) ) {
-            this.outFileName = this.getOptionValue( 'o' );
-        }
-
         this.taxonService = ( TaxonService ) getBean( "taxonService" );
         this.arrayDesignService = ( ArrayDesignService ) getBean( "arrayDesignService" );
         this.expressionExperimentService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
