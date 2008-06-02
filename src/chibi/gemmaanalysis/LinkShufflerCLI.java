@@ -102,11 +102,13 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
 
 		}
 
-		try {
-			Writer out = new PrintWriter(outFileName);
-			lss.writeStats(out, confStats, shuffleRuns);
-		} catch (IOException e) {
-			return e;
+		if (numIterations > 0) {
+    		try {
+    			Writer out = new PrintWriter(outFileName);
+    			lss.writeStats(out, confStats, shuffleRuns);
+    		} catch (IOException e) {
+    			return e;
+    		}
 		}
 
 
