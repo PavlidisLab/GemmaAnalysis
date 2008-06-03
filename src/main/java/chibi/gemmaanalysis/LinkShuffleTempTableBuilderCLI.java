@@ -18,25 +18,11 @@
  */
 package chibi.gemmaanalysis;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PredictedGene;
-import ubic.gemma.model.genome.ProbeAlignedRegion;
 
 /**
  * <p>

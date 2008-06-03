@@ -41,6 +41,7 @@ import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
+import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.gene.GeneService;
 
 /**
@@ -68,14 +69,15 @@ public class LinkStatisticsService {
     /**
      * @param ees ExpressionExperiments to use
      * @param genes Genes to consider
-     * @param shuffle Should the links in each database be shuffled (to get background statistics)
-     * @param filterNonSpecific links which involve probes that hit more than one gene will be removed if this is true.
      * @return LinkStatistic object holding the results.
      */
-    public LinkStatistics analyze( Collection<ExpressionExperiment> ees, Collection<Gene> genes, String taxonName,
-            boolean shuffle, boolean filterNonSpecific ) {
+    public LinkStatistics analyze( Collection<ExpressionExperiment> ees, Collection<Gene> genes, Taxon taxon,
+            boolean shuffleLinks, boolean filterNonSpecific ) {
         LinkStatistics stats = new LinkStatistics( ees, genes );
-        int numLinks = this.countLinks( stats, ees, shuffle, filterNonSpecific, taxonName );
+        int numLinks = 0;
+        for ( ExpressionExperiment ee : ees ) {
+            numLinks += countLinks( stats, ee, taxon, shuffleLinks, filterNonSpecific );
+        }
         log.info( numLinks + " gene links in total for " + ees.size() + " expression experiments " );
         return stats;
     }
@@ -156,58 +158,42 @@ public class LinkStatisticsService {
     }
 
     /**
+     * Tabulate links in an ExpressionExperiment
+     * 
      * @param stats object to hold the results
-     * @param ees ExpressionExperiments to analyze.
-     * @param shuffle if true, the links are shuffled before being tabulated
-     * @param filterNonSpecific
-     * @param taxonName common name e.g. mouse
+     * @param ee ExpressionExperiment to analyze.
+     * @param taxon
      */
-    private int countLinks( LinkStatistics stats, Collection<ExpressionExperiment> ees, boolean shuffle,
-            boolean filterNonSpecific, String taxonName ) {
-        int totalLinks = 0;
-        for ( ExpressionExperiment ee : ees ) {
-            totalLinks += countLinks( stats, shuffle, filterNonSpecific, taxonName, ee );
-        }
-        return totalLinks;
-    }
-
-    /**
-     * @param stats
-     * @param shuffle
-     * @param taxonName
-     * @param ee
-     */
-    @SuppressWarnings("unchecked")
-    private int countLinks( LinkStatistics stats, boolean shuffle, boolean filterNonSpecific, String taxonName,
-            ExpressionExperiment ee ) {
+    private int countLinks( LinkStatistics stats, ExpressionExperiment ee, Taxon taxon, boolean shuffleLinks,
+            boolean filterNonSpecific ) {
         assert ee != null;
         log.info( "Loading links for  " + ee.getShortName() );
 
         // FIXME if not shuffling, don't use the working table, so we can 'get on with it' without worrying about
         // creating that table first.
-        Collection<ProbeLink> links = p2pService.getProbeCoExpression( ee, taxonName, true ); // FIXME pass in
+        Collection<ProbeLink> links = p2pService.getProbeCoExpression( ee, taxon.getCommonName(), true ); // FIXME
+        // pass in
         // filterNonSpecific.
 
         Collection<ProbeLink> filteredLinks = filterLinks( stats, links, filterNonSpecific );
 
         if ( filteredLinks == null || filteredLinks.size() == 0 ) return 0;
 
-        Collection<GeneLink> geneLinks = null;
-        if ( shuffle ) {
+        Collection<GeneLink> geneLinks = getGeneLinks( filteredLinks, stats );
+        if ( shuffleLinks ) {
+            log.info( "Shuffling links..." );
             /*
              * We start with a list of all the probes for genes that are in our matrix and which are expressed.
              */
-            Map<Long, Collection<Long>> assayedProbes = getRelevantProbeIds( ee, stats, filterNonSpecific );
+            Map<Long, Collection<Long>> assayedProbe2Genes = getRelevantProbe2GeneIds( ee, stats, filterNonSpecific );
 
             /* for shuffling at the probe level */
             // shuffleProbeLinks( stats, ee, filteredLinks, assayedProbes );
             // geneLinks = getGeneLinks( filteredLinks, stats );
             /* shuffle at gene level */
-            geneLinks = shuffleGeneLinks( stats, filteredLinks, assayedProbes );
-
-        } else {
-            geneLinks = getGeneLinks( filteredLinks, stats );
+            geneLinks = shuffleGeneLinks( geneLinks, assayedProbe2Genes );
         }
+
         return stats.addLinks( geneLinks, ee );
     }
 
@@ -217,9 +203,8 @@ public class LinkStatisticsService {
      * @param probeGeneMap
      * @return
      */
-    private Collection<GeneLink> shuffleGeneLinks( LinkStatistics stats, Collection<ProbeLink> filteredLinks,
+    private Collection<GeneLink> shuffleGeneLinks( Collection<GeneLink> geneLinks,
             Map<Long, Collection<Long>> probeGeneMap ) {
-        Collection<GeneLink> geneLinks;
         Collection<Long> geneIds = new HashSet<Long>();
         for ( Long probeId : probeGeneMap.keySet() ) {
             geneIds.addAll( probeGeneMap.get( probeId ) );
@@ -233,15 +218,14 @@ public class LinkStatisticsService {
         Collections.shuffle( shuffledGeneIdList );
 
         log.debug( geneIdList.size() + " genes to shuffle" );
+        // assign each gene ID to a random one
         Map<Long, Long> shuffleMap = new HashMap<Long, Long>();
-        for ( int i = 0, j = geneIdList.size(); i < j; i++ ) {
+        for ( int i = 0; i < geneIdList.size(); i++ ) {
             shuffleMap.put( geneIdList.get( i ), shuffledGeneIdList.get( i ) );
         }
 
-        geneLinks = getGeneLinks( filteredLinks, stats );
-        log.info( geneLinks.size() + " gene links to shuffle" );
-
-        Set<Long> usedGeneList = new HashSet<Long>();
+        // keep track of genes in ee
+        Set<Long> usedGenes = new HashSet<Long>();
         for ( GeneLink gl : geneLinks ) {
             if ( !shuffleMap.containsKey( gl.getFirstGene() ) ) {
                 log.error( "Shuffle map did not contain gene used in links: " + gl.getFirstGene() );
@@ -252,15 +236,16 @@ public class LinkStatisticsService {
                 continue;
             }
 
-            usedGeneList.add( gl.getFirstGene() );
-            usedGeneList.add( gl.getSecondGene() );
+            usedGenes.add( gl.getFirstGene() );
+            usedGenes.add( gl.getSecondGene() );
 
+            // reassign gene links
             gl.setFirstGene( shuffleMap.get( gl.getFirstGene() ) );
             gl.setSecondGene( shuffleMap.get( gl.getSecondGene() ) );
         }
 
-        log.info( "Gene links used a total of " + usedGeneList.size() + " genes, we shuffled using "
-                + geneIdList.size() + " available genes" );
+        log.info( "Gene links used a total of " + usedGenes.size() + " genes, we shuffled using " + geneIdList.size()
+                + " available genes" );
 
         // usedGeneList.clear();
         // for ( GeneLink gl : geneLinks ) {
@@ -286,8 +271,8 @@ public class LinkStatisticsService {
      * @param linksToShuffle
      * @return
      */
-    void shuffleProbeLinks( LinkStatistics stats, ExpressionExperiment ee, Collection<ProbeLink> linksToShuffle,
-            Map<Long, Collection<Long>> probeUniverse ) {
+    private void shuffleProbeLinks( LinkStatistics stats, ExpressionExperiment ee,
+            Collection<ProbeLink> linksToShuffle, Map<Long, Collection<Long>> probeUniverse ) {
         log.info( "Shuffling links for " + ee.getShortName() );
 
         /*
@@ -437,9 +422,8 @@ public class LinkStatisticsService {
             Collection<Long> secondGeneIds = cs2genes.get( link.getSecondDesignElementId() );
             if ( firstGeneIds == null || secondGeneIds == null ) {
                 ++missing;
-                if ( log.isDebugEnabled() )
-                    log.debug( "No gene found for one/both of CS:  " + link.getFirstDesignElementId() + ","
-                            + link.getSecondDesignElementId() );
+                log.debug( "No gene found for one/both of CS:  " + link.getFirstDesignElementId() + ","
+                        + link.getSecondDesignElementId() );
                 continue;
             }
 
@@ -475,7 +459,7 @@ public class LinkStatisticsService {
      *         this includes non-refseq genes etc.) and 3) used as inputs for the 'real' analysis we are comparing to.
      */
     @SuppressWarnings("unchecked")
-    private Map<Long, Collection<Long>> getRelevantProbeIds( ExpressionExperiment ee, LinkStatistics stats,
+    private Map<Long, Collection<Long>> getRelevantProbe2GeneIds( ExpressionExperiment ee, LinkStatistics stats,
             boolean filterNonSpecific ) {
         /*
          * FIXME EXPRESSION_RANK_THRESHOLD is the threshold for genes that are expressed used in link analysis. The

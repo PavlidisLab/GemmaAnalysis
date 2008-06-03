@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,6 +32,10 @@ import java.util.List;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
+
+import chibi.gemmaanalysis.LinkConfirmationStatistics;
+import chibi.gemmaanalysis.LinkStatistics;
+import chibi.gemmaanalysis.LinkStatisticsService;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Gene;
@@ -184,7 +188,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
 
         if ( doRealAnalysis ) { // Currently this is really just for debugging purposes, though reading in from a
             // file might be useful.
-            LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), false,
+            LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false,
                     filterNonSpecific );
             log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
@@ -202,7 +206,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         for ( int i = 0; i < numIterations; i++ ) {
             log.info( "*** Iteration " + i + " ****" );
 
-            LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon.getCommonName(), true,
+            LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon, true,
                     filterNonSpecific );
             log.info( sr.getTotalLinkCount() + " gene links in total" );
 
