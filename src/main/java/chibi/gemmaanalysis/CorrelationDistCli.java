@@ -32,20 +32,24 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.graphics.ColorMap;
 import ubic.basecode.graphics.ColorMatrix;
 import ubic.basecode.graphics.MatrixDisplay;
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.basecode.math.CorrelationStats;
-import ubic.gemma.analysis.expression.coexpression.GeneEffectSizeCoExpressionAnalyzer;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.designElement.DesignElement;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import cern.colt.list.DoubleArrayList;
@@ -82,19 +86,9 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         }
         adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
         noLinkEEs = new HashSet<ExpressionExperiment>();
-    }
-
-    /**
-     * @param ee
-     * @return
-     */
-    @SuppressWarnings("unchecked")
-    private QuantitationType getPreferredQT( ExpressionExperiment ee ) {
-        Collection<QuantitationType> qts = eeService.getQuantitationTypes( ee );
-        for ( QuantitationType qt : qts ) {
-            if ( qt.getIsPreferred() ) return qt;
-        }
-        return null;
+        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
+                .getBean( "processedExpressionDataVectorService" );
+        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
     }
 
     /**
@@ -146,6 +140,8 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         return shuffledGenes;
     }
 
+    ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
     /**
      * @param ee
      * @param cs2knowngenes
@@ -154,11 +150,15 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
     @SuppressWarnings("unchecked")
     Collection<Double> calculateCorrs( ExpressionExperiment ee, Map<Long, Collection<Long>> cs2knowngenes ) {
         ArrayList<Double> corrs = new ArrayList<Double>();
-        QuantitationType qt = getPreferredQT( ee );
+
+        Collection<ProcessedExpressionDataVector> processedDataVectors = processedExpressionDataVectorService
+                .getProcessedDataVectors( ee );
+
         Map<DesignElementDataVector, Collection<Long>> dedv2genes = eeService.getDesignElementDataVectors(
                 cs2knowngenes, qt );
+
         Map<Long, Collection<ExpressionProfile>> geneID2EPs = new HashMap<Long, Collection<ExpressionProfile>>();
-        for ( DesignElementDataVector dedv : dedv2genes.keySet() ) {
+        for ( ProcessedExpressionDataVector dedv : processedDataVectors ) {
             Collection<Long> geneIds = dedv2genes.get( dedv );
             for ( Long id : geneIds ) {
                 Collection<ExpressionProfile> eps = geneID2EPs.get( id );
@@ -184,6 +184,21 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         return corrs;
     }
 
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
+    }
+
     /**
      * @param ee
      * @param geneIds
@@ -201,7 +216,7 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
             csIds.add( cs.getId() );
         }
 
-        Map<Long, Collection<Long>> cs2genes = geneService.getCS2GeneMap( csIds );
+        Map<Long, Collection<Long>> cs2genes = getCs2GeneMap( csIds );
         Map<Long, Collection<Long>> cs2knowngenes = new HashMap<Long, Collection<Long>>();
         for ( Long csId : cs2genes.keySet() ) {
             Collection<Long> mappedGeneIds = cs2genes.get( csId );
@@ -253,7 +268,7 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
                 log.info( ee.getShortName() + "---->" + culmulatives[eeIndex] );
                 dataIndex++;
             }
-            DoubleMatrixNamed<String, String> dataMatrix = new DenseDoubleMatrix2DNamed<String, String>( data );
+            DoubleMatrix<String, String> dataMatrix = new DenseDoubleMatrix<String, String>( data );
             dataMatrix.setRowNames( rowLabels );
             dataMatrix.setColumnNames( colLabels );
 
@@ -283,7 +298,8 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
             histogram = new int[expressionExperiments.size()][binNum];
             eeIndexMap = new HashMap<ExpressionExperiment, Integer>();
             int index = 0;
-            for ( ExpressionExperiment ee : expressionExperiments ) {
+            for ( BioAssaySet bas : expressionExperiments ) {
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                 eeIndexMap.put( ee, index );
                 index++;
             }
@@ -291,7 +307,8 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
             Collection<Long> geneIds = new HashSet<Long>();
             for ( Gene gene : genes )
                 geneIds.add( gene.getId() );
-            for ( ExpressionExperiment ee : expressionExperiments ) {
+            for ( BioAssaySet bas : expressionExperiments ) {
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                 fillHistogram( ee, geneIds );
             }
             saveHistogram();

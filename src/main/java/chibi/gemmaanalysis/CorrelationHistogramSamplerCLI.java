@@ -11,9 +11,9 @@ import org.apache.commons.lang.time.StopWatch;
 
 import ubic.basecode.math.distribution.HistogramSampler;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
 import cern.colt.list.DoubleArrayList;
 
 public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipulatingCLI {
@@ -45,7 +45,6 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
     @Override
     protected void processOptions() {
         super.processOptions();
-        TaxonService taxonService = ( TaxonService ) getBean( "taxonService" );
         String taxonName = getOptionValue( 't' );
         taxon = Taxon.Factory.newInstance();
         taxon.setCommonName( taxonName );
@@ -91,7 +90,8 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         log.info( "Finished sampling in " + watch );
 
         String header = "# ";
-        for ( ExpressionExperiment ee : expressionExperiments ) {
+        for ( BioAssaySet bas : expressionExperiments ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             header += ee.getShortName() + " ";
         }
 

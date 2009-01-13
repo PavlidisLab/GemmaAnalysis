@@ -33,6 +33,7 @@ import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 
@@ -64,7 +65,6 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         coexpAnalysisService = ( CoexpressionAnalysisService ) getBean( "coexpressionAnalysisService" );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         processCommandLine( "ExpressionProfileWriterCLI", args );
@@ -77,7 +77,8 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         }
 
         FilterConfig filterConfig = new FilterConfig();
-        for ( ExpressionExperiment ee : this.expressionExperiments ) {
+        for ( BioAssaySet bas : this.expressionExperiments ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
             Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
             for ( ArrayDesign ad : ads ) {

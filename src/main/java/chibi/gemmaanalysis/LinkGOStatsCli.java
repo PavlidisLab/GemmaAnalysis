@@ -34,10 +34,13 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.CompressedNamedBitMatrix;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGene;
@@ -54,7 +57,6 @@ import ubic.gemma.ontology.GoMetric.Metric;
  * <pre>
  * java -Xmx5G  -jar linkGOStats.jar -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxx -v 3
  * </pre>
- * 
  * <p>
  * FIXME this class reproduces code in the ShuffleLinksCli. This should also load links from a file.
  * 
@@ -90,7 +92,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
 
     private Probe2ProbeCoexpressionService p2pService = null;
     private GoMetric goMetricService;
-    private CompressedNamedBitMatrix linkCount = null;
+    private CompressedBitMatrix linkCount = null;
     private int[][] realStats = null;
     private int[][] simulatedStats = null;
     private Map<Long, Integer> eeIndexMap = new HashMap<Long, Integer>();
@@ -178,6 +180,21 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         }
     }
 
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
+    }
+
     @SuppressWarnings("unchecked")
     private void fillingMatrix( Collection<ProbeLink> links, ExpressionExperiment ee ) {
         Collection<Long> csIds = new HashSet<Long>();
@@ -186,7 +203,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
             csIds.add( link.getSecondDesignElementId() );
         }
         // FIXME this used to only return known genes.
-        Map<Long, Collection<Long>> cs2genes = geneService.getCS2GeneMap( csIds );
+        Map<Long, Collection<Long>> cs2genes = getCs2GeneMap( csIds );
         int eeIndex = eeIndexMap.get( ee.getId() );
         for ( ProbeLink link : links ) {
             Collection<Long> firstGeneIds = cs2genes.get( link.getFirstDesignElementId() );
@@ -407,7 +424,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         if ( err != null ) {
             return err;
         }
-
+        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
         geneOntologyService.init( true );
 
         while ( !this.geneOntologyService.isReady() ) {
@@ -441,16 +458,17 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
                 geneMap.put( gene.getId(), gene );
             }
             int index = 0;
-            for ( ExpressionExperiment ee : expressionExperiments ) {
+            for ( BioAssaySet ee : expressionExperiments ) {
                 eeIndexMap.put( ee.getId(), index );
                 index++;
             }
-            linkCount = new CompressedNamedBitMatrix( allGenes.size(), allGenes.size(), expressionExperiments.size() );
+            linkCount = new CompressedBitMatrix( allGenes.size(), allGenes.size(), expressionExperiments.size() );
             for ( Gene geneIter : allGenes ) {
                 linkCount.addRowName( geneIter.getId() );
                 linkCount.addColumnName( geneIter.getId() );
             }
-            for ( ExpressionExperiment ee : expressionExperiments ) {
+            for ( BioAssaySet bas : expressionExperiments ) {
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                 log.info( "Shuffling " + ee.getShortName() );
                 Collection<ProbeLink> links = p2pService.getProbeCoExpression( ee, this.taxon.getCommonName(), true );
                 if ( links == null || links.size() == 0 ) continue;

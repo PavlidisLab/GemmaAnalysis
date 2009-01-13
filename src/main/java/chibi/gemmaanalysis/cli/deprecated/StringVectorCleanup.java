@@ -33,6 +33,7 @@ import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.common.quantitationtype.QuantitationTypeService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
@@ -78,7 +79,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
 
         dedvs = ( DesignElementDataVectorService ) this.getBean( "designElementDataVectorService" );
 
-        for ( ExpressionExperiment ee : expressionExperiments ) {
+        for ( BioAssaySet ee : expressionExperiments ) {
             processExperiment( ee );
         }
 
@@ -91,7 +92,8 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
      * @param ee
      */
     @SuppressWarnings("unchecked")
-    private void processExperiment( ExpressionExperiment ee ) {
+    private void processExperiment( BioAssaySet bas ) {
+        ExpressionExperiment ee = ( ExpressionExperiment ) bas;
         Collection<QuantitationType> types = this.eeService.getQuantitationTypes( ee );
 
         ByteArrayConverter converter = new ByteArrayConverter();

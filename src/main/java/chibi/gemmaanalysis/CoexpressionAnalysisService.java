@@ -35,9 +35,9 @@ import org.apache.commons.lang.time.StopWatch;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix3DNamed;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
+import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.reader.HistogramReader;
 import ubic.basecode.io.writer.HistogramWriter;
 import ubic.basecode.math.CorrelationStats;
@@ -47,16 +47,16 @@ import ubic.basecode.math.metaanalysis.CorrelationEffectMetaAnalysis;
 import ubic.gemma.analysis.preprocess.filter.ExpressionExperimentFilter;
 import ubic.gemma.analysis.preprocess.filter.FilterConfig;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
-import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.gene.GeneService;
 import ubic.gemma.util.ConfigUtils;
 import cern.colt.list.DoubleArrayList;
 
@@ -68,8 +68,8 @@ import cern.colt.list.DoubleArrayList;
  * @spring.bean id="coexpressionAnalysisService"
  * @spring.property name="eeService" ref="expressionExperimentService"
  * @spring.property name="dedvService" ref="designElementDataVectorService"
- * @spring.property name="geneService" ref="geneService"
  * @spring.property name="adService" ref="arrayDesignService"
+ * @spring.property name="csService" ref="compositeSequenceService"
  * @author Raymond
  * @version $Id$
  */
@@ -90,7 +90,14 @@ public class CoexpressionAnalysisService {
 
     private ArrayDesignService adService;
 
-    private GeneService geneService;
+    /**
+     * @param csService the csService to set
+     */
+    protected void setCsService( CompositeSequenceService csService ) {
+        this.csService = csService;
+    }
+
+    private CompositeSequenceService csService;
 
     /**
      * Create an effect size service
@@ -110,20 +117,21 @@ public class CoexpressionAnalysisService {
      * @return
      */
     @SuppressWarnings("unchecked")
-    public CoexpressionMatrices calculateCoexpressionMatrices( Collection<ExpressionExperiment> ees,
+    public CoexpressionMatrices calculateCoexpressionMatrices( Collection<BioAssaySet> ees,
             Collection<Gene> queryGenes, Collection<Gene> targetGenes, FilterConfig filterConfig,
             CorrelationMethod correlationMethod ) {
         if ( correlationMethod == null ) correlationMethod = CorrelationMethod.PEARSON;
         CoexpressionMatrices matrices = new CoexpressionMatrices( ees, queryGenes, targetGenes );
-        DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> correlationMatrix = matrices.getCorrelationMatrix();
-        DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> sampleSizeMatrix = matrices.getSampleSizeMatrix();
+        DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix = matrices.getCorrelationMatrix();
+        DenseDouble3dMatrix<Gene, Gene, BioAssaySet> sampleSizeMatrix = matrices.getSampleSizeMatrix();
         int count = 1;
         int numEes = ees.size();
         // calculate correlations
         log.info( "Calculating correlation and sample size matrices" );
         StopWatch watch = new StopWatch();
         watch.start();
-        for ( ExpressionExperiment ee : ees ) {
+        for ( BioAssaySet bas : ees ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             log.info( "Processing " + ee.getShortName() + " (" + count++ + " of " + numEes + ")" );
             int slice = correlationMatrix.getSliceIndexByName( ee );
 
@@ -170,11 +178,10 @@ public class CoexpressionAnalysisService {
      * @param sampleSizeMatrix
      * @return
      */
-    public DoubleMatrixNamed<Gene, Gene> calculateEffectSizeMatrix(
-            DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> correlationMatrix,
-            DenseDoubleMatrix3DNamed sampleSizeMatrix ) {
-        DenseDoubleMatrix2DNamed<Gene, Gene> matrix = new DenseDoubleMatrix2DNamed<Gene, Gene>( correlationMatrix
-                .rows(), correlationMatrix.columns() );
+    public DoubleMatrix<Gene, Gene> calculateEffectSizeMatrix(
+            DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix, DenseDouble3dMatrix sampleSizeMatrix ) {
+        DoubleMatrix<Gene, Gene> matrix = new DenseDoubleMatrix<Gene, Gene>( correlationMatrix.rows(),
+                correlationMatrix.columns() );
         matrix.setRowNames( correlationMatrix.getRowNames() );
         matrix.setColumnNames( correlationMatrix.getColNames() );
 
@@ -184,7 +191,8 @@ public class CoexpressionAnalysisService {
                 int colIndex = matrix.getColIndexByName( colId );
                 DoubleArrayList correlations = new DoubleArrayList( correlationMatrix.slices() );
                 DoubleArrayList sampleSizes = new DoubleArrayList( correlationMatrix.slices() );
-                for ( ExpressionExperiment sliceId : correlationMatrix.getSliceNames() ) {
+                for ( BioAssaySet bas : correlationMatrix.getSliceNames() ) {
+                    ExpressionExperiment sliceId = ( ExpressionExperiment ) bas;
                     int sliceIndex = correlationMatrix.getSliceIndexByName( sliceId );
                     double correlation = correlationMatrix.get( sliceIndex, rowIndex, colIndex );
                     double sampleSize = sampleSizeMatrix.get( sliceIndex, rowIndex, colIndex );
@@ -207,13 +215,13 @@ public class CoexpressionAnalysisService {
      * @param ees expression experiments to sample from the gemmaData dir
      * @return p-value matrix
      */
-    public DoubleMatrixNamed<String, String> calculateMaxCorrelationPValueMatrix(
-            DoubleMatrixNamed<String, String> maxCorrelationMatrix, int n, Collection<ExpressionExperiment> ees ) {
+    public DoubleMatrix<String, String> calculateMaxCorrelationPValueMatrix(
+            DoubleMatrix<String, String> maxCorrelationMatrix, int n, Collection<BioAssaySet> ees ) {
         log.info( "Calculating " + n + "-max p-value matrix" );
         StopWatch watch = new StopWatch();
         watch.start();
-        DoubleMatrixNamed<String, String> pMatrix = new DenseDoubleMatrix2DNamed<String, String>( maxCorrelationMatrix
-                .rows(), maxCorrelationMatrix.columns() );
+        DoubleMatrix<String, String> pMatrix = new DenseDoubleMatrix<String, String>( maxCorrelationMatrix.rows(),
+                maxCorrelationMatrix.columns() );
         pMatrix.setRowNames( maxCorrelationMatrix.getRowNames() );
         pMatrix.setColumnNames( maxCorrelationMatrix.getColNames() );
 
@@ -263,8 +271,7 @@ public class CoexpressionAnalysisService {
      * @param matrix
      * @return
      */
-    public DenseDoubleMatrix3DNamed filterCoexpressionMatrix(
-            DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> matrix ) {
+    public DenseDouble3dMatrix filterCoexpressionMatrix( DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix ) {
         log.info( "Filtering expression experiments..." );
         // find empty columns
         List<ExpressionExperiment> filteredEeIds = new ArrayList<ExpressionExperiment>();
@@ -280,7 +287,7 @@ public class CoexpressionAnalysisService {
         log.info( filteredEeIds.size() + " of " + matrix.slices() + " passed" );
 
         // create a new filtered matrix
-        DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> filteredMatrix = new DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment>(
+        DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> filteredMatrix = new DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment>(
                 filteredEeIds.size(), matrix.rows(), matrix.columns() );
         filteredMatrix.setSliceNames( filteredEeIds );
         for ( int i = 0; i < filteredEeIds.size(); i++ ) {
@@ -315,16 +322,8 @@ public class CoexpressionAnalysisService {
         watch.start();
         log.info( ee.getShortName() + ": Getting expression data matrix" );
 
-        // get quantitation types
-        Collection<QuantitationType> qts;
-        qts = eeService.getPreferredQuantitationType( ee );
-        if ( qts.size() < 1 ) {
-            log.info( ee.getShortName() + ": No preferred quantitation types" );
-            return null;
-        }
-
         // get dedvs to build expression data matrix
-        Collection<DesignElementDataVector> dedvs = eeService.getDesignElementDataVectors( qts );
+        Collection<ProcessedExpressionDataVector> dedvs = eeService.getProcessedDataVectors( ee );
         dedvService.thaw( dedvs );
 
         // build and filter expression data matrix
@@ -350,7 +349,7 @@ public class CoexpressionAnalysisService {
      */
     @SuppressWarnings("unchecked")
     public Map<Gene, Collection<CompositeSequence>> getGene2CsMap( Collection<CompositeSequence> css ) {
-        Map<CompositeSequence, Collection<Gene>> cs2gene = geneService.getCS2GeneMap( css );
+        Map<CompositeSequence, Collection<Gene>> cs2gene = csService.getGenes( css );
         // filter for specific cs 2 gene
         for ( Iterator<Map.Entry<CompositeSequence, Collection<Gene>>> it = cs2gene.entrySet().iterator(); it.hasNext(); ) {
             Map.Entry<CompositeSequence, Collection<Gene>> entry = it.next();
@@ -380,9 +379,10 @@ public class CoexpressionAnalysisService {
      * @param ees
      * @return a collection of histogram samplers
      */
-    public Collection<HistogramSampler> getHistogramSamplers( Collection<ExpressionExperiment> ees ) {
+    public Collection<HistogramSampler> getHistogramSamplers( Collection<BioAssaySet> ees ) {
         Collection<HistogramSampler> histSamplers = new HashSet<HistogramSampler>();
-        for ( ExpressionExperiment ee : ees ) {
+        for ( BioAssaySet bas : ees ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             String fileName = ConfigUtils.getAnalysisStoragePath() + ee.getShortName() + ".correlDist.txt";
             try {
                 HistogramSampler sampler = readHistogramFile( fileName );
@@ -405,13 +405,11 @@ public class CoexpressionAnalysisService {
      * @param n - the Nth largest correlation
      * @return matrix with Nth largest correlations
      */
-    public DoubleMatrixNamed getMaxCorrelationMatrix(
-            DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> matrix, int n ) {
+    public DoubleMatrix getMaxCorrelationMatrix( DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix, int n ) {
         log.info( "Calculating " + n + "-max matrix" );
         StopWatch watch = new StopWatch();
         watch.start();
-        DenseDoubleMatrix2DNamed<Gene, Gene> maxMatrix = new DenseDoubleMatrix2DNamed<Gene, Gene>( matrix.rows(),
-                matrix.columns() );
+        DoubleMatrix<Gene, Gene> maxMatrix = new DenseDoubleMatrix<Gene, Gene>( matrix.rows(), matrix.columns() );
         maxMatrix.setRowNames( matrix.getRowNames() );
         maxMatrix.setColumnNames( matrix.getColNames() );
         for ( int i = 0; i < matrix.rows(); i++ ) {
@@ -444,10 +442,6 @@ public class CoexpressionAnalysisService {
 
     public void setEeService( ExpressionExperimentService eeService ) {
         this.eeService = eeService;
-    }
-
-    public void setGeneService( GeneService geneService ) {
-        this.geneService = geneService;
     }
 
     /**
@@ -555,9 +549,9 @@ public class CoexpressionAnalysisService {
      * @author raymond
      */
     public class CoexpressionMatrices {
-        private DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> correlationMatrix;
+        private DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix;
 
-        private DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> sampleSizeMatrix;
+        private DenseDouble3dMatrix<Gene, Gene, BioAssaySet> sampleSizeMatrix;
 
         private Map<ExpressionExperiment, String> eeNameMap;
 
@@ -568,16 +562,14 @@ public class CoexpressionAnalysisService {
          * @param queryGenes
          * @param targetGenes
          */
-        public CoexpressionMatrices( Collection<ExpressionExperiment> ees, Collection<Gene> queryGenes,
+        public CoexpressionMatrices( Collection<BioAssaySet> ees, Collection<Gene> queryGenes,
                 Collection<Gene> targetGenes ) {
-            List<ExpressionExperiment> eeList = new ArrayList<ExpressionExperiment>( ees );
+            List<BioAssaySet> eeList = new ArrayList<BioAssaySet>( ees );
             List<Gene> qGeneList = new ArrayList<Gene>( queryGenes );
             List<Gene> tGeneList = new ArrayList<Gene>( targetGenes );
 
-            correlationMatrix = new DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment>( eeList, qGeneList,
-                    tGeneList );
-            sampleSizeMatrix = new DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment>( eeList, qGeneList,
-                    tGeneList );
+            correlationMatrix = new DenseDouble3dMatrix<Gene, Gene, BioAssaySet>( eeList, qGeneList, tGeneList );
+            sampleSizeMatrix = new DenseDouble3dMatrix<Gene, Gene, BioAssaySet>( eeList, qGeneList, tGeneList );
             // NaN matrices
             for ( int k = 0; k < correlationMatrix.slices(); k++ ) {
                 for ( int i = 0; i < correlationMatrix.rows(); i++ ) {
@@ -590,8 +582,10 @@ public class CoexpressionAnalysisService {
 
             // generate name maps
             eeNameMap = new HashMap<ExpressionExperiment, String>();
-            for ( ExpressionExperiment ee : ees )
+            for ( BioAssaySet bas : ees ) {
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                 eeNameMap.put( ee, ee.getShortName() );
+            }
 
             geneNameMap = new HashMap<Gene, String>();
             for ( Gene gene : queryGenes ) {
@@ -606,7 +600,7 @@ public class CoexpressionAnalysisService {
             }
         }
 
-        public DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> getCorrelationMatrix() {
+        public DenseDouble3dMatrix<Gene, Gene, BioAssaySet> getCorrelationMatrix() {
             return correlationMatrix;
         }
 
@@ -618,15 +612,15 @@ public class CoexpressionAnalysisService {
             return geneNameMap;
         }
 
-        public DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> getSampleSizeMatrix() {
+        public DenseDouble3dMatrix<Gene, Gene, BioAssaySet> getSampleSizeMatrix() {
             return sampleSizeMatrix;
         }
 
-        public void setCorrelationMatrix( DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> correlationMatrix ) {
+        public void setCorrelationMatrix( DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix ) {
             this.correlationMatrix = correlationMatrix;
         }
 
-        public void setSampleSizeMatrix( DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> sampleSizeMatrix ) {
+        public void setSampleSizeMatrix( DenseDouble3dMatrix<Gene, Gene, BioAssaySet> sampleSizeMatrix ) {
             this.sampleSizeMatrix = sampleSizeMatrix;
         }
     }

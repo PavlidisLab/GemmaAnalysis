@@ -31,8 +31,8 @@ import org.apache.commons.logging.LogFactory;
 
 import ubic.basecode.bio.geneset.GeneAnnotations;
 import ubic.basecode.io.ByteArrayConverter;
-import ubic.gemma.analysis.expression.diff.ExpressionDataManager;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -50,13 +50,13 @@ public class ExpressionDataLoader {
 
     protected String experimentName = null;
 
-    protected static final Log log = LogFactory.getLog( ExpressionDataManager.class );
+    protected static final Log log = LogFactory.getLog( ExpressionDataLoader.class );
 
     protected GeneAnnotations geneAnnotations = null;
 
     protected int uniqueItems = 0;
 
-    protected Collection<DesignElementDataVector> designElementDataVectors = null;
+    protected Collection<ProcessedExpressionDataVector> designElementDataVectors = null;
 
     public ExpressionDataLoader( ExpressionExperiment paraExperiment, String paraGOFile ) {
         this.experiment = paraExperiment;
@@ -85,13 +85,7 @@ public class ExpressionDataLoader {
     }
 
     private void getValidDesignmentDataVector() {
-        Collection<DesignElementDataVector> dataVectors = this.experiment.getDesignElementDataVectors();
-        this.designElementDataVectors = new HashSet<DesignElementDataVector>();
-        for ( DesignElementDataVector dataVector : dataVectors ) {
-            if ( dataVector.getQuantitationType().getName().trim().equals( "VALUE" )
-                    && dataVector.getQuantitationType().getRepresentation().toString().trim().equals( "DOUBLE" ) )
-                this.designElementDataVectors.add( dataVector );
-        }
+        this.designElementDataVectors = this.experiment.getProcessedExpressionDataVectors();
     }
 
     public void writeExpressionDataToFile( String paraFileName ) {

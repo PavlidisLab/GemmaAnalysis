@@ -38,6 +38,8 @@ import org.apache.commons.logging.LogFactory;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -60,6 +62,13 @@ public class LinkStatisticsService {
 
     private static Log log = LogFactory.getLog( LinkStatisticsService.class.getName() );
 
+    /**
+     * @param compositeSequenceService the compositeSequenceService to set
+     */
+    protected void setCompositeSequenceService( CompositeSequenceService compositeSequenceService ) {
+        this.compositeSequenceService = compositeSequenceService;
+    }
+
     private GeneService geneService = null;
 
     private Probe2ProbeCoexpressionService p2pService = null;
@@ -71,11 +80,12 @@ public class LinkStatisticsService {
      * @param genes Genes to consider
      * @return LinkStatistic object holding the results.
      */
-    public LinkStatistics analyze( Collection<ExpressionExperiment> ees, Collection<Gene> genes, Taxon taxon,
+    public LinkStatistics analyze( Collection<BioAssaySet> ees, Collection<Gene> genes, Taxon taxon,
             boolean shuffleLinks, boolean filterNonSpecific ) {
         LinkStatistics stats = new LinkStatistics( ees, genes );
         int numLinks = 0;
-        for ( ExpressionExperiment ee : ees ) {
+        for ( BioAssaySet bas : ees ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             numLinks += countLinks( stats, ee, taxon, shuffleLinks, filterNonSpecific );
         }
         log.info( numLinks + " gene links in total for " + ees.size() + " expression experiments " );
@@ -88,7 +98,7 @@ public class LinkStatisticsService {
      * @param candidates
      * @param taxonName to figure out which table to get the links from (FIXME should not be needed)
      */
-    public void prepareDatabase( Collection<ExpressionExperiment> ees, String taxonName, boolean filterNonSpecific ) {
+    public void prepareDatabase( Collection<BioAssaySet> ees, String taxonName, boolean filterNonSpecific ) {
         log.info( "Creating working table for link analysis" );
         StopWatch watch = new StopWatch();
         watch.start();
@@ -384,6 +394,19 @@ public class LinkStatisticsService {
         return probeIdsToKeepLinksFor;
     }
 
+    private Map<Long, Collection<Long>> getCs2GeneMapFromProbeIds( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
+    }
+
     /**
      * @param links
      * @return map of cs to genes, by primary key.
@@ -391,12 +414,28 @@ public class LinkStatisticsService {
     @SuppressWarnings("unchecked")
     private Map<Long, Collection<Long>> getCS2GeneMap( Collection<ProbeLink> links ) {
         log.info( "Getting CS -> Gene map" );
-        Set<Long> csIds = new HashSet<Long>();
+        Collection<Long> csIds = new HashSet<Long>();
         for ( ProbeLink link : links ) {
             csIds.add( link.getFirstDesignElementId() );
             csIds.add( link.getSecondDesignElementId() );
         }
-        return geneService.getCS2GeneMap( csIds );
+
+        return getCs2GeneMap( csIds );
+    }
+
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
     }
 
     /**
@@ -479,7 +518,7 @@ public class LinkStatisticsService {
          * Further filter the list to only include probes that have alignments. This is a map of CS to genes (this is
          * probably not strictly needed as the next step also looks at genes.)
          */
-        Map<Long, Collection<Long>> geneMap = geneService.getCS2GeneMap( assayedProbeIds );
+        Map<Long, Collection<Long>> geneMap = getCs2GeneMapFromProbeIds( assayedProbeIds );
         log.info( geneMap.size() + " probes with alignments" );
 
         /*

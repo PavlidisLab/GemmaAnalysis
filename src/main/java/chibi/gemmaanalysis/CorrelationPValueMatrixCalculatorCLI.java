@@ -8,7 +8,7 @@ import java.util.Locale;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.reader.DoubleMatrixReader;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
@@ -60,8 +60,8 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
 
         DoubleMatrixReader in = new DoubleMatrixReader();
         try {
-            DoubleMatrixNamed<String, String> matrix = in.read( inFile );
-            DoubleMatrixNamed<String, String> pMatrix = coexpService.calculateMaxCorrelationPValueMatrix( matrix, 0,
+            DoubleMatrix<String, String> matrix = in.read( inFile );
+            DoubleMatrix<String, String> pMatrix = coexpService.calculateMaxCorrelationPValueMatrix( matrix, 0,
                     expressionExperiments );
             MatrixWriter out = new MatrixWriter( outFile, formatter );
             out.writeMatrix( pMatrix, true );

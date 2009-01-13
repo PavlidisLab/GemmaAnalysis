@@ -21,14 +21,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -51,7 +54,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     /*
      * (non-Javadoc)
-     * 
      * @see ubic.gemma.util.AbstractCLI#buildOptions()
      */
     @Override
@@ -80,6 +82,8 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         initBeans();
     }
 
+    ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
     /**
      * 
      */
@@ -87,6 +91,8 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         eeService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
         adService = ( ArrayDesignService ) getBean( "arrayDesignService" );
         dedvService = ( DesignElementDataVectorService ) getBean( "designElementDataVectorService" );
+        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
+                .getBean( "processedExpressionDataVectorService" );
     }
 
     /**
@@ -95,9 +101,9 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * @return
      */
     @SuppressWarnings("unchecked")
-    private DenseDoubleMatrix2DNamed getRankMatrix( Collection<Gene> genes, Collection<ExpressionExperiment> ees ) {
-        DenseDoubleMatrix2DNamed<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix2DNamed<Gene, ExpressionExperiment>(
-                genes.size(), ees.size() );
+    private DenseDoubleMatrix getRankMatrix( Collection<Gene> genes, Collection<BioAssaySet> ees ) {
+        DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>( genes
+                .size(), ees.size() );
         for ( int i = 0; i < matrix.rows(); i++ ) {
             for ( int j = 0; j < matrix.columns(); j++ ) {
                 matrix.set( i, j, Double.NaN );
@@ -107,12 +113,14 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         for ( Gene gene : genes ) {
             matrix.addRowName( gene );
         }
-        for ( ExpressionExperiment ee : ees ) {
+        for ( BioAssaySet bas : ees ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             matrix.addColumnName( ee );
         }
 
         int eeCount = 1;
-        for ( ExpressionExperiment ee : ees ) {
+        for ( BioAssaySet bas : ees ) {
+            ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             int col = matrix.getColIndexByName( ee );
             log.info( "Processing " + ee.getShortName() + " (" + eeCount++ + " of " + ees.size() + ")" );
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
@@ -120,23 +128,21 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             for ( ArrayDesign ad : ads ) {
                 css.addAll( adService.loadCompositeSequences( ad ) );
             }
-            Collection<QuantitationType> qts = eeService.getPreferredQuantitationType( ee );
-            if ( qts.size() == 0 ) {
-                log.info( "No preferred quantitation type" );
-                continue;
-            }
-            QuantitationType qt = qts.iterator().next();
-            Collection<DesignElementDataVector> dedvs = eeService.getDesignElementDataVectors( qts );
-            Map<DesignElementDataVector, Collection<Gene>> dedv2geneMap = dedvService.getDedv2GenesMap( dedvs, qt );
+
+            Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
+                    .getProcessedDataVectors( ee );
+
+            Map<ProcessedExpressionDataVector, Collection<Gene>> dedv2geneMap = dedvService
+                    .getDedv2GenesMap( dedvs, qt );
 
             // invert dedv2geneMap
-            Map<Gene, Collection<DesignElementDataVector>> gene2dedvMap = new HashMap<Gene, Collection<DesignElementDataVector>>();
-            for ( DesignElementDataVector dedv : dedv2geneMap.keySet() ) {
+            Map<Gene, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Gene, Collection<ProcessedExpressionDataVector>>();
+            for ( ProcessedExpressionDataVector dedv : dedv2geneMap.keySet() ) {
                 Collection<Gene> c = dedv2geneMap.get( dedv );
                 for ( Gene gene : c ) {
-                    Collection<DesignElementDataVector> vs = gene2dedvMap.get( dedv );
+                    Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( dedv );
                     if ( vs == null ) {
-                        vs = new HashSet<DesignElementDataVector>();
+                        vs = new HashSet<ProcessedExpressionDataVector>();
                         gene2dedvMap.put( gene, vs );
                     }
                     vs.add( dedv );
@@ -153,10 +159,10 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
                 line += "\t";
                 Double rank;
                 List<Double> ranks = new ArrayList<Double>();
-                Collection<DesignElementDataVector> vs = gene2dedvMap.get( gene );
+                Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene );
                 if ( vs == null ) continue;
-                for ( DesignElementDataVector dedv : vs ) {
-                    ranks.add( dedv.getRank() );
+                for ( ProcessedExpressionDataVector dedv : vs ) {
+                    ranks.add( dedv.getRankByMean() );
                 }
                 if ( ranks.size() < 1 ) continue;
 
@@ -177,7 +183,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * @param matrix
      * @return
      */
-    private DenseDoubleMatrix2DNamed filterRankmatrix( DenseDoubleMatrix2DNamed matrix ) {
+    private DenseDoubleMatrix filterRankmatrix( DenseDoubleMatrix matrix ) {
         // filter out genes with less than filterThreshold fraction of ranks
         List<Object> fRowNames = new ArrayList<Object>();
         for ( Object rowName : matrix.getRowNames() ) {
@@ -207,7 +213,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         }
 
         // fill matrix
-        DenseDoubleMatrix2DNamed fMatrix = new DenseDoubleMatrix2DNamed( fRowNames.size(), fColNames.size() );
+        DenseDoubleMatrix fMatrix = new DenseDoubleMatrix( fRowNames.size(), fColNames.size() );
         fMatrix.setRowNames( fRowNames );
         fMatrix.setColumnNames( fColNames );
         for ( Object rowName : fRowNames ) {
@@ -226,7 +232,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     /*
      * (non-Javadoc)
-     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @SuppressWarnings("unchecked")
@@ -241,7 +246,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         genes = geneService.loadKnownGenes( taxon );
         log.info( "Loaded " + genes.size() + " genes" );
 
-        DenseDoubleMatrix2DNamed rankMatrix = getRankMatrix( genes, expressionExperiments );
+        DenseDoubleMatrix rankMatrix = getRankMatrix( genes, expressionExperiments );
         // rankMatrix = filterRankmatrix(rankMatrix);
 
         // gene names

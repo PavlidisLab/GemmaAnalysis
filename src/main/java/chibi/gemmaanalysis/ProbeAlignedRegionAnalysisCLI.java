@@ -34,14 +34,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.CompressedNamedBitMatrix;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -105,7 +107,7 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
     protected Exception doWork( String[] args ) {
         Collection<Long> parIds = new HashSet<Long>();
         Collection<Long> knownGeneIds = new HashSet<Long>();
-        for ( Gene gene : ( Collection<Gene> ) geneService.getGenesByTaxon( taxon ) ) {
+        for ( Gene gene : geneService.getGenesByTaxon( taxon ) ) {
             if ( gene instanceof ProbeAlignedRegion )
                 parIds.add( gene.getId() );
             else if ( !( gene instanceof PredictedGene ) ) knownGeneIds.add( gene.getId() );
@@ -123,8 +125,8 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
         }
         parIds = parId2eeRankMap.keySet();
 
-        CompressedNamedBitMatrix<Long, Long> linkMatrix = getLinkCountMatrix( EEs, parIds, knownGeneIds );
-        CompressedNamedBitMatrix<Long, Long> negativeLinkMatrix = getLinkCountMatrix( EEs, parIds, knownGeneIds );
+        CompressedBitMatrix<Long, Long> linkMatrix = getLinkCountMatrix( EEs, parIds, knownGeneIds );
+        CompressedBitMatrix<Long, Long> negativeLinkMatrix = getLinkCountMatrix( EEs, parIds, knownGeneIds );
 
         for ( ExpressionExperiment EE : EEs ) {
             int eeIndex = eeId2IndexMap.get( EE.getId() );
@@ -136,7 +138,7 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
                 csIds.add( link.getSecondDesignElementId() );
             }
             // FIXME this used to provide only known genes.
-            Map<Long, Collection<Long>> cs2geneMap = geneService.getCS2GeneMap( csIds );
+            Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
             for ( ProbeLink link : links ) {
                 Collection<Long> firstGeneIds = cs2geneMap.get( link.getFirstDesignElementId() );
                 Collection<Long> secondGeneIds = cs2geneMap.get( link.getSecondDesignElementId() );
@@ -178,6 +180,7 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
         taxon = Taxon.Factory.newInstance();
         taxon.setCommonName( taxonName );
         TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
+        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
         taxon = taxonService.find( taxon );
         if ( taxon == null ) {
             log.info( "No Taxon found!" );
@@ -211,11 +214,11 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
      * @param parId
      * @return
      */
-    private Double getGeneRank( Map<Long, Collection<DesignElementDataVector>> gene2dedvMap, Long parId ) {
-        Collection<DesignElementDataVector> dedvs = gene2dedvMap.get( parId );
+    private Double getGeneRank( Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap, Long parId ) {
+        Collection<ProcessedExpressionDataVector> dedvs = gene2dedvMap.get( parId );
         ArrayList<Double> ranks = new ArrayList<Double>();
-        for ( DesignElementDataVector dedv : dedvs ) {
-            ranks.add( dedv.getRank() );
+        for ( ProcessedExpressionDataVector dedv : dedvs ) {
+            ranks.add( dedv.getRankByMean() );
         }
         Collections.sort( ranks );
         Double rank = ranks.get( ranks.size() / 2 );
@@ -242,11 +245,10 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
      * @param knownGeneIds known gene IDs
      * @return
      */
-    private CompressedNamedBitMatrix<Long, Long> getLinkCountMatrix( Collection<ExpressionExperiment> EEs,
+    private CompressedBitMatrix<Long, Long> getLinkCountMatrix( Collection<ExpressionExperiment> EEs,
             Collection<Long> parIds, Collection<Long> knownGeneIds ) {
         int n = parIds.size() + knownGeneIds.size();
-        CompressedNamedBitMatrix<Long, Long> linkCountMatrix = new CompressedNamedBitMatrix<Long, Long>( n, n, EEs
-                .size() );
+        CompressedBitMatrix<Long, Long> linkCountMatrix = new CompressedBitMatrix<Long, Long>( n, n, EEs.size() );
         for ( Long l : parIds ) {
             linkCountMatrix.addColumnName( l );
             linkCountMatrix.addRowName( l );
@@ -256,6 +258,21 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
             linkCountMatrix.addRowName( l );
         }
         return linkCountMatrix;
+    }
+
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
     }
 
     /**
@@ -284,18 +301,18 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
                 }
             }
             // FIXME this use dto return only known genes.
-            Map<Long, Collection<Long>> cs2geneMap = geneService.getCS2GeneMap( csIds );
+            Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
 
-            Map<DesignElementDataVector, Collection<Long>> dedv2geneMap = eeService.getDesignElementDataVectors(
+            Map<ProcessedExpressionDataVector, Collection<Long>> dedv2geneMap = eeService.getDesignElementDataVectors(
                     cs2geneMap, qt );
             // invert dedv2geneMap to gene2dedvMap
-            Map<Long, Collection<DesignElementDataVector>> gene2dedvMap = new HashMap<Long, Collection<DesignElementDataVector>>();
-            for ( DesignElementDataVector dedv : dedv2geneMap.keySet() ) {
+            Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Long, Collection<ProcessedExpressionDataVector>>();
+            for ( ProcessedExpressionDataVector dedv : dedv2geneMap.keySet() ) {
                 Collection<Long> geneIds = dedv2geneMap.get( dedv );
                 for ( Long geneId : geneIds ) {
-                    Collection<DesignElementDataVector> dedvs = gene2dedvMap.get( dedv );
+                    Collection<ProcessedExpressionDataVector> dedvs = gene2dedvMap.get( dedv );
                     if ( dedvs == null ) {
-                        dedvs = new HashSet<DesignElementDataVector>();
+                        dedvs = new HashSet<ProcessedExpressionDataVector>();
                         gene2dedvMap.put( geneId, dedvs );
                     }
                     dedvs.add( dedv );

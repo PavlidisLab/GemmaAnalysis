@@ -39,7 +39,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     private Taxon taxon;
 
     private int SUBSETSIZE;
-    
+
     private boolean queryGenesOnly;
 
     private static Log log = LogFactory.getLog( Gene2GeneCoexpressionResultsCli.class );
@@ -79,9 +79,9 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
                 "The name of the taxon." ).withLongOpt( "taxon" ).create( 't' );
         addOption( taxonOption );
-        
+
         Option queryOption = OptionBuilder.hasArg().withArgName( "QueryGenesOnly" ).withDescription(
-        "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
+                "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
         addOption( queryOption );
 
         Option subsetOption = OptionBuilder.hasArg().withArgName( "GeneSubsetSize" ).withDescription(
@@ -136,13 +136,13 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         }
 
         // random option - r
-        // if "all" is given, then use all genes in a given taxon        
+        // if "all" is given, then use all genes in a given taxon
         if ( this.hasOption( 'r' ) ) {
             String rOption = this.getOptionValue( 'r' );
             assert taxon != null;
             if ( rOption.equals( "all" ) ) geneList = geneService.loadKnownGenes( taxon );
-        } 
-        //no random option
+        }
+        // no random option
         else {
             assert taxon != null;
             try {
@@ -161,15 +161,13 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
         // subset gene list size to use
         SUBSETSIZE = 25; // default
-        if ( this.hasOption( 'z' ) ) 
-            SUBSETSIZE = Integer.parseInt( this.getOptionValue( 'z' ) );
-        
-        //link analysis on genelist only?
+        if ( this.hasOption( 'z' ) ) SUBSETSIZE = Integer.parseInt( this.getOptionValue( 'z' ) );
+
+        // link analysis on genelist only?
         queryGenesOnly = false; // default
         if ( this.hasOption( 'q' ) ) {
             String query = this.getOptionValue( 'q' );
-            if (query.equals( "true") || query.equals( "1") )
-                queryGenesOnly =  true;           
+            if ( query.equals( "true" ) || query.equals( "1" ) ) queryGenesOnly = true;
         }
 
     }
@@ -222,56 +220,56 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return genes;
     }
 
-    //    /**
-    //     * Uses precomputed file of IDs; calls helper method, <code>readGeneListFile()</code>
-    //     * 
-    //     * @param inFile - Precomputed file of IDs
-    //     * @param i - number of random genes to use
-    //     * @return - list of 'i' random number of genes from precomputed list of IDs
-    //     * @throws IOException
-    //     */
-    //    private Collection<Gene> getRandomKnownGenes( String inFile, int i ) throws IOException {
-    //        Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
-    //        Collection<Gene> genes = new HashSet<Gene>();
-    //        String line;
-    //        int geneCount = 0;
-    //        SecureRandom randomSeed;
-    //        try {
-    //            randomSeed = SecureRandom.getInstance( "SHA1PRNG" );
+    // /**
+    // * Uses precomputed file of IDs; calls helper method, <code>readGeneListFile()</code>
+    // *
+    // * @param inFile - Precomputed file of IDs
+    // * @param i - number of random genes to use
+    // * @return - list of 'i' random number of genes from precomputed list of IDs
+    // * @throws IOException
+    // */
+    // private Collection<Gene> getRandomKnownGenes( String inFile, int i ) throws IOException {
+    // Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
+    // Collection<Gene> genes = new HashSet<Gene>();
+    // String line;
+    // int geneCount = 0;
+    // SecureRandom randomSeed;
+    // try {
+    // randomSeed = SecureRandom.getInstance( "SHA1PRNG" );
     //
-    //            while ( geneCount < 1000 ) {
+    // while ( geneCount < 1000 ) {
     //
-    //                randomSeed.generateSeed( 10 );
-    //                int randomInt = randomSeed.nextInt( rawLinesInFile.length );
+    // randomSeed.generateSeed( 10 );
+    // int randomInt = randomSeed.nextInt( rawLinesInFile.length );
     //
-    //                line = ( String ) rawLinesInFile[randomInt];
+    // line = ( String ) rawLinesInFile[randomInt];
     //
-    //                Gene gene = geneService.load( Long.parseLong( line ) );
-    //                if ( gene == null ) {
-    //                    log.error( "ERROR: Cannot find genes for ID: " + line );
-    //                    continue;
-    //                }
-    //                geneService.thaw( gene );
+    // Gene gene = geneService.load( Long.parseLong( line ) );
+    // if ( gene == null ) {
+    // log.error( "ERROR: Cannot find genes for ID: " + line );
+    // continue;
+    // }
+    // geneService.thaw( gene );
     //
-    //                // because we are using a HashSet, no duplicates are allowed - which is what we want
-    //                genes.add( gene );
-    //                geneCount++;
-    //            }
+    // // because we are using a HashSet, no duplicates are allowed - which is what we want
+    // genes.add( gene );
+    // geneCount++;
+    // }
     //
-    //        } catch ( NoSuchAlgorithmException e ) {
-    //            // TODO Auto-generated catch block
-    //            e.printStackTrace();
-    //        }
+    // } catch ( NoSuchAlgorithmException e ) {
+    // // TODO Auto-generated catch block
+    // e.printStackTrace();
+    // }
     //
-    //        return genes;
-    //    }
+    // return genes;
+    // }
 
-    @SuppressWarnings("unchecked")
-    private void outputCoexpressionResults( Collection<Gene> geneList, Taxon taxon, int stringency, boolean queryGenesOnly ) throws IOException {
+    private void outputCoexpressionResults( Collection<Gene> geneList, Taxon taxon, int stringency,
+            boolean queryGenesOnly ) throws IOException {
         int geneCount = 0;
-       
-       createColumnHeadings();
-       
+
+        createColumnHeadings();
+
         while ( geneCount < geneList.size() ) {
 
             // use a subset of genes
@@ -283,7 +281,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
                 geneCount++;
             }
             // use subset list of genes, size SUBSETSIZE
-            CoexpressionMetaValueObject cmvo = geneCoexpressionService.getCannedAnalysisResults( 717L, geneSubset,
+            CoexpressionMetaValueObject cmvo = geneCoexpressionService.coexpressionSearch( 717L, geneSubset,
                     stringency, 0, queryGenesOnly );
             Collection<CoexpressionValueObjectExt> cvoExtCol = cmvo.getKnownGeneResults();
 
@@ -300,13 +298,12 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     }
 
     private void createColumnHeadings() throws IOException {
- System.out.println( "Query_Gene\tCoexpressed_Gene\tDatasets_Tested\t+Correlation\t-Correlation" );
-        
+        System.out.println( "Query_Gene\tCoexpressed_Gene\tDatasets_Tested\t+Correlation\t-Correlation" );
+
         String dir = "../";
         String query = "";
-        if (queryGenesOnly == true)
-              query = "-qgOnly";
-        String outFile = getOptionValue('g')+"Stringency" + getOptionValue( 's' )+ query+"-Summary.txt";
+        if ( queryGenesOnly == true ) query = "-qgOnly";
+        String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
         BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
         out.write( "Query_Gene\tTotal_Degree\n" );
         out.close();
@@ -314,6 +311,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     /**
      * map of queryGene to coexpressed gene, # of datasets, etc
+     * 
      * @param cvoExtCol
      * @return mapping of the query gene to all expressed
      */
@@ -346,28 +344,27 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         Integer numDSTested = cvo.getNumTestedIn();
         StringBuilder buf = new StringBuilder();
 
-        //only positive correlation
-        if ( cvo.getPosLinks() > 0 && cvo.getNegLinks() <= 0 ) {
-            buf.append( cvo.getPosLinks() + "\t" );
+        // only positive correlation
+        if ( cvo.getPosSupp() > 0 && cvo.getNegSupp() == 0 ) {
+            buf.append( cvo.getPosSupp() + "\t" );
         }
-        //only negative correlation
-        else if ( cvo.getNegLinks() > 0 && cvo.getPosLinks() <= 0 ) {
-            buf.append( "\t" + cvo.getNegLinks() );
+        // only negative correlation
+        else if ( cvo.getNegSupp() > 0 && cvo.getPosSupp() == 0 ) {
+            buf.append( "\t" + cvo.getNegSupp() );
         }
-        //negative and positive
+        // negative and positive
         else
-            buf.append( cvo.getPosLinks() + "\t" + cvo.getNegLinks() );
+            buf.append( cvo.getPosSupp() + "\t" + cvo.getNegSupp() );
         String[] fields = new String[] { queryGene, foundGene, numDSTested.toString(), buf.toString() };
         return StringUtils.join( fields, "\t" );
 
     }
 
     /**
-     * 
      * @param coexpressionList
      */
     private void printCoexpressionResults( Map<String, Collection<String>> coexpressionList ) {
-        
+
         for ( String queryGene : coexpressionList.keySet() ) {
             // String outFile = "hub-coexpression-canned-results-queryGenesOnly-false.txt";
             // try {
@@ -388,7 +385,8 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     }
 
     /**
-     * prints out, in a file, the degree count for each query gene.  Degree count = number of coexpressed genes
+     * prints out, in a file, the degree count for each query gene. Degree count = number of coexpressed genes
+     * 
      * @param coexpressionList
      * @throws IOException
      */
@@ -396,15 +394,14 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         try {
             String dir = "../";
             String query = "";
-            if (queryGenesOnly == true)
-                  query = "-qgOnly";
-            String outFile = getOptionValue('g')+"Stringency" + getOptionValue( 's' )+ query+"-Summary.txt";
+            if ( queryGenesOnly == true ) query = "-qgOnly";
+            String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
             BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
 
             for ( String queryGene : coexpressionList.keySet() ) {
 
                 int degree = coexpressionList.get( queryGene ).size();
-                out.write(queryGene + "\t" + degree +"\n" );
+                out.write( queryGene + "\t" + degree + "\n" );
 
             }
             out.close();
@@ -414,10 +411,10 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         }
     }
 
-    //    private boolean isNumber( String string ) {
-    //        for ( int i = 0; i < string.length(); i++ ) {
-    //            if ( !Character.isDigit( string.charAt( i ) ) ) return false;
-    //        }
-    //        return true;
-    //    }
+    // private boolean isNumber( String string ) {
+    // for ( int i = 0; i < string.length(); i++ ) {
+    // if ( !Character.isDigit( string.charAt( i ) ) ) return false;
+    // }
+    // return true;
+    // }
 }

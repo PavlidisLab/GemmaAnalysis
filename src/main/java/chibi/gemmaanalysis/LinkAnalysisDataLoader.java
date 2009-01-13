@@ -26,13 +26,14 @@ import java.util.Collection;
 import java.util.List;
 
 import ubic.basecode.bio.geneset.GeneAnnotations;
-import ubic.basecode.dataStructure.matrix.DoubleMatrix2DNamedFactory;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrixFactory;
 import ubic.basecode.datafilter.AffymetrixProbeNameFilter;
 import ubic.basecode.datafilter.Filter;
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.biomaterial.BioMaterial;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
@@ -43,7 +44,7 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
  */
 public class LinkAnalysisDataLoader extends ExpressionDataLoader {
 
-    private DoubleMatrixNamed<String, String> dataMatrix = null;
+    private DoubleMatrix<String, String> dataMatrix = null;
 
     public LinkAnalysisDataLoader( ExpressionExperiment paraExpressionExperiment, String goFile ) {
         super( paraExpressionExperiment, goFile );
@@ -52,8 +53,8 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
     }
 
     private void filter() {
-        Filter<DoubleMatrixNamed<String, String>, String, String, Double> x = new AffymetrixProbeNameFilter<DoubleMatrixNamed<String, String>, String, String, Double>();
-        DoubleMatrixNamed<String, String> r = x.filter( this.dataMatrix );
+        Filter<DoubleMatrix<String, String>, String, String, Double> x = new AffymetrixProbeNameFilter<DoubleMatrix<String, String>, String, String, Double>();
+        DoubleMatrix<String, String> r = x.filter( this.dataMatrix );
         this.dataMatrix = r;
         System.err.println( this.dataMatrix );
         this.uniqueItems = this.dataMatrix.rows();
@@ -87,19 +88,19 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         }
     }
 
-    private DoubleMatrixNamed<String, String> vectorsToDoubleMatrix( Collection<DesignElementDataVector> vectors ) {
-        if ( vectors == null || vectors.size() == 0 ) {
+    private DoubleMatrix<String, String> vectorsToDoubleMatrix( Collection<ProcessedExpressionDataVector> collection ) {
+        if ( collection == null || collection.size() == 0 ) {
             return null;
         }
 
         ByteArrayConverter bac = new ByteArrayConverter();
 
-        List<BioAssay> bioAssays = ( List<BioAssay> ) vectors.iterator().next().getBioAssayDimension().getBioAssays();
+        List<BioAssay> bioAssays = ( List<BioAssay> ) collection.iterator().next().getBioAssayDimension()
+                .getBioAssays();
 
         assert bioAssays.size() > 0 : "Empty BioAssayDimension for the vectors";
 
-        DoubleMatrixNamed<String, String> matrix = DoubleMatrix2DNamedFactory
-                .fastrow( vectors.size(), bioAssays.size() );
+        DoubleMatrix<String, String> matrix = DoubleMatrixFactory.fastrow( collection.size(), bioAssays.size() );
 
         // Use BioMaterial names to represent the column in the matrix (as it can span multiple BioAssays)
         for ( BioAssay assay : bioAssays ) {
@@ -113,7 +114,7 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         }
 
         int rowNum = 0;
-        for ( DesignElementDataVector vector : vectors ) {
+        for ( DesignElementDataVector vector : collection ) {
             String name = vector.getDesignElement().getName();
             matrix.addRowName( name );
             byte[] bytes = vector.getData();
@@ -128,7 +129,7 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         return matrix;
     }
 
-    public DoubleMatrixNamed getDataMatrix() {
+    public DoubleMatrix getDataMatrix() {
         return this.dataMatrix;
     }
 

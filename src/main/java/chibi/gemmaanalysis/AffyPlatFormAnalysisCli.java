@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -40,7 +39,9 @@ import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
@@ -116,7 +117,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
     private Map<DesignElement, DoubleArrayList> presentAbsentData = new HashMap<DesignElement, DoubleArrayList>();
     private DesignElementDataVectorService devService = null;
     private ExpressionExperimentService eeService = null;
-    private Map<Object, Set> probeToGeneAssociation = null;
+    private Map<CompositeSequence, Collection<Gene>> probeToGeneAssociation = null;
 
     @Override
     protected void processOptions() {
@@ -140,7 +141,6 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         addOption( OutOption );
     }
 
-    @SuppressWarnings("unchecked")
     private QuantitationType getQuantitationType( ExpressionExperiment ee, StandardQuantitationType requiredQT,
             boolean isPreferedQT ) {
         QuantitationType qtf = null;
@@ -201,68 +201,36 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         return null;
     }
 
-    // From start to
-    // end-1
-    @SuppressWarnings("unchecked")
-    private Map<Object, Set> getDevToGeneAssociation( Object[] allVectors, int start, int end ) {
-        Collection<DesignElementDataVector> someVectors = new HashSet<DesignElementDataVector>();
-        Map<Object, Set> returnAssocation = null;
-        for ( int i = start; i < end; i++ ) {
-            someVectors.add( ( DesignElementDataVector ) allVectors[i] );
+    private Map<CompositeSequence, Collection<Gene>> getDevToGeneAssociation(
+            Collection<ProcessedExpressionDataVector> datavectors ) {
+
+        Collection<CompositeSequence> cs = new HashSet<CompositeSequence>();
+        for ( ProcessedExpressionDataVector designElementDataVector : datavectors ) {
+            cs.add( ( CompositeSequence ) designElementDataVector.getDesignElement() );
         }
-        returnAssocation = this.devService.getGenes( someVectors );
-        return returnAssocation;
+        CompositeSequenceService css = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        return css.getGenes( cs );
     }
 
-    @SuppressWarnings("unchecked")
-    private Map<Object, Set> getProbeToGeneAssociation( Collection<DesignElementDataVector> dataVectors ) {
-        Map<Object, Set> association = new HashMap<Object, Set>();
-        Object[] allVectors = dataVectors.toArray();
-        int ChunkNum = 1000;
-        int end = allVectors.length > ChunkNum ? ChunkNum : allVectors.length;
-        association.putAll( this.getDevToGeneAssociation( allVectors, 0, end ) );
-
-        StopWatch watch = new StopWatch();
-        watch.start();
-        log.info( "Starting the query to get the mapping between probe and gene" );
-        for ( int i = 0; i < allVectors.length; i++ ) {
-            if ( i >= end ) {
-                int start = end;
-                end = allVectors.length > end + ChunkNum ? end + ChunkNum : allVectors.length;
-                System.err.println( start + " " + end );
-                association.putAll( this.getDevToGeneAssociation( allVectors, start, end ) );
-            }
-        }
-        Map<Object, Set> probeToGeneAssociation = new HashMap<Object, Set>();
-
-        for ( Object dev : association.keySet() ) {
-            Set<Gene> mappedGenes = association.get( dev );
-            probeToGeneAssociation.put( ( ( DesignElementDataVector ) dev ).getDesignElement(), mappedGenes );
-        }
-
-        return probeToGeneAssociation;
-    }
-
-    @SuppressWarnings("unchecked")
     String processEE( ExpressionExperiment ee ) {
         // eeService.thaw( ee );
         QuantitationType qt = this.getQuantitationType( ee, null, true );
         if ( qt == null ) return ( "No usable quantitation type in " + ee.getShortName() );
         log.info( "Load Data for  " + ee.getShortName() );
 
-        Collection<DesignElementDataVector> dataVectors = devService.find( qt );
+        Collection<ProcessedExpressionDataVector> dataVectors = eeService.getProcessedDataVectors( ee );
         if ( dataVectors == null ) return ( "No data vector " + ee.getShortName() );
         if ( this.probeToGeneAssociation == null ) {
-            this.probeToGeneAssociation = getProbeToGeneAssociation( dataVectors );
+            this.probeToGeneAssociation = this.getDevToGeneAssociation( dataVectors );
         }
 
-        for ( DesignElementDataVector vector : dataVectors ) {
+        for ( ProcessedExpressionDataVector vector : dataVectors ) {
             DesignElement de = vector.getDesignElement();
             DoubleArrayList rankList = this.rankData.get( de );
             if ( rankList == null ) {
                 return ( " EE data vectors don't match array design for probe " + de.getName() );
             }
-            Double rank = vector.getRank();
+            Double rank = vector.getRankByMean();
             if ( rank != null ) {
                 rankList.add( rank.doubleValue() );
             }
@@ -372,7 +340,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
                     output.print( "\t" + lower_threshould );
                 else
                     output.print( "\t" + oneElement.getPresentAbsentCall() );
-                Set<Gene> mappedGenes = this.probeToGeneAssociation.get( oneElement.getDE() );
+                Collection<Gene> mappedGenes = this.probeToGeneAssociation.get( oneElement.getDE() );
                 if ( mappedGenes != null )
                     output.println( "\t" + mappedGenes.size() );
                 else

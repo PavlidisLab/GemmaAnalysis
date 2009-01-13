@@ -32,9 +32,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix3DNamed;
+import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -104,7 +105,7 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         // calculate matrices
         CoexpressionMatrices matrices = coexpressionAnalysisService.calculateCoexpressionMatrices(
                 expressionExperiments, queryGenes, targetGenes, filterConfig, CorrelationMethod.SPEARMAN );
-        DenseDoubleMatrix3DNamed<Gene, Gene, ExpressionExperiment> correlationMatrix = matrices.getCorrelationMatrix();
+        DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix = matrices.getCorrelationMatrix();
         // DenseDoubleMatrix3DNamed sampleSizeMatrix = matrices
         // .getSampleSizeMatrix();
 
@@ -142,8 +143,9 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
             out.close();
 
             out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.col_names.txt" ) );
-            Collection<ExpressionExperiment> cols = correlationMatrix.getSliceNames();
-            for ( ExpressionExperiment ee : cols ) {
+            Collection<BioAssaySet> cols = correlationMatrix.getSliceNames();
+            for ( BioAssaySet bas : cols ) {
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                 out.println( ee.getShortName() );
             }
             out.close();

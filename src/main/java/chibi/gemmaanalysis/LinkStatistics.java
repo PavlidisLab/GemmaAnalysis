@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-
-import ubic.basecode.dataStructure.matrix.CompressedNamedBitMatrix;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 
@@ -52,8 +52,8 @@ public class LinkStatistics {
      * Gene-by-gene matrix
      */
     private Collection<Gene> genes;
-    private CompressedNamedBitMatrix<Long, Long> posLinkCounts = null;
-    private CompressedNamedBitMatrix<Long, Long> negLinkCounts = null;
+    private CompressedBitMatrix<Long, Long> posLinkCounts = null;
+    private CompressedBitMatrix<Long, Long> negLinkCounts = null;
     // private int totalLinks = 0;
     private Set<Long> geneCoverage = new HashSet<Long>();
 
@@ -61,10 +61,10 @@ public class LinkStatistics {
      * @param ees
      * @param genes Needed so output contains gene symbols, not just IDs.
      */
-    public LinkStatistics( Collection<ExpressionExperiment> ees, Collection<Gene> genes ) {
+    public LinkStatistics( Collection<BioAssaySet> ees, Collection<Gene> genes ) {
         this.eeMap = new HashMap<Long, Integer>();
         int index = 0;
-        for ( ExpressionExperiment eeIter : ees ) {
+        for ( BioAssaySet eeIter : ees ) {
             eeMap.put( eeIter.getId(), new Integer( index ) );
             index++;
         }
@@ -78,9 +78,9 @@ public class LinkStatistics {
      * @param genes
      * @return
      */
-    public CompressedNamedBitMatrix<Long, Long> initMatrix( Collection<ExpressionExperiment> ees, Collection<Gene> genes ) {
-        CompressedNamedBitMatrix<Long, Long> linkCount = new CompressedNamedBitMatrix<Long, Long>( genes.size(), genes
-                .size(), ees.size() );
+    public CompressedBitMatrix<Long, Long> initMatrix( Collection<BioAssaySet> ees, Collection<Gene> genes ) {
+        CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<Long, Long>( genes.size(), genes.size(),
+                ees.size() );
         for ( Gene geneIter : genes ) {
             linkCount.addRowName( geneIter.getId() );
         }

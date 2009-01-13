@@ -34,7 +34,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.dataStructure.matrix.CompressedNamedBitMatrix;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -82,9 +82,9 @@ public class LinkMatrix {
      * @return
      */
     public static boolean checkBits( long[] mask, int index ) {
-        int num = index / CompressedNamedBitMatrix.BITS_PER_ELEMENT;
-        int bit_index = index % CompressedNamedBitMatrix.BITS_PER_ELEMENT;
-        long res = mask[num] & CompressedNamedBitMatrix.BIT1 << bit_index;
+        int num = index / CompressedBitMatrix.BITS_PER_ELEMENT;
+        int bit_index = index % CompressedBitMatrix.BITS_PER_ELEMENT;
+        long res = mask[num] & CompressedBitMatrix.BIT1 << bit_index;
         if ( res == 0 ) return false;
         return true;
     }
@@ -135,7 +135,7 @@ public class LinkMatrix {
      */
     private int shift = 50000; // to encode two geneid into one long id
 
-    private CompressedNamedBitMatrix<Long, Long> linkCountMatrix = null;
+    private CompressedBitMatrix<Long, Long> linkCountMatrix = null;
 
     private Map<Long, Integer> eeIndexMap = null;
     private Map<Integer, ExpressionExperiment> eeMap = null;
@@ -172,7 +172,6 @@ public class LinkMatrix {
      * @param geneService
      * @throws IOException
      */
-    @SuppressWarnings("unchecked")
     public LinkMatrix( String matrixFile, String eeMapFile, ExpressionExperimentService eeService,
             GeneService geneService, GeneOntologyService goService ) throws IOException {
         this.goService = goService;
@@ -198,7 +197,7 @@ public class LinkMatrix {
                     log.info( mesg );
                     throw new IOException( mesg );
                 }
-                linkCountMatrix = new CompressedNamedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ), Integer
+                linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ), Integer
                         .valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
                 hasConfig = true;
             } else if ( !hasRowNames ) {
@@ -274,7 +273,6 @@ public class LinkMatrix {
      * 
      * @param taxon
      */
-    @SuppressWarnings("unchecked")
     public LinkMatrix( Taxon taxon ) {
         Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
         Collection<Gene> genes = new HashSet<Gene>();
@@ -367,7 +365,7 @@ public class LinkMatrix {
             CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
                     stringency, false, 0 );
             Map<Long, Collection<Long>> geneEEMap = coexpressed.getKnownGeneCoexpression()
-                    .getSpecificExpressionExperiments();
+                    .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
             this.count( gene.getId(), geneEEMap );
             i++;
         }
@@ -421,12 +419,12 @@ public class LinkMatrix {
      * @param mask
      * @return
      */
-    public Collection getEENames( long[] mask ) {
+    public Collection<String> getEENames( long[] mask ) {
         Set<String> returnedSet = new HashSet<String>();
         for ( int i = 0; i < mask.length; i++ ) {
-            for ( int j = 0; j < CompressedNamedBitMatrix.BITS_PER_ELEMENT; j++ )
-                if ( ( mask[i] & ( CompressedNamedBitMatrix.BIT1 << j ) ) != 0 ) {
-                    returnedSet.add( getEEName( j + i * CompressedNamedBitMatrix.BITS_PER_ELEMENT ) );
+            for ( int j = 0; j < CompressedBitMatrix.BITS_PER_ELEMENT; j++ )
+                if ( ( mask[i] & ( CompressedBitMatrix.BIT1 << j ) ) != 0 ) {
+                    returnedSet.add( getEEName( j + i * CompressedBitMatrix.BITS_PER_ELEMENT ) );
                 }
         }
         return returnedSet;
@@ -465,7 +463,7 @@ public class LinkMatrix {
         return pairedGene;
     }
 
-    public CompressedNamedBitMatrix getRawMatrix() {
+    public CompressedBitMatrix<Long, Long> getRawMatrix() {
         return this.linkCountMatrix;
     }
 
@@ -485,7 +483,7 @@ public class LinkMatrix {
      */
     public void init( Collection<ExpressionExperiment> ees, Collection<Gene> targetGenes,
             Collection<Gene> coExpressedGenes ) {
-        CompressedNamedBitMatrix<Long, Long> linkCount = new CompressedNamedBitMatrix<Long, Long>( targetGenes.size(),
+        CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<Long, Long>( targetGenes.size(),
                 coExpressedGenes.size(), ees.size() );
         for ( Gene geneIter : targetGenes ) {
             linkCount.addRowName( geneIter.getId() );
@@ -637,7 +635,7 @@ public class LinkMatrix {
 
     // The following codes for testing matrix and output
     public void testBitMatrix() {
-        CompressedNamedBitMatrix<Long, Long> matrix = new CompressedNamedBitMatrix<Long, Long>( 21, 11, 125 );
+        CompressedBitMatrix<Long, Long> matrix = new CompressedBitMatrix<Long, Long>( 21, 11, 125 );
         for ( int i = 0; i < 21; i++ )
             matrix.addRowName( new Long( i ) );
         for ( int i = 0; i < 11; i++ )
@@ -723,7 +721,6 @@ public class LinkMatrix {
     /**
      * @param genes
      */
-    @SuppressWarnings("unchecked")
     private void init( Collection<Gene> genes ) {
         if ( genes == null || genes.size() == 0 ) return;
         Taxon taxon = genes.iterator().next().getTaxon();
@@ -736,7 +733,6 @@ public class LinkMatrix {
      * @param genes
      * @param ees
      */
-    @SuppressWarnings("unchecked")
     private void init( Collection<Gene> genes, Collection<ExpressionExperiment> ees ) {
         if ( genes == null || ees == null || genes.size() == 0 || ees.size() == 0 ) return;
         Collection<Gene> genesInTaxon = geneService.getGenesByTaxon( genes.iterator().next().getTaxon() );

@@ -21,7 +21,7 @@ package chibi.gemmaanalysis;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.dataStructure.matrix.CompressedNamedBitMatrix;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import cern.colt.list.ObjectArrayList;
 
 /**
@@ -58,7 +58,7 @@ public class FrequentLinkSetFinder {
     public FrequentLinkSetFinder( int threshold, LinkMatrix linkMatrix ) {
         super();
         this.threshold = threshold;
-        int num = linkMatrix.getRawMatrix().getBitNum() / CompressedNamedBitMatrix.BITS_PER_ELEMENT + 1;
+        int num = linkMatrix.getRawMatrix().getBitNum() / CompressedBitMatrix.BITS_PER_ELEMENT + 1;
         root = new TreeNode( 0, new long[num], null );
         root.setLevel( 0 );
         candidatesNodes = new ObjectArrayList();
@@ -104,8 +104,8 @@ public class FrequentLinkSetFinder {
         TreeNode iter = leafNode;
         System.err.print( leafNode.getMaskBits() + "\t" );
         for ( int i = 0; i < leafNode.getMask().length; i++ ) {
-            for ( int j = 0; j < CompressedNamedBitMatrix.BITS_PER_ELEMENT; j++ )
-                if ( ( leafNode.getMask()[i] & ( CompressedNamedBitMatrix.BIT1 << j ) ) != 0 ) {
+            for ( int j = 0; j < CompressedBitMatrix.BITS_PER_ELEMENT; j++ )
+                if ( ( leafNode.getMask()[i] & ( CompressedBitMatrix.BIT1 << j ) ) != 0 ) {
                     System.err.print( "1" );
                 } else {
                     System.err.print( "0" );
@@ -119,9 +119,9 @@ public class FrequentLinkSetFinder {
         }
 
         for ( int i = 0; i < leafNode.getMask().length; i++ ) {
-            for ( int j = 0; j < CompressedNamedBitMatrix.BITS_PER_ELEMENT; j++ )
-                if ( ( leafNode.getMask()[i] & ( CompressedNamedBitMatrix.BIT1 << j ) ) != 0 ) {
-                    System.err.print( linkMatrix.getEEName( j + i * CompressedNamedBitMatrix.BITS_PER_ELEMENT ) + " " );
+            for ( int j = 0; j < CompressedBitMatrix.BITS_PER_ELEMENT; j++ )
+                if ( ( leafNode.getMask()[i] & ( CompressedBitMatrix.BIT1 << j ) ) != 0 ) {
+                    System.err.print( linkMatrix.getEEName( j + i * CompressedBitMatrix.BITS_PER_ELEMENT ) + " " );
                 }
         }
         System.err.println( "" );

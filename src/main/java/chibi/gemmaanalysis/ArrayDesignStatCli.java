@@ -28,6 +28,8 @@ import java.util.Map;
 import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGeneImpl;
@@ -91,9 +93,23 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         return res;
     }
 
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
+    }
+
     /*
      * (non-Javadoc)
-     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @SuppressWarnings("unchecked")
@@ -102,6 +118,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         Exception err = processCommandLine( "Array design stat summary", args );
         if ( err != null ) return err;
         adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
+        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
         geneService = ( GeneService ) this.getBean( "geneService" );
         Collection<ArrayDesign> allArrayDesigns = adService.loadAll();
         Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<Taxon, Collection<ArrayDesign>>();
@@ -156,12 +173,12 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                             ad );
                     long numCsPureGenes = numCsGenes - numCsPredictedGenes - numCsProbeAlignedRegions;
                     long numGenes = getArrayDesignService().numGenes( ad );
-                    Collection<DesignElement> allCSs = getArrayDesignService().loadCompositeSequences( ad );
+                    Collection<CompositeSequence> allCSs = getArrayDesignService().loadCompositeSequences( ad );
                     Collection<Long> csIds = new HashSet<Long>();
-                    for ( DesignElement cs : allCSs )
+                    for ( CompositeSequence cs : allCSs )
                         csIds.add( cs.getId() );
                     // FIXME this used to provide only known genes.
-                    Map<Long, Collection<Long>> csId2geneIds = geneService.getCS2GeneMap( csIds );
+                    Map<Long, Collection<Long>> csId2geneIds = this.getCs2GeneMap( csIds );
                     Map<Long, Collection<Long>> geneId2csIds = getGeneId2CSIdsMap( csId2geneIds );
                     int[] csStats = getStats( csId2geneIds, false );
                     int[] geneStats = getStats( geneId2csIds, true );

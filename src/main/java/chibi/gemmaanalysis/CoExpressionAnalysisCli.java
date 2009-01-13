@@ -41,14 +41,14 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
-import ubic.basecode.dataStructure.matrix.StringMatrix2DNamed;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
+import ubic.basecode.dataStructure.matrix.StringMatrix;
 import ubic.basecode.graphics.ColorMap;
 import ubic.basecode.graphics.ColorMatrix;
 import ubic.basecode.graphics.MatrixDisplay;
 import ubic.basecode.io.reader.StringMatrixReader;
-import ubic.gemma.analysis.expression.coexpression.GeneEffectSizeCoExpressionAnalyzer;
+import chibi.gemmaanalysis.GeneEffectSizeCoExpressionAnalyzer;
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
@@ -144,7 +144,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @param taxon
      * @return
      */
-    private Collection<Gene> getGenes( GeneService geneService, Object[] geneNames, Taxon taxon ) {
+    private Collection<Gene> getGenes( Object[] geneNames, Taxon taxon ) {
         HashSet<Gene> genes = new HashSet<Gene>();
         for ( int i = 0; i < geneNames.length; i++ ) {
             Gene gene = getGene( geneService, ( String ) geneNames[i], taxon );
@@ -194,7 +194,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
             CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
                     this.stringency, false, 0 );
             Map<Long, Collection<Long>> geneEEMap = coexpressed.getKnownGeneCoexpression()
-                    .getSpecificExpressionExperiments();
+                    .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
             for ( Long geneId : geneEEMap.keySet() ) {
                 Collection<Long> ees = geneEEMap.get( geneId );
                 if ( ees.size() >= this.stringency ) geneIds.add( geneId );
@@ -232,7 +232,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         Map<DoubleVectorValueObject, Collection<Gene>> dedv2coExpressedGenes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();
         // ArrayList<Object> saved = new ArrayList<Object>();
         log.info( "Start the Query for " + queryGenes.size() + " query genes" );
-        dedv2queryGenes.putAll( dedvService.getMaskedPreferredDataArrays( allEEs, queryGenes ) );
+        dedv2queryGenes.putAll( dedvService.getPreferredVectors( allEEs, queryGenes ) );
 
         Map<Long, Collection<Gene>> cs2gene = getCsId2GeneMap( queryGenes, coExpressedGenes );
 
@@ -296,7 +296,6 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
 
     /*
      * (non-Javadoc)
-     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @SuppressWarnings("unchecked")
@@ -361,14 +360,14 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
             log.info( "No gene is read from the input file" );
             return null;
         }
-        Collection<Gene> queryGenes = this.getGenes( geneService, queryGeneNames.toArray(), taxon );
+        Collection<Gene> queryGenes = this.getGenes( queryGeneNames.toArray(), taxon );
         if ( queryGenes.size() == 0 ) {
             log.info( "Can't load any of genes" + queryGeneNames );
             return null;
         }
         Collection<Gene> coExpressedGenes = null;
         if ( coExpressedGeneNames.size() != 0 ) {
-            coExpressedGenes = this.getGenes( geneService, coExpressedGeneNames.toArray(), taxon );
+            coExpressedGenes = this.getGenes( coExpressedGeneNames.toArray(), taxon );
         } else {
             // coexpressed genes using vote count
             coExpressedGenes = this.getCoExpressedGenes( queryGenes );
@@ -435,10 +434,10 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         Process cluster = rt.exec( cmdToRun );
         cluster.waitFor();
 
-        DoubleMatrixNamed<String, String> dataMatrix = getClusteredMatrix( filebaseName );
+        DoubleMatrix<String, String> dataMatrix = getClusteredMatrix( filebaseName );
 
         // Get the rank Matrix
-        DoubleMatrixNamed<String, String> rankMatrix = coExpression.getRankMatrix( dataMatrix );
+        DoubleMatrix<String, String> rankMatrix = coExpression.getRankMatrix( dataMatrix );
 
         // generate the png figures
         ColorMatrix dataColorMatrix = new ColorMatrix( dataMatrix );
@@ -457,12 +456,12 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @return
      * @throws IOException
      */
-    private DoubleMatrixNamed<String, String> getClusteredMatrix( String baseName ) throws IOException {
+    private DoubleMatrix<String, String> getClusteredMatrix( String baseName ) throws IOException {
         // Read the generated file into a String Matrix
         StringMatrixReader mReader = new StringMatrixReader();
 
         String CDTMatrixFile = baseName;
-        StringMatrix2DNamed<String, String> cdtMatrix = mReader.read( CDTMatrixFile + ".cdt" );
+        StringMatrix<String, String> cdtMatrix = mReader.read( CDTMatrixFile + ".cdt" );
 
         // Read String Matrix and convert into DenseDoubleMatrix
         int extra_rows = 2, extra_cols = 3;
@@ -470,9 +469,9 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         List<String> rowLabels = new ArrayList<String>();
         List<String> colLabels = new ArrayList<String>();
 
-        List colNames = cdtMatrix.getColNames();
+        List<String> colNames = cdtMatrix.getColNames();
         for ( int i = extra_cols; i < colNames.size(); i++ )
-            colLabels.add( ( String ) colNames.get( i ) );
+            colLabels.add( colNames.get( i ) );
 
         int rowIndex = 0;
         for ( int i = extra_rows; i < cdtMatrix.rows(); i++ ) {
@@ -488,7 +487,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
                 }
             rowIndex++;
         }
-        DoubleMatrixNamed<String, String> dataMatrix = new DenseDoubleMatrix2DNamed<String, String>( data );
+        DoubleMatrix<String, String> dataMatrix = new DenseDoubleMatrix<String, String>( data );
         dataMatrix.setRowNames( rowLabels );
         dataMatrix.setColumnNames( colLabels );
         return dataMatrix;

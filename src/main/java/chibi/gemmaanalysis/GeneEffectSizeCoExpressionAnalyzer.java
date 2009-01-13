@@ -31,13 +31,16 @@ import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
-import ubic.basecode.dataStructure.matrix.ObjectMatrix2DNamed;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
+import ubic.basecode.dataStructure.matrix.ObjectMatrix;
+import ubic.basecode.dataStructure.matrix.ObjectMatrixImpl;
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.basecode.math.CorrelationStats;
 import ubic.basecode.math.metaanalysis.CorrelationEffectMetaAnalysis;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -52,18 +55,18 @@ import cern.colt.list.DoubleArrayList;
  */
 public class GeneEffectSizeCoExpressionAnalyzer {
     private class ExpressedData {
-        public DesignElementDataVector query = null;
-        public DesignElementDataVector coexpressed = null;
+        public ProcessedExpressionDataVector query = null;
+        public ProcessedExpressionDataVector coexpressed = null;
 
-        public ExpressedData( DesignElementDataVector query, DesignElementDataVector coexpressed ) {
+        public ExpressedData( ProcessedExpressionDataVector query, ProcessedExpressionDataVector coexpressed ) {
             this.query = query;
             this.coexpressed = coexpressed;
         }
     }
 
-    private Map<Long, Map<Long, Collection<DesignElementDataVector>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DesignElementDataVector>>>();;
+    private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>();;
 
-    private Map<DesignElementDataVector, Collection<Gene>> dedv2genes = new HashMap<DesignElementDataVector, Collection<Gene>>();;
+    private Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();;
 
     // Cached the mean value and STD value for DesignElementDataVector.
     private Map<Long, Double> dedv2cachedMeanValue = new HashMap<Long, Double>();
@@ -71,19 +74,19 @@ public class GeneEffectSizeCoExpressionAnalyzer {
 
     // The dimension of next two NamedMatrix in the map: coExpressedGenes X expression_experiments
     // The following map save the correlation data between query gene and each coExpressedGene in all EEs
-    private Map<Long, DenseDoubleMatrix2DNamed<Long, Long>> queryGene2correlationData = new HashMap<Long, DenseDoubleMatrix2DNamed<Long, Long>>();
+    private Map<Long, DenseDoubleMatrix<Long, Long>> queryGene2correlationData = new HashMap<Long, DenseDoubleMatrix<Long, Long>>();
     // The following map save the DesignElementDataVectors (Encapulated in ExpressedData) involved in the correlation
     // caculation
     // between query gene and each coExpressedGene in all EEs, which will be used to get the rank matrix.
     // The reason for using ExpressedData object is that there are many DEDVs for each gene and different correlation
     // calculation
     // may use different DEDV.
-    private Map<Long, ObjectMatrix2DNamed<Long, Long, DesignElementDataVector>> queryGene2coExpressedData = new HashMap<Long, ObjectMatrix2DNamed<Long, Long, DesignElementDataVector>>();
+    private Map<Long, ObjectMatrix<Long, Long, DesignElementDataVector>> queryGene2coExpressedData = new HashMap<Long, ObjectMatrix<Long, Long, DesignElementDataVector>>();
 
     // The next NamedMatrix: queryGenes X expression_experiments
     // Each object is a designElementVector which is specifically associated with the query gene in a expression
     // experiment
-    private ObjectMatrix2DNamed<Long, Long, DesignElementDataVector> queryGenesData = null;
+    private ObjectMatrix<Long, Long, DesignElementDataVector> queryGenesData = null;
 
     // The following two maps are only used for the output.
     private Map<Long, String> geneNames = new HashMap<Long, String>();
@@ -96,12 +99,17 @@ public class GeneEffectSizeCoExpressionAnalyzer {
 
     public GeneEffectSizeCoExpressionAnalyzer( Collection<Gene> queryGenes, Collection<Gene> coExpressedGenes,
             Collection<ExpressionExperiment> ees ) {
-        queryGenesData = new ObjectMatrix2DNamed<Long, Long, DesignElementDataVector>( queryGenes.size(), ees.size() );
+        queryGenesData = new ObjectMatrixImpl<Long, Long, DesignElementDataVector>( queryGenes.size(), ees.size() );
+
+        int k = 0;
         for ( Gene queryGene : queryGenes ) {
-            queryGenesData.addRowName( queryGene.getId() );
+            queryGenesData.addRowName( queryGene.getId(), k );
+            k++;
         }
+        k = 0;
         for ( ExpressionExperiment ee : ees ) {
-            queryGenesData.addColumnName( ee.getId() );
+            queryGenesData.addColumnName( ee.getId(), k );
+            k++;
         }
         for ( int i = 0; i < queryGenesData.rows(); i++ ) {
             for ( int j = 0; j < queryGenesData.columns(); j++ ) {
@@ -110,9 +118,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         }
 
         for ( Gene queryGene : queryGenes ) {
-            DenseDoubleMatrix2DNamed<Long, Long> correlationData = new DenseDoubleMatrix2DNamed<Long, Long>(
-                    coExpressedGenes.size(), ees.size() );
-            ObjectMatrix2DNamed<Long, Long, DesignElementDataVector> coExpressedData = new ObjectMatrix2DNamed<Long, Long, DesignElementDataVector>(
+            DenseDoubleMatrix<Long, Long> correlationData = new DenseDoubleMatrix<Long, Long>( coExpressedGenes.size(),
+                    ees.size() );
+            ObjectMatrix<Long, Long, DesignElementDataVector> coExpressedData = new ObjectMatrixImpl<Long, Long, DesignElementDataVector>(
                     coExpressedGenes.size(), ees.size() );
             for ( int i = 0; i < correlationData.rows(); i++ ) {
                 for ( int j = 0; j < correlationData.columns(); j++ ) {
@@ -120,13 +128,17 @@ public class GeneEffectSizeCoExpressionAnalyzer {
                     coExpressedData.set( i, j, null );
                 }
             }
+            k = 0;
             for ( Gene coExpressedGene : coExpressedGenes ) {
                 correlationData.addRowName( coExpressedGene.getId() );
-                coExpressedData.addRowName( coExpressedGene.getId() );
+                coExpressedData.addRowName( coExpressedGene.getId(), k );
+                k++;
             }
+            k = 0;
             for ( ExpressionExperiment ee : ees ) {
                 correlationData.addColumnName( ee.getId() );
-                coExpressedData.addColumnName( ee.getId() );
+                coExpressedData.addColumnName( ee.getId(), k );
+                k++;
             }
             queryGene2correlationData.put( queryGene.getId(), correlationData );
             queryGene2coExpressedData.put( queryGene.getId(), coExpressedData );
@@ -146,10 +158,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
     /**
      * @param dedvs
      */
-    @SuppressWarnings("unchecked")
-    private void distributeDesignElementDataVector( Set<DesignElementDataVector> dedvs ) {
+    private void distributeDesignElementDataVector( Set<DoubleVectorValueObject> dedvs ) {
         // First, get the sample sizes for Expression Experiments
-        for ( DesignElementDataVector dedv : dedvs ) {
+        for ( DoubleVectorValueObject dedv : dedvs ) {
             ExpressionExperiment ee = dedv.getExpressionExperiment();
             if ( !eeSampleSizes.containsKey( ee.getId() ) ) {
                 int sampleSize = getSampleSize( dedv );
@@ -159,29 +170,29 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         // Second, distribute the dedvs to different buckets according to ee and genes, which will be used to caculate
         // the correlation
         // between genes in every expression experiments
-        for ( DesignElementDataVector dedv : dedvs ) {
+        for ( DoubleVectorValueObject dedv : dedvs ) {
             ExpressionExperiment ee = dedv.getExpressionExperiment();
             if ( ee.getId() == null ) {
                 System.err.println( ee + " wrong! " );
             }
-            Map<Long, Collection<DesignElementDataVector>> gene2dedvs = ee2gene2dedvs.get( ee.getId() );
+            Map<Long, Collection<DoubleVectorValueObject>> gene2dedvs = ee2gene2dedvs.get( ee.getId() );
             if ( gene2dedvs == null ) {
-                gene2dedvs = new HashMap<Long, Collection<DesignElementDataVector>>();
+                gene2dedvs = new HashMap<Long, Collection<DoubleVectorValueObject>>();
                 Collection<Long> coExpressionGeneNames = null;
                 for ( Long geneId : this.queryGenesData.getRowNames() ) {
-                    gene2dedvs.put( geneId, new HashSet<DesignElementDataVector>() );
+                    gene2dedvs.put( geneId, new HashSet<DoubleVectorValueObject>() );
                     if ( coExpressionGeneNames == null ) {
                         coExpressionGeneNames = queryGene2coExpressedData.get( geneId ).getRowNames();
                     }
                 }
                 for ( Object geneId : coExpressionGeneNames ) {
-                    gene2dedvs.put( ( Long ) geneId, new HashSet<DesignElementDataVector>() );
+                    gene2dedvs.put( ( Long ) geneId, new HashSet<DoubleVectorValueObject>() );
                 }
                 ee2gene2dedvs.put( ee.getId(), gene2dedvs );
             }
             HashSet<Gene> geneSet = ( HashSet<Gene> ) dedv2genes.get( dedv );
             for ( Gene gene : geneSet ) {
-                Collection<DesignElementDataVector> mappedDevs = gene2dedvs.get( gene.getId() );
+                Collection<DoubleVectorValueObject> mappedDevs = gene2dedvs.get( gene.getId() );
                 /** The mapped gene for dev may not in both query genes and candidate genes** */
                 if ( mappedDevs != null ) {
                     mappedDevs.add( dedv );
@@ -251,11 +262,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      * @param dedv
      * @return
      */
-    private int getSampleSize( DesignElementDataVector dedv ) {
-        byte[] bytes = dedv.getData();
-        ByteArrayConverter bac = new ByteArrayConverter();
-        double[] val = bac.byteArrayToDoubles( bytes );
-        return val.length;
+    private int getSampleSize( DoubleVectorValueObject dedv ) {
+        double[] data = dedv.getData();
+        return data.length;
     }
 
     /**
@@ -346,13 +355,12 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      */
     private void calculateCoRelation() {
         for ( Long eeId : ee2gene2dedvs.keySet() ) {
-            /* Calculate the paired gene coexpression values**** */
-            Map<Long, Collection<DesignElementDataVector>> gene2dedvs = ee2gene2dedvs.get( eeId );
+            /* Calculate the paired gene coexpression values */
+            Map<Long, Collection<DoubleVectorValueObject>> gene2dedvs = ee2gene2dedvs.get( eeId );
             for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
                 Object[] dedvI = gene2dedvs.get( queryGeneId ).toArray();
-                DenseDoubleMatrix2DNamed<Long, Long> correlationDataMatrix = queryGene2correlationData
-                        .get( queryGeneId );
-                ObjectMatrix2DNamed<Long, Long, DesignElementDataVector> coExpressedData = queryGene2coExpressedData
+                DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
+                ObjectMatrix<Long, Long, DesignElementDataVector> coExpressedData = queryGene2coExpressedData
                         .get( queryGeneId );
 
                 for ( Long coExpressedGeneId : correlationDataMatrix.getRowNames() ) {
@@ -400,7 +408,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         DoubleArrayList sampleSizes = new DoubleArrayList();
         DoubleArrayList effectSizes = new DoubleArrayList();
         for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
-            DenseDoubleMatrix2DNamed<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
+            DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
             for ( Long coExpressedGeneId : correlationDataMatrix.getRowNames() ) {
                 if ( coExpressedGeneId.equals( queryGeneId ) ) continue;
                 int rowIndex = correlationDataMatrix.getRowIndexByName( coExpressedGeneId );
@@ -453,7 +461,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         double totalExpressionValuesInOneExperssionExperiment = 0;
         for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
             if ( queryGeneId != inputGeneId ) continue;
-            DenseDoubleMatrix2DNamed correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
+            DenseDoubleMatrix correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
             String queryGeneName = geneNames.get( queryGeneId );
             for ( Object coExpressedGeneId : correlationDataMatrix.getRowNames() ) {
                 if ( coExpressedGeneId.equals( queryGeneId ) ) continue;
@@ -469,8 +477,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
             // Check the missing percentage
             double missing = 0;
             for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
-                DenseDoubleMatrix2DNamed<Long, Long> correlationDataMatrix = queryGene2correlationData
-                        .get( queryGeneId );
+                DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
                 int colIndex = correlationDataMatrix.getColIndexByName( allEEs[ee] );
                 for ( Long coExpressedGeneId : correlationDataMatrix.getRowNames() ) {
                     if ( coExpressedGeneId.equals( queryGeneId ) ) continue;
@@ -484,8 +491,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
             output.print( eeNames.get( allEEs[ee] ) );
             for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
                 if ( queryGeneId != inputGeneId ) continue;
-                DenseDoubleMatrix2DNamed<Long, Long> correlationDataMatrix = queryGene2correlationData
-                        .get( queryGeneId );
+                DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
                 int colIndex = correlationDataMatrix.getColIndexByName( allEEs[ee] );
                 for ( Long coExpressedGeneId : correlationDataMatrix.getRowNames() ) {
                     if ( coExpressedGeneId.equals( queryGeneId ) ) continue;
@@ -506,8 +512,8 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      */
     private double getExpressionRank( ExpressedData expressedData ) {
         Double rank1 = null, rank2 = null;
-        rank1 = expressedData.query.getRank();
-        rank2 = expressedData.coexpressed.getRank();
+        rank1 = expressedData.query.getRankByMean();
+        rank2 = expressedData.coexpressed.getRankByMean();
         if ( rank1 == null || rank2 == null ) return 0;
         return ( rank1 + rank2 ) / 2;
     }
@@ -516,9 +522,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      * @param dataMatrix
      * @return
      */
-    public DoubleMatrixNamed<String, String> getRankMatrix( DoubleMatrixNamed<String, String> dataMatrix ) {
+    public DoubleMatrix<String, String> getRankMatrix( DoubleMatrix<String, String> dataMatrix ) {
         double[][] rank = new double[dataMatrix.rows()][dataMatrix.columns()];
-        DoubleMatrixNamed<String, String> rankMatrix = new DenseDoubleMatrix2DNamed<String, String>( rank );
+        DoubleMatrix<String, String> rankMatrix = new DenseDoubleMatrix<String, String>( rank );
         rankMatrix.setRowNames( dataMatrix.getRowNames() );
         rankMatrix.setColumnNames( dataMatrix.getColNames() );
 
@@ -535,9 +541,8 @@ public class GeneEffectSizeCoExpressionAnalyzer {
             }
 
             for ( Long queryGeneId : queryGene2coExpressedData.keySet() ) {
-                DenseDoubleMatrix2DNamed<Long, Long> correlationDataMatrix = queryGene2correlationData
-                        .get( queryGeneId );
-                ObjectMatrix2DNamed coExpressedDataMatrix = queryGene2coExpressedData.get( queryGeneId );
+                DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
+                ObjectMatrix coExpressedDataMatrix = queryGene2coExpressedData.get( queryGeneId );
                 int colIndex = correlationDataMatrix.getColIndexByName( allEEs[ee] );
                 String queryGeneName = geneNames.get( queryGeneId );
 
@@ -568,7 +573,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      * @param dedvs
      * @return
      */
-    public boolean analyze( Set<DesignElementDataVector> dedvs ) {
+    public boolean analyze( Set<DoubleVectorValueObject> dedvs ) {
         assert ( this.dedv2genes != null );
         assert ( this.eeService != null );
         this.distributeDesignElementDataVector( dedvs );
@@ -579,7 +584,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
     /**
      * @param devToGenes
      */
-    public void setDedv2Genes( Map<DesignElementDataVector, Collection<Gene>> dedv2genes ) {
+    public void setDedv2Genes( Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes ) {
         this.dedv2genes = dedv2genes;
     }
 

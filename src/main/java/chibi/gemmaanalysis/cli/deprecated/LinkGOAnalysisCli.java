@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -37,13 +37,15 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix2DNamed;
-import ubic.basecode.dataStructure.matrix.DoubleMatrixNamed;
+import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.graphics.ColorMap;
 import ubic.basecode.graphics.ColorMatrix;
 import ubic.basecode.graphics.MatrixDisplay;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -58,6 +60,7 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  * @version $Id$
  * @deprecated because we don't know what this is for. see LinkGOStatsCli.
  */
+@Deprecated
 public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
 
     private final static int GO_MAXIMUM_COUNT = 50;
@@ -130,14 +133,28 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         return candidates;
     }
 
-    @SuppressWarnings("unchecked")
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
+    }
+
     private void counting( int[] stats, Collection<ProbeLink> links ) {
         Collection<Long> csIds = new HashSet<Long>();
         for ( ProbeLink link : links ) {
             csIds.add( link.getFirstDesignElementId() );
             csIds.add( link.getSecondDesignElementId() );
         }
-        Map<Long, Collection<Long>> cs2genes = geneService.getCS2GeneMap( csIds );
+        Map<Long, Collection<Long>> cs2genes = getCs2GeneMap( csIds );
         for ( ProbeLink link : links ) {
             if ( link.getFirstDesignElementId() == link.getSecondDesignElementId() ) continue;
             Collection<Long> firstGeneIds = cs2genes.get( link.getFirstDesignElementId() );
@@ -207,7 +224,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
             }
             dataIndex++;
         }
-        DoubleMatrixNamed<String, String> dataMatrix = new DenseDoubleMatrix2DNamed<String, String>( data );
+        DoubleMatrix<String, String> dataMatrix = new DenseDoubleMatrix<String, String>( data );
         dataMatrix.setRowNames( rowLabels );
         dataMatrix.setColumnNames( colLabels );
 
@@ -255,6 +272,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         }
 
         Taxon taxon = taxonService.findByCommonName( taxonName );
+        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
         Collection<ExpressionExperiment> ees = eeService.findByTaxon( taxon );
         Collection<ExpressionExperiment> eeCandidates = getCandidateEE( this.eeNameFile, ees );
         Collection<Gene> allGenes = geneService.loadKnownGenes( taxon );
