@@ -37,11 +37,10 @@ import org.apache.commons.lang.time.StopWatch;
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
-import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -78,6 +77,8 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
     private String outFileName;
 
     private ExpressionExperimentService eeService;
+
+    private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
     private GeneService geneService;
 
@@ -181,6 +182,8 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
         taxon.setCommonName( taxonName );
         TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
         compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
+                .getBean( "processedExpressionDataVectorService" );
         taxon = taxonService.find( taxon );
         if ( taxon == null ) {
             log.info( "No Taxon found!" );
@@ -284,12 +287,6 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
     private Map<Long, List<Double>> getParId2eeRankMap( Collection<Long> parIds, Collection<ExpressionExperiment> EEs ) {
         Map<Long, List<Double>> parId2eeRankMap = new HashMap<Long, List<Double>>();
         for ( ExpressionExperiment EE : EEs ) {
-            // get quantitation type
-            Collection<QuantitationType> qts = eeService.getPreferredQuantitationType( EE );
-            if ( qts.size() < 1 ) {
-                return null;
-            }
-            QuantitationType qt = qts.iterator().next();
 
             // get cs2gene map
             Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( EE );
@@ -300,19 +297,20 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
                     csIds.add( CS.getId() );
                 }
             }
-            // FIXME this use dto return only known genes.
+
+            Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
+                    .getProcessedDataVectors( EE );
+
             Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
 
-            Map<ProcessedExpressionDataVector, Collection<Long>> dedv2geneMap = eeService.getDesignElementDataVectors(
-                    cs2geneMap, qt );
             // invert dedv2geneMap to gene2dedvMap
             Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Long, Collection<ProcessedExpressionDataVector>>();
-            for ( ProcessedExpressionDataVector dedv : dedv2geneMap.keySet() ) {
-                Collection<Long> geneIds = dedv2geneMap.get( dedv );
+            for ( ProcessedExpressionDataVector dedv : dedvs ) {
+                Collection<Long> geneIds = cs2geneMap.get( dedv.getDesignElement().getId() );
                 for ( Long geneId : geneIds ) {
-                    Collection<ProcessedExpressionDataVector> dedvs = gene2dedvMap.get( dedv );
-                    if ( dedvs == null ) {
-                        dedvs = new HashSet<ProcessedExpressionDataVector>();
+                    Collection<ProcessedExpressionDataVector> vectorsForGene = gene2dedvMap.get( geneId );
+                    if ( vectorsForGene == null ) {
+                        vectorsForGene = new HashSet<ProcessedExpressionDataVector>();
                         gene2dedvMap.put( geneId, dedvs );
                     }
                     dedvs.add( dedv );

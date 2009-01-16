@@ -154,12 +154,20 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         Collection<ProcessedExpressionDataVector> processedDataVectors = processedExpressionDataVectorService
                 .getProcessedDataVectors( ee );
 
-        Map<DesignElementDataVector, Collection<Long>> dedv2genes = eeService.getDesignElementDataVectors(
-                cs2knowngenes, qt );
+        // get cs2gene map
+        Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( ee );
+        Collection<Long> csIds = new HashSet<Long>();
+        for ( ArrayDesign AD : ADs ) {
+            Collection<CompositeSequence> CSs = adService.loadCompositeSequences( AD );
+            for ( CompositeSequence CS : CSs ) {
+                csIds.add( CS.getId() );
+            }
+        }
+        Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
 
         Map<Long, Collection<ExpressionProfile>> geneID2EPs = new HashMap<Long, Collection<ExpressionProfile>>();
         for ( ProcessedExpressionDataVector dedv : processedDataVectors ) {
-            Collection<Long> geneIds = dedv2genes.get( dedv );
+            Collection<Long> geneIds = cs2geneMap.get( dedv.getDesignElement().getId() );
             for ( Long id : geneIds ) {
                 Collection<ExpressionProfile> eps = geneID2EPs.get( id );
                 if ( eps == null ) {

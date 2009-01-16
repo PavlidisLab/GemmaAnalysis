@@ -31,6 +31,7 @@ import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
@@ -132,15 +133,24 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
                     .getProcessedDataVectors( ee );
 
-            Map<ProcessedExpressionDataVector, Collection<Gene>> dedv2geneMap = dedvService
-                    .getDedv2GenesMap( dedvs, qt );
+            // get cs2gene map
+            Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( ee );
+            Collection<Long> csIds = new HashSet<Long>();
+            for ( ArrayDesign AD : ADs ) {
+                Collection<CompositeSequence> CSs = adService.loadCompositeSequences( AD );
+                for ( CompositeSequence CS : CSs ) {
+                    csIds.add( CS.getId() );
+                }
+            }
+            // FIXME this use dto return only known genes.
+            Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
 
             // invert dedv2geneMap
-            Map<Gene, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Gene, Collection<ProcessedExpressionDataVector>>();
-            for ( ProcessedExpressionDataVector dedv : dedv2geneMap.keySet() ) {
-                Collection<Gene> c = dedv2geneMap.get( dedv );
-                for ( Gene gene : c ) {
-                    Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( dedv );
+            Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Long, Collection<ProcessedExpressionDataVector>>();
+            for ( ProcessedExpressionDataVector dedv : dedvs ) {
+                Collection<Long> c = cs2geneMap.get( dedv.getDesignElement().getId() );
+                for ( Long gene : c ) {
+                    Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene );
                     if ( vs == null ) {
                         vs = new HashSet<ProcessedExpressionDataVector>();
                         gene2dedvMap.put( gene, vs );
@@ -159,7 +169,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
                 line += "\t";
                 Double rank;
                 List<Double> ranks = new ArrayList<Double>();
-                Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene );
+                Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene.getId() );
                 if ( vs == null ) continue;
                 for ( ProcessedExpressionDataVector dedv : vs ) {
                     ranks.add( dedv.getRankByMean() );
@@ -177,6 +187,21 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         }
 
         return matrix;
+    }
+
+    CompositeSequenceService compositeSequenceService;
+
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
     }
 
     /**
