@@ -39,14 +39,14 @@ public class PARMapper extends AbstractSpringAwareCLI {
         /*
          * FIXME don't hard-code this.
          */
-        Taxon taxon = taxonService.findByCommonName( "human" );
+        Taxon taxon = taxonService.findByCommonName( "mouse" );
         if ( taxon == null ) {
             throw new IllegalArgumentException();
         }
         Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
 
         log.info( pars.size() + " PARS" );
-
+        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol" );
         for ( ProbeAlignedRegion par : pars ) {
             parService.thaw( par );
 
@@ -60,7 +60,8 @@ public class PARMapper extends AbstractSpringAwareCLI {
             if ( !nearest.isEmpty() ) {
                 for ( Gene gene : nearest ) {
 
-                    System.err.println( par + "\t" + loc + "\t" + gene );
+                    System.out.println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName()
+                            + "\t" + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() );
 
                 }
             }

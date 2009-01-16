@@ -74,13 +74,16 @@ public class GeneEffectSizeCoExpressionAnalyzer {
 
     // The dimension of next two NamedMatrix in the map: coExpressedGenes X expression_experiments
     // The following map save the correlation data between query gene and each coExpressedGene in all EEs
+
     private Map<Long, DenseDoubleMatrix<Long, Long>> queryGene2correlationData = new HashMap<Long, DenseDoubleMatrix<Long, Long>>();
+
     // The following map save the DesignElementDataVectors (Encapulated in ExpressedData) involved in the correlation
     // caculation
     // between query gene and each coExpressedGene in all EEs, which will be used to get the rank matrix.
     // The reason for using ExpressedData object is that there are many DEDVs for each gene and different correlation
     // calculation
     // may use different DEDV.
+
     private Map<Long, ObjectMatrix<Long, Long, DesignElementDataVector>> queryGene2coExpressedData = new HashMap<Long, ObjectMatrix<Long, Long, DesignElementDataVector>>();
 
     // The next NamedMatrix: queryGenes X expression_experiments
@@ -355,8 +358,10 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      */
     private void calculateCoRelation() {
         for ( Long eeId : ee2gene2dedvs.keySet() ) {
+
             /* Calculate the paired gene coexpression values */
             Map<Long, Collection<DoubleVectorValueObject>> gene2dedvs = ee2gene2dedvs.get( eeId );
+
             for ( Long queryGeneId : queryGene2correlationData.keySet() ) {
                 Object[] dedvI = gene2dedvs.get( queryGeneId ).toArray();
                 DenseDoubleMatrix<Long, Long> correlationDataMatrix = queryGene2correlationData.get( queryGeneId );
