@@ -282,8 +282,7 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
      * @param parIds
      * @param EEs
      * @return
-     */
-    @SuppressWarnings("unchecked")
+     */ 
     private Map<Long, List<Double>> getParId2eeRankMap( Collection<Long> parIds, Collection<ExpressionExperiment> EEs ) {
         Map<Long, List<Double>> parId2eeRankMap = new HashMap<Long, List<Double>>();
         for ( ExpressionExperiment EE : EEs ) {

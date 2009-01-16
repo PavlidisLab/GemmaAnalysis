@@ -66,7 +66,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
 
     private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>();;
 
-    private Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Gene>>();;
+    private Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Long>>();;
 
     // Cached the mean value and STD value for DesignElementDataVector.
     private Map<Long, Double> dedv2cachedMeanValue = new HashMap<Long, Double>();
@@ -190,9 +190,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
                 }
                 ee2gene2dedvs.put( ee.getId(), gene2dedvs );
             }
-            HashSet<Gene> geneSet = ( HashSet<Gene> ) dedv2genes.get( dedv );
-            for ( Gene gene : geneSet ) {
-                Collection<DoubleVectorValueObject> mappedDevs = gene2dedvs.get( gene.getId() );
+            Collection<Long> geneSet = dedv2genes.get( dedv );
+            for ( Long gene : geneSet ) {
+                Collection<DoubleVectorValueObject> mappedDevs = gene2dedvs.get( gene );
                 /** The mapped gene for dev may not in both query genes and candidate genes** */
                 if ( mappedDevs != null ) {
                     mappedDevs.add( dedv );
@@ -584,7 +584,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
     /**
      * @param devToGenes
      */
-    public void setDedv2Genes( Map<DoubleVectorValueObject, Collection<Gene>> dedv2genes ) {
+    public void setDedv2Genes( Map<DoubleVectorValueObject, Collection<Long>> dedv2genes ) {
         this.dedv2genes = dedv2genes;
     }
 
