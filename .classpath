@@ -65,7 +65,6 @@
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/Rserve/0.5-0/Rserve-0.5-0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/javax/servlet/servlet-api/2.4/servlet-api-2.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/spark/spark/1.2/spark-1.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring/2.0.8/spring-2.0.8.jar" sourcepath="M2_REPO/org/springframework/spring/2.0.8/spring-2.0.8-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-beans/2.5.5/spring-beans-2.5.5.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-binding/1.0.5/spring-binding-1.0.5.jar" sourcepath="M2_REPO/org/springframework/spring-binding/1.0.5/spring-binding-1.0.5-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context/2.5.5/spring-context-2.5.5.jar"/>
@@ -85,5 +84,6 @@
 	<classpathentry kind="var" path="M2_REPO/xom/xom/1.0/xom-1.0.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/baseCode"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Gemma"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-orm/2.5.5/spring-orm-2.5.5.jar" sourcepath="/JAR_SOURCE/spring-framework-2.5.5"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
