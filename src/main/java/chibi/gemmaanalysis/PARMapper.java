@@ -6,6 +6,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PhysicalLocation;
 import ubic.gemma.model.genome.PhysicalLocationService;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
+import ubic.gemma.model.genome.RelativeLocationData;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
@@ -46,7 +47,11 @@ public class PARMapper extends AbstractSpringAwareCLI {
         Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
 
         log.info( pars.size() + " PARS" );
-        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol" );
+        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar" );
+
+        // test case
+        // ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load( 1224203 );
+
         for ( ProbeAlignedRegion par : pars ) {
             parService.thaw( par );
 
@@ -54,16 +59,14 @@ public class PARMapper extends AbstractSpringAwareCLI {
 
             physicalLocationservice.thaw( loc );
 
-            if ( loc == null ) continue;
+            // if ( loc == null ) continue;
             loc.setStrand( null );
-            Collection<Gene> nearest = parService.findNearest( loc );
-            if ( !nearest.isEmpty() ) {
-                for ( Gene gene : nearest ) {
-
-                    System.out.println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName()
-                            + "\t" + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() );
-
-                }
+            RelativeLocationData nearest = parService.findNearest( loc );
+            if ( nearest != null ) {
+                Gene gene = nearest.getNearestGene();
+                System.out.println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
+                        + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
+                        + nearest.getRange() + "\t" + nearest.isContainedWithinGene() );
             }
         }
         return null;
