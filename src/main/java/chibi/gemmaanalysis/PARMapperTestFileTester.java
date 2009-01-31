@@ -8,8 +8,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 
+import ubic.gemma.model.analysis.expression.ExpressionExperimentSet;
+import ubic.gemma.model.analysis.expression.ExpressionExperimentSetService;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorDao.RankMethod;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
@@ -33,8 +41,9 @@ public class PARMapperTestFileTester extends AbstractSpringAwareCLI {
 	
 	GeneService parService;
 	TaxonService taxonService;
-	
-	
+	//ExpressionExperimentSetService expressionExperimentSetService;
+	ExpressionExperimentService expressionExperimentService;
+	ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 	
 	@Override
 	protected void buildOptions() {
@@ -50,6 +59,10 @@ public class PARMapperTestFileTester extends AbstractSpringAwareCLI {
 //		ExpressionExperimentService eeService = (ExpressionExperimentService)getBean("expressionExperimentService");
 		this.parService = ( GeneService ) this.getBean( "geneService" );
  		this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
+ 		//this.expressionExperimentSetService = ( ExpressionExperimentSetService ) this.getBean( "expressionExperimentSetService" );
+ 		this.expressionExperimentService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
+ 		this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this.getBean( "processedExpressionDataVectorService" );
+ 		
  		
  		Taxon taxon = taxonService.findByCommonName( "mouse" );
  		long taxonId = 1;
@@ -85,20 +98,20 @@ public class PARMapperTestFileTester extends AbstractSpringAwareCLI {
 		
 		readPARFile(inFile);
 		
-/*		for (int i=0; i<records.size(); i++) {
+		/*for (int i=0; i<records.size(); i++) {
 			System.out.println(records[i]);
 		}*/
 		
 		
-		Collection<Gene> genes = null;
+		Collection<Gene> genes = new ArrayList<Gene>();
 		
 		
-		int ParIDIdx = getIndex("ParID");
-		int ParNameIdx = getIndex("ParName");
-		int ChromIdx = getIndex("Chrom");
-		int NucIdx = getIndex("Nuc");
-		int GeneIdIdx = getIndex("GeneId");
-		int GeneSymbolIdx = getIndex("GeneSymbol");
+		int ParIDIdx		= getIndex("ParID");
+		int ParNameIdx		= getIndex("ParName");
+		int ChromIdx		= getIndex("Chrom");
+		int NucIdx			= getIndex("Nuc");
+		int GeneIdIdx		= getIndex("GeneId");
+		int GeneSymbolIdx	= getIndex("GeneSymbol");
 		
 		
 		Iterator recordItr = records.iterator();
@@ -108,15 +121,21 @@ public class PARMapperTestFileTester extends AbstractSpringAwareCLI {
 			record = (String[]) recordItr.next();
 			
 			// accessing data elements
-			int ParID = Integer.parseInt( record[ParIDIdx] );
-			String ParName = record[ ParNameIdx];
-			String Chrom = record[ ChromIdx];
-			int Nuc = Integer.parseInt( record[NucIdx] );
-			int GeneId = Integer.parseInt( record[GeneIdIdx] );
-			String GeneSymbol = record[ GeneSymbolIdx ];
+			int ParID			= Integer.parseInt( record[ParIDIdx] );
+			String ParName		= record[ ParNameIdx];
+			String Chrom		= record[ ChromIdx];
+			int Nuc				= Integer.parseInt( record[NucIdx] );
+			int GeneId			= Integer.parseInt( record[GeneIdIdx] );
+			String GeneSymbol	= record[ GeneSymbolIdx ];
 			
 			
 			Gene g = this.parService.load(GeneId); //System.out.println("Gene 889481\t"+this.parService.getCompositeSequencesById(new Integer(889481).longValue()));
+			
+			if (g == null) {
+				System.out.println("Gene doesn't exist: "+ g);
+				continue;
+			}
+			
 			genes.add(g);
 	 		System.out.println("Gene "
 	 				//+g
@@ -133,10 +152,62 @@ public class PARMapperTestFileTester extends AbstractSpringAwareCLI {
 			
 		}
 		
+		/*
+		Collection<ExpressionExperimentSet> eesCol = expressionExperimentSetService.loadAll();
+        Collection<ExpressionExperimentSet> eesColToUse = new HashSet<ExpressionExperimentSet>();
+        for ( ExpressionExperimentSet ees : eesCol ) {
+            if ( ees.getName() != null ) {
+            // if ( ees.getTaxon().equals( taxon ) ) eesColToUse.add( ees );
+                eesColToUse.add( ees );
+                System.out.print("Has name: ");
+            } else {
+            	System.out.print("No name : ");
+            }
+            System.out.println(ees.getDescription()
+            		+"\t|\t"+ ees.toString()
+            		//+"\t|\t"+ ees.getTaxon()  //why does this give me errors???
+            		+"\t|\t"+ ees.getId()
+            		);
+        }
+        System.out.println("EEset    : " + eesCol.size());
+        System.out.println("EEset_use: " + eesColToUse.size());
+        */
 		
+
+        
+
+        System.out.println("\n\nExperiments by taxon\n\n");
+        Taxon taxon_human = taxonService.findByCommonName( "human" );
+        
+        System.out.println(taxon_human);
+        
+        Collection<ExpressionExperiment> eeCol = expressionExperimentService.findByTaxon(taxon_human);
+        System.out.println(eeCol.size());
+        for ( ExpressionExperiment ees : eeCol ) {
+            /*System.out.println(ees.getDescription()
+            		+"\t|\t"+ ees.toString()
+            		//+"\t|\t"+ ees.getTaxon()  //why does this give me errors???
+            		+"\t|\t"+ ees.getId()
+            		);*/
+        }
+        
+        RankMethod method = RankMethod.mean;
+		Map<ExpressionExperiment, Map<Gene, Collection<Double>>> res = processedExpressionDataVectorService.getRanks(eeCol, genes, method);
+        
+		for ( ExpressionExperiment ee : res.keySet() ) {
+			System.out.println(">> Exp: " + ee.getName());
+			for ( Gene g : res.get(ee).keySet() ) {
+				System.out.println("> Gene: " + g.getName());
+				for ( Double d : res.get(ee).get(g) ) {
+					System.out.print(d+"\t");
+				}
+				System.out.println();
+			}
+        }
 		
-		
-		
+        //System.out.println(res);
+        
+        
 		return null;
 	}
 
