@@ -9,12 +9,9 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
-import ubic.gemma.model.analysis.expression.ExpressionExperimentSet;
-import ubic.gemma.model.analysis.expression.ExpressionExperimentSetService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorDao.RankMethod;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -52,10 +49,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	protected Exception doWork(String[] args) {
 		// TODO Auto-generated method stub
 		
-		Exception exc = processCommandLine( "test", args );
-		
-		// TODO Auto-generated method stub
-//			ExpressionExperimentService eeService = (ExpressionExperimentService)getBean("expressionExperimentService");
 		this.parService = ( GeneService ) this.getBean( "geneService" );
 		this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
 		//this.expressionExperimentSetService = ( ExpressionExperimentSetService ) this.getBean( "expressionExperimentSetService" );
@@ -63,29 +56,15 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this.getBean( "processedExpressionDataVectorService" );
 		
 		
-		Taxon taxon = taxonService.findByCommonName( "mouse" );
-		long taxonId = 1;
+		//log.info(taxonService.loadAll());
 		
-		log.info(taxonService.loadAll());
-		log.info(taxonService.load(taxonId));
-		log.info(taxonService.find(taxon));
-		
-		//int taxonId = 1; // human=1
-		//String taxonLabel = "beef";//taxonService.toString(); 
-		
-		
-		//Gene g1 = this.parService.load(889481); //System.out.println("Gene 889481\t"+this.parService.getCompositeSequencesById(new Integer(889481).longValue()));
-		//System.out.println("Gene 889481\t"+g1+"\t|\t"+g1.getName()+"\t|\t"+g1.getDescription()+"\t|\t"+g1.getNcbiId()+"\t|\t"+g1.getTaxon());
-		//System.out.println("Gene 3609073\t"+this.parService.getCompositeSequencesById(new Integer(3609073).longValue()));
-		
-		//System.out.println("Reading file");
-		System.out.println(taxon.toString());
-		//System.out.println("Reading the file");
-		
-		
+		// For my mac
+//		String inFile =  "/Users/mokada/development/PARs/data/human-par-gene-relations.txt";
+//		String outFileDir = "/Users/mokada/development/PARs/data";
 		
 		String inFile = "/home/hmokada/scratch/human-par-gene-relations.txt";
 		String outFileDir = "/home/hmokada/scratch";
+		
 		int batchSize = 100;
 		
 		
@@ -102,35 +81,21 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			pex = new PrintStream(new FileOutputStream(outFileDir + "/human-par-gene-relations.output.ex.txt"));
 			pee = new PrintStream(new FileOutputStream(outFileDir + "/human-par-gene-relations.output.ee.txt"));
 
-			//p.println ("This is written to a file");
 		} catch (Exception e) {
 			System.err.println("Error writing to file");
 		}
 		
-		
-		
-		
-		
+		// allow a user to enter a filename through the command line
 		if (0 < args.length && args[0] != null) {
 			inFile = args[0];
 		}
 		
+		
 		System.out.println("Reading file: " + inFile);
-		
-		
-		
-		//HashMap headerLookup;
-		//String headers
-		
 		readPARFile(inFile);
 		
 		
-		/*for (int i=0; i<records.size(); i++) {
-			System.out.println(records[i]);
-		}*/
-		
-		
-		
+		// Establish the column numbers
 		
 		int ParIDIdx		= getIndex("ParID");
 		int ParNameIdx		= getIndex("ParName");
@@ -142,7 +107,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		int GeneContainsParIdx	= getIndex("GeneContainsPar");
 		int SameStrandIdx	= getIndex("SameStrand");
 		
-		
+		// Output column ordering
 		String outputHeader = "ParID,ParName,Chrom,Nuc,GeneId,GeneSymbol,Distance,GeneContainsPar,SameStrand,NumExperiments,NumSamples,Rank";
 		pxx.println(outputHeader);
 		pxe.println(outputHeader);
@@ -152,19 +117,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		
 		//System.out.println("\n\nExperiments by taxon\n\n");
 		Taxon taxon_human = taxonService.findByCommonName( "human" );
-		//System.out.println(taxon_human);
 		
 		Collection<ExpressionExperiment> eeCol = expressionExperimentService.findByTaxon(taxon_human);
 		System.out.println(eeCol.size());
-		/*for ( ExpressionExperiment ees : eeCol ) {
-			System.out.println(ees.getDescription()
-					+"\t|\t"+ ees.toString()
-					//+"\t|\t"+ ees.getTaxon()  //why does this give me errors???
-					+"\t|\t"+ ees.getId()
-					);
-		}*/
-		
-		
 		
 		
 		Iterator recordItr = records.iterator();
@@ -226,41 +181,21 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				
 				// todo: place as log
 				if (par == null || g == null) {
-					System.out.println("PAR or Gene doesn't exist: "+ g);
+					System.out.println("PAR or Gene doesn't exist: "+ par.getId() +"\t"+ g.getId());
 					continue;
 				}
 				
 				pars.add(par);
 				genes.add(g);
-				/*
-				System.out.println("Gene "
-						//+g
-						+"\t|\t"+GeneId
-						//+"\t|\t"+g.getPhysicalLocation()  // gives errors
-						+"\t|\t"+g.getName()
-						+"\t|\t"+g.getOfficialSymbol()
-						//+"\t|\t"+g.getDescription()
-						//+"\t|\t"+g.getNcbiId()
-						//+"\t|\t"+g.getTaxon()
-						);
 				
-				System.out.println("PAR  "
-						//+g
-						+"\t|\t"+ParID
-						//+"\t|\t"+par.getPhysicalLocation()  // gives errors
-						+"\t|\t"+par.getName()
-						+"\t|\t"+par.getOfficialSymbol()
-						//+"\t|\t"+g.getDescription()
-						//+"\t|\t"+g.getNcbiId()
-						//+"\t|\t"+g.getTaxon()
-						);
-				*/
-				count--;
+				count--;  // count down the number of genes in a batch
 				
 			}
 			
 			
 			
+			
+			// print results to file
 			
 			pxx.println("Batch Number: "+ batch);
 			pxe.println("Batch Number: "+ batch);
@@ -279,32 +214,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			outputAll(eeCol, pars, pex, pee, "mean");
 			
 			
-			//RankMethod method = RankMethod.max;
-//			outputAll(eeCol, genes, pxx, "max", "max");
-			
-			//method = RankMethod.mean;
-//			outputAll(eeCol, genes, pex, "mean", "max");
-
-			//RankMethod method = RankMethod.max;
-//			outputAll(eeCol, genes, pxe, "max", "mean");
-			
-			//method = RankMethod.mean;
-//			outputAll(eeCol, genes, pee, "mean", "mean");
-			
-			
-			/*Map<ExpressionExperiment, Map<Gene, Collection<Double>>> res = processedExpressionDataVectorService.getRanks(eeCol, genes, method);
-			
-			for ( ExpressionExperiment ee : res.keySet() ) {
-				//p.println(">> Exp: " + ee.getName());
-				for ( Gene g : res.get(ee).keySet() ) {
-					//p.println("> Gene: " + g.getName());
-					for ( Double d : res.get(ee).get(g) ) {
-						//p.print(d+"\t");
-					}
-					//p.println();
-				}
-				//p.println();
-			}*/
 			
 		}
 		pxx.close();
@@ -349,43 +258,47 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		Map<ExpressionExperiment, Map<Gene, Collection<Double>>> expressRankings = processedExpressionDataVectorService.getRanks(eeCol, genes, method);
 		
 		// need to map experiments to genes to calculate max/mean across experiments
-		//HashMap<Gene, Map<ExpressionExperiment, Collection<Double>>> allGeneRankings = new HashMap<Gene, Map<ExpressionExperiment, Collection<Double>>>();
 		HashMap<Gene, double[]> allGeneRankings = new HashMap<Gene, double[]>();
 		HashMap<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
 		
 		for ( ExpressionExperiment ee : expressRankings.keySet() ) {
-			//p.println(">> Exp: " + ee.getName());
 			for ( Gene g : expressRankings.get(ee).keySet() ) {
-				//p.println("> Gene: " + g.getName());
 				
 				double[] maxAndAveRank = new double[2];
 				maxAndAveRank[0] = 0;  // max
 				maxAndAveRank[1] = 0;  // mean
-				//double averageRank = 0;
-				//double maxRank = 0;
-				
-				//if (expressRankings.get(ee).get(g).size() != 1)
-				//	System.out.println("### "+ expressRankings.get(ee).get(g).size());
+								
+				int numNullRanks = 0;  // keep track of how many null rankings there are 
+				boolean allNull = true;
 				
 				for ( Double d : expressRankings.get(ee).get(g) ) {
-					//p.print(d+"\t");
-					//p.println(g.getId()+","+ee.getId()+","+d+","+rankMethodStr);
 					
-					
-					// TODO: subtract this entry from the list of probes, and if necessary, the entire experiment
+					// subtract this entry from the list of probes, and if necessary, the entire experiment
 					if (d == null) {
-						//d = 0.0;
-						//System.out.println("Null");
+						numNullRanks++;
+						System.out.println("Null rank value "+g.getId()+", numNullRanks: "+ numNullRanks);
 						
+					} else {
 						
+						// calculate the maximum and average rankings
+						maxAndAveRank[1] += d;
+						if (maxAndAveRank[0] < d) maxAndAveRank[0] = d;
+						
+						allNull = false;
 					}
 					
-					maxAndAveRank[1] += d;
-					if (maxAndAveRank[0] < d) maxAndAveRank[0] = d;
 					
 				}
 				
-				maxAndAveRank[1] = maxAndAveRank[1] / expressRankings.get(ee).get(g).size();
+				
+				// check if genes for this experiment are null-ranked. if so, skip
+				if (allNull) {
+					System.out.println("Null: No exps for this gene "+g.getId()+", exp: "+ ee.getId());
+					continue;
+				}
+				
+				
+				maxAndAveRank[1] = maxAndAveRank[1] / (expressRankings.get(ee).get(g).size() - numNullRanks);
 				
 				
 				//update hash of expression levels
@@ -410,9 +323,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					geneCounts.put(g, counts);
 				}
 				
-				//p.println();
 			}
-			//p.println();
 		}
 		
 		
@@ -426,46 +337,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			
 			px.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+maxrank);
 			pe.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+meanrank);
-			//px.println(g.getId()+","+numExperiments+","+numSamples+","+maxrank);
-			//pe.println(g.getId()+","+numExperiments+","+numSamples+","+meanrank);
-			
 		}
 		
 		
 		
 		
 		
-	}
-
-	
-	
-	private void outputAll_old(Collection<ExpressionExperiment> eeCol, Collection<Gene> genes, PrintStream p, String rankMethodStr, String probeRankStr) {
-		
-		RankMethod method;
-		
-		// todo: make these boolean
-		if (rankMethodStr.equalsIgnoreCase("max")) {
-			method = RankMethod.max;
-		} else {
-			method = RankMethod.mean;
-		}
-		
-		Map<ExpressionExperiment, Map<Gene, Collection<Double>>> res = processedExpressionDataVectorService.getRanks(eeCol, genes, method);
-		
-		int numExperiments = res.size();
-		
-		for ( ExpressionExperiment ee : res.keySet() ) {
-			//p.println(">> Exp: " + ee.getName());
-			for ( Gene g : res.get(ee).keySet() ) {
-				//p.println("> Gene: " + g.getName());
-				for ( Double d : res.get(ee).get(g) ) {
-					//p.print(d+"\t");
-					p.println(g.getId()+","+ee.getId()+","+d+","+rankMethodStr);
-				}
-				//p.println();
-			}
-			//p.println();
-		}
 	}
 
 	
