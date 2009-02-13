@@ -45,12 +45,12 @@ public class PARMapper extends AbstractSpringAwareCLI {
             throw new IllegalArgumentException();
         }
         Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
+        log.info( pars.size() + " " + taxon.getCommonName() + " PARS" );
 
-        log.info( pars.size() + " PARS" );
-        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar" );
+        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar\tSameStrand" );
 
         // test case
-        // ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load( 1224203 );
+        // ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load( 1450985 );
 
         for ( ProbeAlignedRegion par : pars ) {
             parService.thaw( par );
@@ -59,14 +59,15 @@ public class PARMapper extends AbstractSpringAwareCLI {
 
             physicalLocationservice.thaw( loc );
 
-            // if ( loc == null ) continue;
-            loc.setStrand( null );
             RelativeLocationData nearest = parService.findNearest( loc );
             if ( nearest != null ) {
                 Gene gene = nearest.getNearestGene();
-                System.out.println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
-                        + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
-                        + nearest.getRange() + "\t" + nearest.isContainedWithinGene() );
+
+                System.out
+                        .println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
+                                + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
+                                + nearest.getRange() + "\t" + nearest.isContainedWithinGene() + "\t"
+                                + nearest.isOnSameStrand() );
             }
         }
         return null;
