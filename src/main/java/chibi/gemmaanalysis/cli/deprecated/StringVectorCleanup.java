@@ -103,7 +103,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
             if ( !isStringType && !fullCheck ) continue;
 
             log.info( "Processing " + type );
-            Collection<DesignElementDataVector> vecs = dedvs.find( type );
+            Collection<? extends DesignElementDataVector> vecs = dedvs.find( type );
             dedvs.thaw( vecs );
 
             boolean changed = false;
@@ -125,7 +125,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
                     }
 
                     if ( updated.size() != numBioAssays ) {
-                        dedvs.thaw( vector );
+                        dedvs.thaw( ( Collection<? extends DesignElementDataVector> ) vector );
                         log.error( "Vector " + vector.getId()
                                 + " did not have right number of values after 'tab' removal for " + type
                                 + "; expected " + numBioAssays + " got " + updated.size() + "; "
@@ -142,7 +142,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
                     List<Object> vec = VectorMarshall.marshall( vector );
                     int numBioAssays = vector.getBioAssayDimension().getBioAssays().size();
                     if ( vec.size() != numBioAssays ) {
-                        dedvs.thaw( vector );
+                        dedvs.thaw( ( Collection<? extends DesignElementDataVector> ) vector );
                         eeService.thawLite( vector.getExpressionExperiment() );
                         log.error( "Vector " + vector.getId() + " did not have right number of values  " + type
                                 + "; expected " + numBioAssays + " got " + vec.size() + "; "

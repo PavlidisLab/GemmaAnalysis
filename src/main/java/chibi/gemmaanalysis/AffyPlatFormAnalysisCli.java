@@ -167,16 +167,14 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             log.info( "Expression Experiment " + ee.getShortName() + " doesn't have required QT " );
         }
         return qtf;
-    }
-
-    @SuppressWarnings("unchecked")
+    } 
     String processEEForPercentage( ExpressionExperiment ee ) {
         // eeService.thaw( ee );
         QuantitationType qt = this.getQuantitationType( ee, StandardQuantitationType.PRESENTABSENT, false );
         if ( qt == null ) return ( "No usable quantitation type in " + ee.getShortName() );
         log.info( "Load Data for  " + ee.getShortName() );
 
-        Collection<DesignElementDataVector> dataVectors = devService.find( qt );
+        Collection<? extends DesignElementDataVector> dataVectors = devService.find( qt );
         if ( dataVectors == null ) return ( "No data vector " + ee.getShortName() );
         ByteArrayConverter bac = new ByteArrayConverter();
 
