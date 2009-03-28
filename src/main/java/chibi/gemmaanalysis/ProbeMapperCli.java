@@ -37,6 +37,7 @@ import org.apache.commons.logging.LogFactory;
 
 import ubic.gemma.analysis.sequence.BlatAssociationScorer;
 import ubic.gemma.analysis.sequence.ProbeMapper;
+import ubic.gemma.analysis.sequence.ProbeMapperConfig;
 import ubic.gemma.apps.ArrayDesignProbeMapperCli;
 import ubic.gemma.externalDb.GoldenPathSequenceAnalysis;
 import ubic.gemma.loader.genome.BlatResultParser;
@@ -63,6 +64,7 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  * @author pavlidis
  * @version $Id$
  * @see ArrayDesignProbeMapperCli for the tool we use day-to-day
+ * @deprecated beause ArrayDesignProbeMapperCli has most of the functionality.
  */
 public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
@@ -120,6 +122,8 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
     private Taxon taxon;
 
+    private ProbeMapperConfig config;
+
     public ProbeMapperCli() {
         super();
     }
@@ -136,11 +140,11 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 "GoldenPath database id (default=" + DEFAULT_DATABASE + ")" ).withLongOpt( "database" ).create( 'd' );
 
         addOption( OptionBuilder.hasArg().withArgName( "value" ).withDescription(
-                "Sequence identity threshold, default = " + probeMapper.DEFAULT_IDENTITY_THRESHOLD ).withLongOpt(
+                "Sequence identity threshold, default = " + ProbeMapperConfig.DEFAULT_IDENTITY_THRESHOLD ).withLongOpt(
                 "identityThreshold" ).create( 'i' ) );
 
         addOption( OptionBuilder.hasArg().withArgName( "value" ).withDescription(
-                "Blat score threshold, default = " + probeMapper.DEFAULT_SCORE_THRESHOLD ).withLongOpt(
+                "Blat score threshold, default = " + ProbeMapperConfig.DEFAULT_SCORE_THRESHOLD ).withLongOpt(
                 "scoreThreshold" ).create( 's' ) );
 
         addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription(
@@ -338,7 +342,8 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
             log.debug( "Parsed " + sequences.size() + " sequences from the stream" );
 
-            Map<String, Collection<BlatAssociation>> allRes = probeMapper.processSequences( goldenPathDb, sequences );
+            Map<String, Collection<BlatAssociation>> allRes = probeMapper.processSequences( goldenPathDb, sequences,
+                    this.config );
 
             printBlatAssociations( output, allRes );
             return allRes;
@@ -356,12 +361,14 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
         probeMapper = ( ProbeMapper ) this.getBean( "probeMapper" );
         taxonService = ( TaxonService ) this.getBean( "taxonService" );
+
+        this.config = new ProbeMapperConfig();
         if ( hasOption( 's' ) ) {
-            probeMapper.setScoreThreshold( getDoubleOptionValue( 's' ) );
+            config.setBlatScoreThreshold( getDoubleOptionValue( 's' ) );
         }
 
         if ( hasOption( 'i' ) ) {
-            probeMapper.setIdentityThreshold( getDoubleOptionValue( 'i' ) );
+            config.setIdentityThreshold( getDoubleOptionValue( 'i' ) );
         }
 
         if ( hasOption( 'd' ) ) {
@@ -470,7 +477,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         }
 
         Map<String, Collection<BlatAssociation>> allRes = probeMapper.processBlatResults( goldenPathAnalysis,
-                blatResults );
+                blatResults, this.config );
 
         printBlatAssociations( output, allRes );
 
@@ -495,7 +502,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     }
 
     /**
-     * @param stream containing genbank accessions, one per line.
+     * @param stream containing genbank accessions, one per line; configuration has no effect.
      * @param writer
      * @return
      */
