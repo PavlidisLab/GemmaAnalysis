@@ -40,7 +40,7 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PhysicalLocation;
-import ubic.gemma.model.genome.PhysicalLocationService;
+//import ubic.gemma.model.genome.PhysicalLocationService;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
@@ -51,30 +51,38 @@ import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
-import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
-import ubic.gemma.datastructure.matrix.ExpressionDataMatrixRowElement;
+//import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
+//import ubic.gemma.datastructure.matrix.ExpressionDataMatrixRowElement;
 
 public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 	private Taxon taxon;
 
+	// Input files and output directories
+	// These can and should be overrided by arguments -i, -p, and -o
 	private String inFile = "/home/hmokada/scratch/human-par-gene-relations.subset.txt";
-	private String outFileDir = "/home/hmokada/scratch/outputfiles";
 	private String pargeneexpFile = null;// = "/home/hmokada/scratch/allpargeneexps_dontuse.txt";
-
-	private boolean checkPAR = false;
-	private boolean checkPARprobe = false;
-	private boolean checkGeneCorank = false;
-	private boolean checkGeneRank = false;
-	private boolean checkExperimentTypes = false;
-	private boolean checkUniqueProbeMappings = false;
-	private boolean checkAllCoexp = false;
-	private boolean checkAllCoexpInDB = false;
-	private boolean checkAllPairsCoexp = false;
+	private String ExperimentListFile = null;// = "/home/hmokada/scratch/expressionexperimentsDoubleStranded.txt";
+	private String outFileDir = "/home/hmokada/scratch/outputfiles";
 	
+	// All output files will be appended to the stem, it is overridden by argument -s
+	private String stem = "human-par-gene-relations";
+
+	// Options that determine analysis is to be performed
+	private boolean checkPAR = false;					// 
+	private boolean checkGeneRank = false;				// 
+	private boolean checkPARprobe = false;				// 
+	private boolean checkGeneCorank = false;			// 
+	private boolean checkAllCoexp = false;				// 
+	private boolean checkAllCoexpInDB = false;			// 
+	private boolean checkAllPairsCoexp = false;			// 
+	
+	private boolean checkExperimentTypes = false;		// 
+	private boolean checkUniqueProbeMappings = false;	// 
+
 
 	private static Map headerLookup;
-	private static String[] headers;
+//	private static String[] headers;
 
 	private static Collection<String[]> records;
 
@@ -114,12 +122,24 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		addOption(outFileDirOption);
 
 		Option pargeneexpFileOption = OptionBuilder.hasArg().withDescription(
-				"pargene name")
+				"PAR-gene-experiment map filename")
 				.withDescription("file of Par/Gene/Exps to read").withLongOpt(
-						"pargeneexpFile").create('p');
-		addOption(inFileOption);
+				"pargeneexpFile").create('p');
+		addOption(pargeneexpFileOption);
+		
+		Option ExperimentListFileOption = OptionBuilder.hasArg().withDescription(
+				"experiment list filename")
+				.withDescription("file of expression experiments to read").withLongOpt(
+				"pargeneexpFile").create('e');
+		addOption(ExperimentListFileOption);
+		
+		Option outputStemOption = OptionBuilder.hasArg().withDescription(
+				"output file stem name")
+				.withDescription("output file stem name").withLongOpt(
+				"stem").create('s');
+		addOption(outputStemOption);
 
-		Option checkParOption = OptionBuilder.create("checkPar");
+		Option checkParOption = OptionBuilder.create("checkPAR");
 		addOption(checkParOption);
 
 		Option checkPARprobeOption = OptionBuilder.create("checkPARprobe");
@@ -131,25 +151,25 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		Option checkGeneRankOption = OptionBuilder.create("checkGeneRank");
 		addOption(checkGeneRankOption);
 
-		Option checkExperimentTypes = OptionBuilder
+		Option checkExperimentTypesOption = OptionBuilder
 				.create("checkExperimentTypes");
-		addOption(checkExperimentTypes);
+		addOption(checkExperimentTypesOption);
 
-		Option checkUniqueProbeMappings = OptionBuilder
+		Option checkUniqueProbeMappingsOption = OptionBuilder
 				.create("checkUniqueProbeMappings");
-		addOption(checkUniqueProbeMappings);
+		addOption(checkUniqueProbeMappingsOption);
 		
-		Option checkAllCoexp = OptionBuilder
+		Option checkAllCoexpOption = OptionBuilder
 		.create("checkAllCoexp");
-		addOption(checkAllCoexp);
+		addOption(checkAllCoexpOption);
 		
-		Option checkAllCoexpInDB = OptionBuilder
+		Option checkAllCoexpInDBOption = OptionBuilder
 		.create("checkAllCoexpInDB");
-		addOption(checkAllCoexpInDB);
+		addOption(checkAllCoexpInDBOption);
 
-		Option checkAllPairsCoexp = OptionBuilder
+		Option checkAllPairsCoexpOption = OptionBuilder
 		.create("checkAllPairsCoexp");
-		addOption(checkAllPairsCoexp);
+		addOption(checkAllPairsCoexpOption);
 
 		
 	}
@@ -183,6 +203,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 		if (hasOption("p")) {
 			pargeneexpFile = getOptionValue("p");
+		}
+		
+		if (hasOption("e")) {
+			ExperimentListFile = getOptionValue("e");
+		}
+		
+		if (hasOption("s")) {
+			stem = getOptionValue("s");
 		}
 
 		if (hasOption("t")) {
@@ -255,6 +283,24 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		
 		
 		
+
+		// Load up experiments - all experiments or from a list
+		Collection<ExpressionExperiment> eeCol;
+		if (ExperimentListFile == null) {
+			eeCol = expressionExperimentService.findByTaxon(taxon);
+		} else {
+			eeCol = loadExpressionExperimentsByFile(ExperimentListFile);
+		}
+		System.out.println("Experiments loaded:" + eeCol.size());
+		
+		
+		// prints out experiment information (exits program when finished)
+		if (checkExperimentTypes) {
+			printExperimentTypes(eeCol);
+			return null;
+		}
+		
+		
 		// log.info(taxonService.loadAll());
 		// For my mac
 		// String inFile =
@@ -283,32 +329,32 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		try {
 			// Connect print stream to the output stream
 			pxx = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.xx.txt"));
+					+ "/" + stem + ".output.xx.txt"));
 			pxe = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.xe.txt"));
+					+ "/" + stem + ".output.xe.txt"));
 			pex = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.ex.txt"));
+					+ "/" + stem + ".output.ex.txt"));
 			pee = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.ee.txt"));
+					+ "/" + stem + ".output.ee.txt"));
 
 			ppr = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.probelevel.txt"));
+					+ "/" + stem + ".output.probelevel.txt"));
 
 			pgp_xx = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.geneVsPar.xx.txt"));
+					+ "/" + stem + ".output.geneVsPar.xx.txt"));
 			pgp_xe = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.geneVsPar.xe.txt"));
+					+ "/" + stem + ".output.geneVsPar.xe.txt"));
 			pgp_ex = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.geneVsPar.ex.txt"));
+					+ "/" + stem + ".output.geneVsPar.ex.txt"));
 			pgp_ee = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.geneVsPar.ee.txt"));
+					+ "/" + stem + ".output.geneVsPar.ee.txt"));
 
 			pco = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.genecoexpression.txt"));
+					+ "/" + stem + ".output.genecoexpression.txt"));
 			pcA = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.genecoexpressionAll.txt"));
+					+ "/" + stem + ".output.genecoexpressionAll.txt"));
 			pap = new PrintStream(new FileOutputStream(outFileDir
-					+ "/human-par-gene-relations.output.genecoexpressionAllPairs.txt"));
+					+ "/" + stem + ".output.genecoexpressionAllPairs.txt"));
 
 		} catch (Exception e) {
 			System.err.println("Error writing to file");
@@ -360,38 +406,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		// taxon = taxonService.findByCommonName( "human" );
 		// Add to options
 
-		Collection<ExpressionExperiment> eeCol = expressionExperimentService.findByTaxon(taxon);
-		System.out.println(eeCol.size());
-
-		// BlatAssociation ba;
-		// ba.getGeneProduct().getGene().
-
-		//Collection<Long> eeids = new ArrayList<Long>();
-		//eeids.add(Long.valueOf(1));
-		//eeids.add(Long.valueOf(4));
-		//eeids.add(Long.valueOf(18));
-		//eeids.add(Long.valueOf(50));
-		//eeids.add(Long.valueOf(98));
-		//eeids.add(Long.valueOf(100));
-		//eeids.add(Long.valueOf(102));
-		//eeids.add(Long.valueOf(106));
-		//eeids.add(Long.valueOf(110));
-		//eeids.add(Long.valueOf(111));
 		
-		// eeids.add(Long.valueOf(370));
-		// eeids.add(Long.valueOf(375));
-		// eeids.add(Long.valueOf(562));
-		// eeids.add(Long.valueOf(597));
-		// eeids.add(Long.valueOf(600));
-		// eeids.add(Long.valueOf(646));
-		// eeids.add(Long.valueOf(1130));
-		// eeids.add(Long.valueOf(1134));
-		//eeCol = expressionExperimentService.loadMultiple(eeids);
-		System.out.println(eeCol.size());
-		if (checkExperimentTypes) {
-			printExperimentTypes(eeCol);
-			return null;
-		}
 
 		// Get the distribution of ranks for ALL human genes!!!!
 		// ///////////////////////////////////////////////// Start
@@ -550,17 +565,22 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			pap.flush();
 
 			if (checkPARprobe) {
-				outputAll_probelevel(eeCol, pars, ppr);
+				outputRankingsProbelevel(eeCol, pars, ppr);
 			}
 
 			if (checkPAR) {
-				outputAll(eeCol, pars, pxx, pxe, "max");
-				outputAll(eeCol, pars, pex, pee, "mean");
+				outputRankings(eeCol, pars, pxx, pxe, "max");
+				outputRankings(eeCol, pars, pex, pee, "mean");
+			}
+			
+			if (checkGeneRank) {
+				outputRankings(eeCol, genes, pxx, pxe, "max");
+				outputRankings(eeCol, genes, pex, pee, "mean");
 			}
 
 			if (checkGeneCorank) {
-				outputAll_geneCorank(eeCol, pars, genes, pgp_xx, pgp_xe, "max");
-				outputAll_geneCorank(eeCol, pars, genes, pgp_ex, pgp_ee, "mean");
+				outputPARGeneCorank(eeCol, pars, genes, pgp_xx, pgp_xe, "max");
+				outputPARGeneCorank(eeCol, pars, genes, pgp_ex, pgp_ee, "mean");
 
 				// not working
 				// outputAll_geneCorank(eeCol, pars, genes, pgp_xx);
@@ -569,11 +589,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				// outputAll_geneCorank(eeCol, parToGene, pex, pee, "mean");
 			}
 
-			if (checkGeneRank) {
-				outputAll(eeCol, genes, pxx, pxe, "max");
-				outputAll(eeCol, genes, pex, pee, "mean");
-			}
-			
 			
 			if (checkAllCoexpInDB) {
 				//if (parToCoExps != null) {
@@ -582,20 +597,21 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					System.exit(0);
 				}
 				//check all coexpressions given a par or look at each par-gene combination
-				outgenecoexpressions(pars, genes, pco);
+				outputPARGeneCoexpressionLinks(pars, genes, pco);
 				
 			}
 			
 			if (checkAllCoexp) {
-				outgenecoexpressions(pars, eeCol, 1, pcA);
+				outputAllGeneCoexpressionLinks(pars, eeCol, 1, pcA);
 			}
+			
 			if (checkAllPairsCoexp) {
 				if (pargeneexpFile == null) {
 					System.out.println("Error, need to supply pargeneexp file");
 					System.exit(0);
 				}
 					
-				out_pargene_allcoexpressions(pars, genes, pap);
+				outputAllPARGeneCoexpressionCalculated(pars, genes, pap);
 			}
 
 		}
@@ -719,7 +735,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 	// Retrieves all coexpression data for pars and genes that are in the same
 	// experiment
-	private void outgenecoexpressions(Collection<Gene> pars,
+	private void outputPARGeneCoexpressionLinks(Collection<Gene> pars,
 		Collection<Gene> genes, PrintStream pco) {
 		
 		ProbeLinkCoexpressionAnalyzer pca = new ProbeLinkCoexpressionAnalyzer();
@@ -837,7 +853,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	// This method is different from the previous method outgenecoexpressions examining par-gene pairs.
 	// Here a given par is compared with all genes containing a link in the database (implying that they
 	// already have some coexpression)
-	private void outgenecoexpressions(Collection<Gene> pars, Collection<ExpressionExperiment> ccCol, int stringency, PrintStream pco) {
+	private void outputAllGeneCoexpressionLinks(Collection<Gene> pars, Collection<ExpressionExperiment> ccCol, int stringency, PrintStream pco) {
 		
 
 		
@@ -991,7 +1007,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	// Note: the stdout can be parsed by pargeneExplist.pl which sorts the
 	// par/gene/exp combo
 	// into lists.
-	private void outputAll_geneCorank(Collection<ExpressionExperiment> eeCol,
+	private void outputPARGeneCorank(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, Collection<Gene> genes, PrintStream px,
 			PrintStream pe, String rankMethodStr) {
 
@@ -1512,7 +1528,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 	}
 
-	private void outputAll_probelevel(Collection<ExpressionExperiment> eeCol,
+	private void outputRankingsProbelevel(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, PrintStream p) {
 
 		// System.out.println("reading probes");
@@ -1520,8 +1536,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		// System.out.println("Genes");
 		// for (Gene e : pars) {System.out.println(e.getId());}
 
-		// WHY THE F ISN'T THIS WORKING?? FOR SOME REASON THEY AREN'T RETURNING
-		// ANYTHING FROM THE GETRANKS METHOD!!!
 
 		// RankMethod method;
 		//
@@ -1810,7 +1824,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	}
 
 	// the original - look at PARs/Genes as a whole, not distinguishing probes
-	private void outputAll(Collection<ExpressionExperiment> eeCol,
+	private void outputRankings(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, PrintStream px, PrintStream pe,
 			String rankMethodStr) {
 
@@ -1939,7 +1953,18 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	private static int getIndex(String header) {
 		return ((Integer) headerLookup.get(header)).intValue();
 	}
-
+	
+	/*
+	 * This method reads the PAR file, the main source of information for this CLI. 
+	 * The PAR file is created by PARMapper.java
+	 * 
+	 * The file format should be tabe delimited file like the following:
+	 * ParID	ParName	Chrom	Nuc	GeneId	GeneSymbol	Distance	GeneContainsPar	SameStrand
+	 * 1124999	R49730.par.8.239068.239461	8	239068	3887948	LOC100131718	462	false	true
+	 * 1125323	AA431402.par.9.35913976.35914288	9	35913976	400013	LOC158376	12294	false	false
+	 * 1126681	W90363.par.2.215298022.215298505	2	215298022	12860	BARD1	3001	false	true
+	 * 
+	 */
 	private static void readPARFile(String inFile) {
 
 		BufferedReader in;
@@ -1980,7 +2005,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		}
 
 		headerLookup = fHash;
-		headers = fHeaders;
+//		headers = fHeaders;
 		records = fRecords;
 	}
 
@@ -1991,7 +2016,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		parToCoExps = new HashMap<Long, long[]>();
 
 		BufferedReader in;
-		Collection<String[]> fRecords = new ArrayList<String[]>();
+//		Collection<String[]> fRecords = new ArrayList<String[]>();
 
 		String header;
 
@@ -2037,7 +2062,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	/*
 	 * This method outputs the pairwise correlations between pars and genes
 	 */
-	private void out_pargene_allcoexpressions(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
+	private void outputAllPARGeneCoexpressionCalculated(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
 		Iterator<Gene> pItr = pars.iterator();
 		Iterator<Gene> gItr = genes.iterator();
 
@@ -2491,103 +2516,46 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 	}
 	
-	/*
-	 * This method calculates the spearman correlation for a pair of double arrays
-	 * 
-	 * The Pearson correlation is already set up, only do this if time
-	 * The code is actually taken from SpearmanMetrics.java.calculateMetrics()
-	 *  -which use a weird 
-	 * 
-	 */
-	/**
-     * calculates spearman - abandoned for now
-     */
-    public double calculateSpearman(double[] x, double[] y) {
-    	ExpressionDataDoubleMatrix dataMatrix = new ExpressionDataDoubleMatrix();
-//        if ( this.numMissing == 0 ) {
-//            this.calculateMetricsFast();
-//            return;
-//        }
+	private Collection<ExpressionExperiment> loadExpressionExperimentsByFile (String ExperimentListFile) {
 
-        // int numused;
-        int numrows = x.length;
-        int numcols = 1;
+		Collection<ExpressionExperiment> eeCol = new ArrayList<ExpressionExperiment>();
+		Collection<Long> eeids = new ArrayList<Long>();
+		
+		BufferedReader in;
 
-/*        boolean doCalcs = this.needToCalculateMetrics();
-        boolean[][] usedB = null;
-        double[][] rankTransformedData = null;
+		try {
+			in = new BufferedReader(new FileReader(ExperimentListFile));
+			String line;
+			
+			while ((line = in.readLine()) != null) {
+				if (line.startsWith("#"))
+					continue;
+				//String[] s = line.trim().split("\t");
+				String expIDstr = line.trim();
+				
+				eeids.add(Long.decode(expIDstr));
+			}
+			
+			eeCol = expressionExperimentService.loadMultiple(eeids);
+			
+			in.close();
 
-        if ( doCalcs ) {
-            // Temporarily copy the data in this matrix, for performance, and rank transform.
-            usedB = new boolean[numrows][numcols];
-            rankTransformedData = getRankTransformedData( usedB );
-        }
-
-
-        // value to use if there are no missing values.
-        double denom = ( Math.pow( numcols, 2 ) - 1 ) * numcols;
-
-        ExpressionDataMatrixRowElement itemA = null;
-        double[] vectorA = null;
-        int count = 0;
-        int numComputed = 0;
-        
-        for ( int i = 0; i < numrows; i++ ) { // first vector
-            double itemA = x[i];
-            
-            boolean thisRowHasMissing = false;
-            if ((new Double(itemA)).isNaN()) thisRowHasMissing = true;
-
-            // out of time, do later if extra info needed
-
-            for ( int j = i + 1; j < numrows; j++ ) { // second vector
-                double itemB = y[j];
-                if ((new Double(itemA)).isNaN()) continue;
-
-                // second pass over matrix? Don't calculate it if we already have it. Just do the requisite checks.
-                if ( !doCalcs || results.get( i, j ) != 0.0 ) {
-                    keepCorrel( i, j, results.get( i, j ), numcols );
-                    continue;
-                }
-
-                double[] vectorB = rankTransformedData[j];
-
-                // if there are no missing values, use the faster method of calculation
-                if ( !thisRowHasMissing && !hasMissing[j] ) {
-                    setCorrel( i, j, this.correlFast( vectorA, vectorB, denom ), numcols );
-                    continue;
-                }
-
-                
-                int numused = 0;
-                double sse = 0.0;
-                for ( int k = 0; k < vectorA.length; k++ ) {
-                    if ( !usedB[i][k] || !usedB[j][k] ) { // avoid double.isnan() calls
-                        continue;
-                    }
-                    sse += Math.pow( vectorA[k] - vectorB[k], 2 );
-                    numused++;
-                }
-
-                if ( numused < minNumUsed ) {
-                    setCorrel( i, j, Double.NaN, 0 );
-                } else {
-                    double rho = 1.0 - sse / ( Math.pow( numused, 3 ) - numused );
-                    setCorrel( i, j, rho, numused );
-                }
-            }
-
-            ++numComputed;
-
-            if ( ++count % 2000 == 0 ) {
-                log.info( count + " rows done, " + numComputed + " correlations computed, last row was " + itemA + " "
-                        + ( keepers.size() > 0 ? keepers.size() + " scores retained" : "" ) );
-            }
-        }
-        finishMetrics();
-        */
-        return 0.0;
-
-    }
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("File " + ExperimentListFile + " not found - "
+					+ e.getMessage());
+			System.exit(0);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("File " + ExperimentListFile + " reads a bit wonky - "
+					+ e.getMessage());
+			System.exit(0);
+		}
+		
+		return eeCol;
 	
+	}
+
 }
