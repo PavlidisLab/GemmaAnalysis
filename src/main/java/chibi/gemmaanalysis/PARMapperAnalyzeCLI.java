@@ -527,7 +527,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 			}
 
-			// print results to file
+			// print batch numbers to output file
 			/*
 			pxx.println("Batch Number: "+ batch);
 			pxe.println("Batch Number: "+ batch);
@@ -611,6 +611,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				outputAllGeneCoexpressionLinks(pars, eeCol, 1, pcA);
 			}
 			
+			// Calcualate all PAR/Gene pairs for all experiments where they co-exist
 			if (checkAllPairsCoexp) {
 				if (pargeneexpFile == null) {
 					System.out.println("Error, need to supply pargeneexp file");
@@ -663,6 +664,33 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	/*
 	 * This method finds the array types for the expressions given It might be
 	 * important to know which array designs make use of double stranded probes
+	 * 
+	 * This is an example of what is printed to standard out
+	 * 
+	 * #399: Molecular profiles (HG-U95A) of dystrophin-deficient and normal human muscle
+	 * #       8: Affymetrix GeneChip Human Genome U95 Version [1 or 2] Set HG-U95A
+	 * #               AFFY_COLLAPSED
+	 * 399     8       AFFY_COLLAPSED
+	 * #403: Molecular heterogeneity in acute renal allograft rejection
+	 * #       197: LC-17
+	 * #               EST
+	 * 403     197     EST
+	 * #406: Prostaglandin J2 alters gene expression patterns and 26S proteasome...
+	 * #       162: CAG Human 19k array v1.0
+	 * #               mRNA
+	 * 406     162     mRNA
+	 * #409: Molecular portraits of human breast tumors
+	 * #       40: SVC
+	 * #               EST
+	 * 409     40      EST
+	 * #437: Serum stimulation of fibroblasts
+	 * #       225: Stanford Human 10k prints 1-3
+	 * #               DNA
+	 * 437     225     DNA
+	 * 
+	 * To determine which are double stranded, a separate process will have to
+	 * be used to extract the names and the types.
+	 * 
 	 */
 	private void printExperimentTypes(Collection<ExpressionExperiment> eeCol) {
 
@@ -673,34 +701,17 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					.getArrayDesignsUsed(e);
 			for (ArrayDesign a : ad) {
 				System.out.println("#\t" + a.getId() + ": " + a.getName());
-				// Collection<CompositeSequence> csc =
-				// a.getCompositeSequences();
-				// Iterator csItr = csc.iterator();
-				// CompositeSequence cs = (CompositeSequence) csItr.next();
-				// CompositeSequence cs = (CompositeSequence)
-				// a.getCompositeSequences().iterator().next();
-
-				// If everything was perfect and easy
-				// SequenceType st = ((CompositeSequence)
-				// a.getCompositeSequences().iterator().next()).getBiologicalCharacteristic().getType();
 
 				SequenceType st = getSequenceType(a);
 
 				System.out.println("#\t\t" + st);
-
 				System.out.println(e.getId() + "\t" + a.getId() + "\t" + st);
-				// System.out.println("\t"+st.toString());
-				// System.out.println("\t"+st.getValue());
-
-				// System.out.println("\t"+a.getTechnologyType());
-				// for (String name : a.getTechnologyType().names()) {
-				// System.out.println("\t\t."+name);
-				// }
 			}
 
 		}
 	}
-
+	
+	// called by printExperimentTypes to get the array type
 	private SequenceType getSequenceType(ArrayDesign a) {
 		arrayDesignService.thawLite(a);
 
@@ -756,26 +767,17 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		Iterator<Gene> pItr = pars.iterator();
 		Iterator<Gene> gItr = genes.iterator();
 
-		// for (Gene par: pars) {
 		while (pItr.hasNext()) {
 			Gene par = pItr.next();
 			Gene gene = gItr.next();
 
-			//bad
-			par  = parService.load(1445595);
-			gene = parService.load(127958);
-
-			//good
-//			par  = parService.load(1445513);
-//			gene = parService.load(442313);
-			
-			// if (par)
 			long[] expIds = parToCoExps.get(par.getId());
 
+			// no information - skip
 			if (expIds == null) {
-				//System.out.println("No information: " + par.getId());
 				continue;
 			}
+			
 			
 			// change expression exp objects to bioassaysets
 			Collection<BioAssaySet> eexps = new ArrayList<BioAssaySet>();
@@ -797,42 +799,26 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			}
 
 
-			System.out.println("Linkanalysis " + par.getId() + "\t" + gene.getId());
+			//System.out.println("Linkanalysis " + par.getId() + "\t" + gene.getId());
 			
-			Map<Gene, CoexpressionCollectionValueObject> coexp;
+			// search Gemma for links
+			Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis(pargene, eexps, 1, false, true, 0);
 			
-//			try {
-				//Map<Gene, CoexpressionCollectionValueObject> 
-				coexp = pca.linkAnalysis(pargene, eexps, 1, false, true, 0);
-//			} catch (java.lang.IndexOutOfBoundsException e) {
-//				e.printStackTrace();
-//				System.out.println("Error performing linkAnalysis "
-//						+ e.getMessage());
-//				continue;
-//			}
-			
-
-			// System.out.print("Par "+ par.getId()+"\t");
 
 			for (Gene g : coexp.keySet()) {
 				CoexpressionCollectionValueObject ccvo = coexp.get(g);
-				
 				Collection<CoexpressionValueObject> cvos = ccvo.getAllGeneCoexpressionData(0);
 				
-				if (cvos.size() >  0) {
-					// found evidence of coexpression
-				}
-				
-				System.out.println("GeneID: " + g.getId()+" Size: " + cvos.size());
+				//System.out.println("GeneID: " + g.getId()+" Size: " + cvos.size());
 
 				
 				for (CoexpressionValueObject cvo : cvos) {
 					//System.out.println("\t\tTS: " + cvo);
 					
-					System.out.println(parFileEntries.get(par.getId())
-							+ "," + g.getId()
-							+ "," + cvo.getPositiveScore()
-							+ "," + cvo.getNegativeScore());
+					//System.out.println(parFileEntries.get(par.getId())
+					//		+ "," + g.getId()
+					//		+ "," + cvo.getPositiveScore()
+					//		+ "," + cvo.getNegativeScore());
 					
 					
 					pco.println(parFileEntries.get(par.getId())
@@ -841,19 +827,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					
 					
 				}
-				// System.exit(0);
 
 			}
 
 		}
 	}
-
-	
-	
-	
-	
-	
-	
 	
 	
 	
@@ -863,9 +841,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	// This method is different from the previous method outgenecoexpressions examining par-gene pairs.
 	// Here a given par is compared with all genes containing a link in the database (implying that they
 	// already have some coexpression)
-	private void outputAllGeneCoexpressionLinks(Collection<Gene> pars, Collection<ExpressionExperiment> ccCol, int stringency, PrintStream pco) {
-		
-
+	private void outputAllGeneCoexpressionLinks(
+			Collection<Gene> pars, Collection<ExpressionExperiment> ccCol, int stringency, PrintStream pco) {
 		
 		Iterator<Gene> pItr = pars.iterator();
 
@@ -873,34 +850,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		while (pItr.hasNext()) {
 			Gene par = pItr.next();
 
-			// if (par)
-			//long[] expIds = parToCoExps.get(par.getId());
-//
-//			if (expIds == null) {
-//				//System.out.println("No information: " + par.getId());
-//				continue;
-//			}
 
-//			Collection<ExpressionExperiment> exps = new ArrayList<ExpressionExperiment>();
-			Collection<BioAssaySet> exps2 = new ArrayList<BioAssaySet>();
+			Collection<BioAssaySet> exps = new ArrayList<BioAssaySet>();
 			
 			for (ExpressionExperiment ee : ccCol) {
-				exps2.add(ee);
+				exps.add(ee);
 			}
 
-//			for (int i = 0; i < eez.length; i++) {
-				// gene2GeneCoexpressionService.
-				// GeneCoexpressionAnalysis gca;
-				// Gene2GeneCoexpression g = getNewGGCOInstance();
-				// g.setFirstGene(par);
-				// g.setSecondGene(gene);
-				// Double d = g.getPvalue();
-				// if (d==null) d = new Double(-5);
-//				exps.add(expressionExperimentService.load(expIds[i]));
-//				exps2.add((BioAssaySet) expressionExperimentService
-//						.load(expIds[i]));
-//			}
-			// System.out.println();
 
 			Collection<Gene> pargene = new ArrayList<Gene>();
 			pargene.add(par);
@@ -915,16 +871,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			}
 
 
-//			System.out.println("Linkanalysis " + par.getId());
-			
 			Map<Gene, CoexpressionCollectionValueObject> coexp;
 			
 			try {
 				ProbeLinkCoexpressionAnalyzer pca = new ProbeLinkCoexpressionAnalyzer();
 				pca.setGeneService(parService);
 				pca.setProbe2ProbeCoexpressionService(probe2ProbeCoexpressionService);
-				//Map<Gene, CoexpressionCollectionValueObject> 
-				coexp = pca.linkAnalysis(pargene, exps2, stringency, false, false, 0);
+				coexp = pca.linkAnalysis(pargene, exps, stringency, false, false, 0);
 			} catch (java.lang.IndexOutOfBoundsException e) {
 				e.printStackTrace();
 				System.out.println("Error performing linkAnalysis "
@@ -938,17 +891,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				continue;
 			}
 			
-			
-			// System.out.print("Par "+ par.getId()+"\t");
-			
-			//Collection<Integer> sizeCount = new ArrayList<Integer>();
-			//int zeroCount = 0;
-			//int maxSize = 0;
-			//int[] sizes = new int[100];
-			
-			//for (Gene g : coexp.keySet()) {
-			
-				//CoexpressionCollectionValueObject ccvo = coexp.get(g);
 			CoexpressionCollectionValueObject ccvo = coexp.get(par);
 			Collection<CoexpressionValueObject> cvos = ccvo.getAllGeneCoexpressionData(0);
 			
@@ -956,29 +898,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			String output_half = (String) parFileEntries.get(par.getId());
 			
 			int csize = cvos.size();
-			
 			if (csize ==  0) {
-//System.out.println("Zerocount!!");
 				zeroCount++;
 				continue;
 			}
 			
-			// keep track of how many coexpressions are non-zero
-			//sizeCount.add(new Integer(csize));
-			//int csizeTmp = csize;
-			//if (99 < csizeTmp) csizeTmp = 99;
-			//sizes[csizeTmp]++;
-			//if (maxSize < csize) maxSize = csize;
-			
-			
-//				System.out.println("GeneID: " + g.getId()+" Size: " + csize);
-			
-			// for (BioAssaySet ee : exps2) {
-			// System.out.println("\tExpid: " + ee.getId());
-			// }
 			
 			for (CoexpressionValueObject cvo : cvos) {
-				//System.out.println("\t\tTS: " + cvo);
 				String output = output_half
 							+ "," + cvo.getGeneId()
 							+ "," + csize
@@ -990,32 +916,23 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				
 			}
 			
-			// print out the numbers
-			System.out.print("Zerocount: " + par.getId()+"\t"+par.getId()+"\t"+"0:"+zeroCount);
-			//for (int i=1; i<99; i++) {
-			//	if (sizes[i] == 0) continue;
-			//	System.out.print("\t"+i+":"+sizes[i]);
-			//}
-			//System.out.println();
+			// print out the number of zeros
+			System.out.println("Zerocount: " + par.getId()+"\t"+par.getId()+"\t"+"0:"+zeroCount);
 			
-			//}
-
 		}
 	}
 
 	
 	
 	
-	
-	
-	
-	
-	
-	// Looks at all par/gene pairs to see if there are any experiemnts with both
-	// This outputs A LOT of information to standard out!!
-	// Note: the stdout can be parsed by pargeneExplist.pl which sorts the
-	// par/gene/exp combo
-	// into lists.
+	/* Looks at all par/gene pairs to see if there are any experiemnts with both
+	 * and extracts the rank information for both
+	 * 
+	 * To get the PAR-gene-experiment map, parse the output to standard out
+	 * This outputs A LOT of information to standard out!!
+	 * Note: the stdout can be parsed by pargeneExplist.pl which sorts the
+	 * par/gene/exp combo into lists.
+	 */
 	private void outputPARGeneCorank(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, Collection<Gene> genes, PrintStream px,
 			PrintStream pe, String rankMethodStr) {
@@ -1036,16 +953,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		// use getRanks function to map genes to experiments
 		Map<ExpressionExperiment, Map<Gene, Collection<Double>>> expressRankings = processedExpressionDataVectorService
 				.getRanks(eeCol, allProbesGenes, method);
-		// Map<ExpressionExperiment, Map<Gene, Collection<Double>>>
-		// expressRankings =
-		// processedExpressionDataVectorService.getRanks(eeCol, pars, method);
 
-		// need to map experiments to genes to calculate max/mean across
-		// experiments
+		// need to map experiments to genes to calculate max/mean across experiments
 		Map<Gene, Collection<Double>> allGeneRankings = new HashMap<Gene, Collection<Double>>();
 		Map<Gene, Collection<Double>> allParRankings = new HashMap<Gene, Collection<Double>>();
-
-		Map<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
 
 		Map<Gene, Collection<ExpressionExperiment>> numOfExpsPars =  new HashMap<Gene, Collection<ExpressionExperiment>>();
 		Map<Gene, Collection<ExpressionExperiment>> numOfExpsGenes = new HashMap<Gene, Collection<ExpressionExperiment>>();
@@ -1145,15 +1056,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		}
 
 		// this time, combine the entries for PARs and genes
-
 		Iterator<Gene> gItr = genes.iterator();
 		Iterator<Gene> pItr = pars.iterator();
 
 		Gene g, p;
 
-		// for ( Gene g : expressRankings.get(ee).keySet() ) {
 		while (gItr.hasNext()) {
-			// for ( Gene p : allGeneRankings.keySet() ) {
 
 			g = gItr.next();
 			p = pItr.next();
@@ -1199,414 +1107,49 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					+ numSamplesPar + "," + meanrankPar + "," + numExpsGene
 					+ "," + numSamplesGene + "," + meanrankGene);
 
-			// px.println(g.getId()+","+numExperiments+","+numSamples+","+maxrank);
-			// pe.println(g.getId()+","+numExperiments+","+numSamples+","+meanrank);
-
 		}
 
 	}
 
-	private void outputAll_geneCorank_old(
-			Collection<ExpressionExperiment> eeCol,
-			HashMap<Gene, Gene> parToGene, PrintStream px, PrintStream pe,
-			String rankMethodStr) {
-
-		Collection<Gene> pars = parToGene.keySet();
-		Collection<Gene> combined = parToGene.values();
-		combined.addAll(pars);
-
-		RankMethod method;
-
-		// todo: make these boolean
-		if (rankMethodStr.equalsIgnoreCase("max")) {
-			method = RankMethod.max;
-		} else {
-			method = RankMethod.mean;
-		}
-
-		// use getRanks function to map genes to experiments
-		Map<ExpressionExperiment, Map<Gene, Collection<Double>>> expressRankings = processedExpressionDataVectorService
-				.getRanks(eeCol, pars, method);
-
-		// need to map experiments to genes to calculate max/mean across
-		// experiments
-		HashMap<Gene, double[]> allGeneRankings = new HashMap<Gene, double[]>();
-		HashMap<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
-
-		for (ExpressionExperiment ee : expressRankings.keySet()) {
-			for (Gene p : expressRankings.get(ee).keySet()) {
-
-				double[] maxAndAveRank = new double[2];
-				maxAndAveRank[0] = 0; // max
-				maxAndAveRank[1] = 0; // mean
-
-				int numNullRanks = 0; // keep track of how many null rankings
-										// there are
-				boolean allNull = true;
-
-				for (Double d : expressRankings.get(ee).get(p)) {
-
-					// subtract this entry from the list of probes, and if
-					// necessary, the entire experiment
-					if (d == null) {
-						numNullRanks++;
-						// System.out.println("Null rank value "+p.getId()+",
-						// numNullRanks: "+ numNullRanks);
-
-					} else {
-
-						// calculate the maximum and average rankings
-						maxAndAveRank[1] += d;
-						if (maxAndAveRank[0] < d)
-							maxAndAveRank[0] = d;
-
-						allNull = false;
-					}
-
-				}
-
-				// check if genes for this experiment are null-ranked. if so,
-				// skip
-				if (allNull) {
-					// System.out.println("Null: No exps for this gene
-					// "+p.getId()+", exp: "+ ee.getId());
-					continue;
-				}
-
-				maxAndAveRank[1] = maxAndAveRank[1]
-						/ (expressRankings.get(ee).get(p).size() - numNullRanks);
-
-				// update hash of expression levels
-				if (allGeneRankings.containsKey(p)) {
-					if (allGeneRankings.get(p)[1] < maxAndAveRank[0])
-						allGeneRankings.get(p)[1] = maxAndAveRank[0];
-					allGeneRankings.get(p)[1] += maxAndAveRank[1];
-
-					geneCounts.get(p)[0]++;
-					geneCounts.get(p)[1] += expressRankings.get(ee).get(p)
-							.size();
-				}
-				// new gene, must create new entities in hash
-				else {
-					allGeneRankings.put(p, maxAndAveRank);
-
-					// number of experiments and number samples for this gene
-					int[] counts = new int[2];
-					counts[0] = 1;
-					counts[1] = expressRankings.get(ee).get(p).size();
-
-					geneCounts.put(p, counts);
-				}
-
-			}
-		}
-
-		for (Gene g : allGeneRankings.keySet()) {
-
-			int numExperiments = geneCounts.get(g)[0];
-			int numSamples = geneCounts.get(g)[1];
-
-			double maxrank = allGeneRankings.get(g)[0];
-			double meanrank = allGeneRankings.get(g)[1] / numExperiments;
-
-			px.println(parFileEntries.get(g.getId()) + "," + numExperiments
-					+ "," + numSamples + "," + maxrank);
-			pe.println(parFileEntries.get(g.getId()) + "," + numExperiments
-					+ "," + numSamples + "," + meanrank);
-		}
-
-	}
-
-	private void outputAll_geneCorank_probelevel(
-			Collection<ExpressionExperiment> eeCol, Collection<Gene> pars,
-			Collection<Gene> genes, PrintStream p) {
-
-		Collection<Gene> allProbesGenes = new ArrayList<Gene>();
-		allProbesGenes.addAll(pars);
-		allProbesGenes.addAll(genes);
-
-		/*
-		 * for ( ExpressionExperiment ee : expressRankings.keySet() ) { Map<Gene,
-		 * Collection<Double>> expressRankingsExperiment =
-		 * expressRankings.get(ee);
-		 * 
-		 * Iterator<Gene> gItr = genes.iterator(); Iterator<Gene> pItr =
-		 * pars.iterator();
-		 * 
-		 * Gene g, p;
-		 * 
-		 * 
-		 * //for ( Gene g : expressRankings.get(ee).keySet() ) { while
-		 * (gItr.hasNext()) { g = gItr.next(); p = pItr.next();
-		 */
-
-		// use getRanks function to map genes to experiments
-		Map<ExpressionExperiment, Map<Gene, Map<DesignElement, Double[]>>> expressRankings = processedExpressionDataVectorService
-				.getRanksProbes(eeCol, allProbesGenes);
-		// Map<ExpressionExperiment, Map<Gene, Map<DesignElement,Double[]>>>
-		// expressRankings = new HashMap<ExpressionExperiment, Map<Gene,
-		// Map<DesignElement,Double[]>>>();
-
-		// need to map experiments to genes to calculate max/mean across
-		// experiments
-		Map<Gene, Double[]> allGeneRankings = new HashMap<Gene, Double[]>();
-		Map<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
-
-		// Map<Gene, Map<DesignElement, Collection<Double>>>
-		// allProbeRankingsMeanrank = new HashMap<Gene,
-		// Map<DesignElement,Collection<Double>>>();
-		// Map<Gene, Map<DesignElement, Collection<Double>>>
-		// allProbeRankingsMaxrank = new HashMap<Gene,
-		// Map<DesignElement,Collection<Double>>>();
-
-		// Contains all the data for Genes and Pars
-		Map<Gene, Map<DesignElement, Collection<Double[]>>> allGeneProbeRankings = new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
-		Map<Gene, Map<DesignElement, Collection<Double[]>>> allPARProbeRankings = new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
-
-		for (ExpressionExperiment ee : expressRankings.keySet()) {
-			Map<Gene, Map<DesignElement, Double[]>> expressRankingsGene = expressRankings
-					.get(ee);
-
-			Iterator<Gene> gItr = genes.iterator();
-			Iterator<Gene> pItr = pars.iterator();
-
-			Gene gene, par;
-
-			// for ( Gene g : expressRankingsGene.keySet() ) {
-			while (gItr.hasNext()) {
-				gene = gItr.next();
-				par = pItr.next();
-
-				if ((!expressRankingsGene.containsKey(gene))
-						|| (!expressRankingsGene.containsKey(par)))
-					continue;
-
-				Map<DesignElement, Double[]> expressRankingsGeneCompseq = expressRankingsGene
-						.get(gene);
-				Map<DesignElement, Double[]> expressRankingsPARCompseq = expressRankingsGene
-						.get(par);
-
-				// take all the samples for that gene in this experiment
-				for (DesignElement de : expressRankingsGeneCompseq.keySet()) {
-
-					// Double d = expressRankings.get(ee).get(g).get(de);
-					Double[] d = expressRankingsGeneCompseq.get(de);
-
-					// subtract this entry from the list of probes, and if
-					// necessary, the entire experiment
-					if (d == null) {
-						// numNullRanks++;
-						// System.out.println("Null rank value "+gene.getId()+",
-						// with probeID: "+ de.getId());
-
-					} else {
-
-						if (!allGeneProbeRankings.containsKey(par)) {
-							allGeneProbeRankings
-									.put(
-											par,
-											new HashMap<DesignElement, Collection<Double[]>>());
-
-							// allProbeRankings.put(g, new
-							// HashMap<DesignElement,Collection<Double>>());
-							// allProbeRankingsMaxrank.put( g, new
-							// HashMap<DesignElement,Collection<Double>>());
-						}
-
-						if (!allGeneProbeRankings.get(par).containsKey(de)) {
-							allGeneProbeRankings.get(par).put(de,
-									new ArrayList<Double[]>());
-							// allProbeRankingsMaxrank.get( g).put(de, new
-							// ArrayList<Double>());
-						}
-
-						allGeneProbeRankings.get(par).get(de).add(d);
-						// allProbeRankingsMaxrank.get( g).get(de).add(d[1]);
-
-						// calculate the maximum and average rankings
-						// maxAndAveRank[1] += d;
-						// if (maxAndAveRank[0] < d) maxAndAveRank[0] = d;
-
-						// allNull = false;
-					}
-
-				}
-
-				// //////////////////////////////////// repeat for pars, doesn't
-				// make sense to do this at probe
-				// level!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				// //////////////////////////////////////////////////
-
-				// check if genes for this experiment are null-ranked. if so,
-				// skip
-				// if (allNull) {
-				// System.out.println("Null: No exps for this gene
-				// "+g.getId()+", exp: "+ ee.getId());
-				// continue;
-				// }
-
-				// maxAndAveRank[1] = maxAndAveRank[1] /
-				// (expressRankings.get(ee).get(g).size() - numNullRanks);
-
-				// update hash of expression levels
-				// if (allGeneRankings.containsKey(g)) {
-				// if (allGeneRankings.get(g)[1] < maxAndAveRank[0])
-				// allGeneRankings.get(g)[1] = maxAndAveRank[0];
-				// allGeneRankings.get(g)[1] += maxAndAveRank[1];
-				//	
-				// geneCounts.get(g)[0]++;
-				// geneCounts.get(g)[1] +=
-				// expressRankings.get(ee).get(g).size();
-				// }
-				// new gene, must create new entities in hash
-				// else {
-				// allGeneRankings.put(g, maxAndAveRank);
-				//	
-				//	
-				// // number of experiments and number samples for this gene
-				// int[] counts = new int[2];
-				// counts[0] = 1;
-				// counts[1] = expressRankings.get(ee).get(g).size();
-				//	
-				// geneCounts.put(g, counts);
-				// }
-
-			}
-		}
-
-		// allProbeRankings.get(g).put(de, new ArrayList<Double>());
-		for (Gene g : allGeneProbeRankings.keySet()) {
-
-			Map<DesignElement, Collection<Double[]>> allProbeRankingsGenes = allGeneProbeRankings
-					.get(g);
-
-			// int numExperiments = geneCounts.get(g)[0];
-			// int numSamples = geneCounts.get(g)[1];
-			//
-			// double maxrank = allGeneRankings.get(g)[0];
-			// double meanrank = allGeneRankings.get(g)[1] / numExperiments;
-			//
-			// //px.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+maxrank);
-			// //pe.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+meanrank);
-
-			for (DesignElement de : allProbeRankingsGenes.keySet()) {
-
-				// element 0 is the mean, element 1 is the max ranking
-
-				// from list of probe expressios, do stats
-
-				int numOfExperiments = allProbeRankingsGenes.get(de).size();
-
-				double valExpMean_RankMean = 0;
-				double valExpMean_RankMax = 0;
-				double valExpMax_RankMean = 0;
-				double valExpMax_RankMax = 0;
-
-				for (Double[] entry : allProbeRankingsGenes.get(de)) {
-
-					// if (entry[0] == null || entry[1] == null) continue;
-
-					double valRankMean = entry[0].doubleValue();
-
-					valExpMean_RankMean += valRankMean;
-					if (valExpMax_RankMean < valRankMean)
-						valExpMax_RankMean = valRankMean;
-
-					double valRankMax = entry[1].doubleValue();
-
-					valExpMean_RankMax += valRankMax;
-					if (valExpMax_RankMax < valRankMax) {
-						valExpMax_RankMax = valRankMax;
-					}
-
-				}
-
-				valExpMean_RankMean = valExpMean_RankMean / numOfExperiments;
-				valExpMean_RankMax = valExpMean_RankMax / numOfExperiments;
-
-				p.println(parFileEntries.get(g.getId()) + "," + de.getId()
-						+ "," + numOfExperiments + "," + valExpMean_RankMean
-						+ "," + valExpMean_RankMax + "," + valExpMax_RankMean
-						+ "," + valExpMax_RankMax);
-
-				// px.println(g.getId()+","+numExperiments+","+numSamples+","+maxrank);
-				// pe.println(g.getId()+","+numExperiments+","+numSamples+","+meanrank);
-			}
-
-		}
-
-	}
-
+	
+	/*
+	 * outputs the ranks for PARs at the probe level.
+	 * 
+	 * Note, this method calls getRanksProbes, which is not in the Gemma
+	 * CVS code base.
+	 * 
+	 */
 	private void outputRankingsProbelevel(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, PrintStream p) {
 
-		// System.out.println("reading probes");
-		// for (ExpressionExperiment e : eeCol) {System.out.println(e.getId());}
-		// System.out.println("Genes");
-		// for (Gene e : pars) {System.out.println(e.getId());}
 
-
-		// RankMethod method;
-		//
-		// // todo: make these boolean
-		// if (rankMethodStr.equalsIgnoreCase("max")) {
-		// method = RankMethod.max;
-		// } else {
-		// method = RankMethod.mean;
-		// }
-
-		// use getRanks function to map genes to experiments
+		// use getRanksProbes function to map genes to experiments
 		Map<ExpressionExperiment, Map<Gene, Map<DesignElement, Double[]>>> expressRankings = processedExpressionDataVectorService
 				.getRanksProbes(eeCol, pars);
-		// Map<ExpressionExperiment, Map<Gene, Map<DesignElement,Double[]>>>
-		// expressRankings = new HashMap<ExpressionExperiment, Map<Gene,
-		// Map<DesignElement,Double[]>>>();
-		// Map<ExpressionExperiment, Map<Gene, Collection<Double>>>
-		// expressRankings =
-		// processedExpressionDataVectorService.getRanks(eeCol, pars,
-		// RankMethod.mean);
 
-		// Map<ExpressionExperiment, Map<Gene, Collection<Double>>>
-		// expressRankings =
-		// processedExpressionDataVectorService.getRanks(eeCol, pars, method);
-
-		// need to map experiments to genes to calculate max/mean across
-		// experiments
+		// need to map experiments to genes to calculate max/mean across experiments
 		Map<Gene, Double[]> allGeneRankings = new HashMap<Gene, Double[]>();
 		Map<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
 
-		// Map<Gene, Map<DesignElement, Collection<Double>>>
-		// allProbeRankingsMeanrank = new HashMap<Gene,
-		// Map<DesignElement,Collection<Double>>>();
-		// Map<Gene, Map<DesignElement, Collection<Double>>>
-		// allProbeRankingsMaxrank = new HashMap<Gene,
-		// Map<DesignElement,Collection<Double>>>();
-		Map<Gene, Map<DesignElement, Collection<Double[]>>> allProbeRankings = new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
-		// Map<Gene, Map<DesignElement,Integer>> probeCounts = new HashMap<Gene,
-		// Map<DesignElement,Integer>>();
 
-		// if (expressRankings.keySet().isEmpty()) {
-		// System.out.println("Batch is empty");
-		// }
+		Map<Gene, Map<DesignElement, Collection<Double[]>>> allProbeRankings = 
+			new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
+
+		
+		// go through the information that getRanksProbes returned
 		for (ExpressionExperiment ee : expressRankings.keySet()) {
-			// System.out.println(ee.getId());
-			Map<Gene, Map<DesignElement, Double[]>> expressRankingsGene = expressRankings
-					.get(ee);
+			Map<Gene, Map<DesignElement, Double[]>> expressRankingsGene = expressRankings.get(ee);
 			for (Gene g : expressRankingsGene.keySet()) {
-				// System.out.println(ee.getId()+"t"+g.getId());
-				Map<DesignElement, Double[]> expressRankingsGeneCompseq = expressRankingsGene
-						.get(g);
+				Map<DesignElement, Double[]> expressRankingsGeneCompseq = expressRankingsGene.get(g);
 
 				Collection<DesignElement> cde;
 
-				// Add filter here to obtain only unique probes
+				// Add filter here to obtain only unique probes - if user requests it
 				if (checkUniqueProbeMappings) {
-					// System.out.println("checking probe mappings");
 					Collection<CompositeSequence> csCasted = new ArrayList<CompositeSequence>();
 
 					// cast all composite sequences as design elements
 					for (DesignElement de : expressRankingsGeneCompseq.keySet()) {
-						// System.out.println("casting de's: " + de.getId());
 						csCasted.add((CompositeSequence) de);
 					}
 
@@ -1620,174 +1163,61 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 						int numLocations = gws.get(cs).keySet().size();
 						if (numLocations == 1) {
-							// System.out.println("CS unique! "+cs.getId());
+							// CS is unique
 							cde.add(cs);
 						} else {
-							// System.out.println("CS is not unique!
-							// "+cs.getId() +"\tTotal Locations: "+
-							// numLocations);
+							// CS non-unique
 						}
-
-						// System.out.println(cs);
-						// for (PhysicalLocation pl : gws.get(cs).keySet()) {
-						// //System.out.println("\t"+pl);
-						// for (BlatAssociation ba : gws.get(cs).get(pl)) {
-						// blatAssociationService.thaw(ba);
-						// System.out.println("\t\t"+ba);
-						// }
-						// }
 					}
-
-					// cccz.add(cz);
-					// cccz.add(compositeSequenceService.load(new
-					// Long(2365242)));
-					// cccz.add(compositeSequenceService.load(new
-					// Long(406118)));
-					// Map<CompositeSequence, Map<PhysicalLocation,
-					// Collection<BlatAssociation>>> ddd =
-					// compositeSequenceService.getGenesWithSpecificity(cccz);
-					// compositeSequenceService.get
-
-					// for (CompositeSequence cs : ddd.keySet()) {
-					// System.out.println(cs);
-					// for (PhysicalLocation pl : ddd.get(cs).keySet()) {
-					// System.out.println("\t"+pl);
-					// for (BlatAssociation ba : ddd.get(cs).get(pl)) {
-					// blatAssociationService.thaw(ba);
-					// System.out.println("\t\t"+ba);
-					// }
-					// }
-					// }
 
 				}
 
+				// don't filter for only unique probes
 				else {
 					cde = expressRankingsGeneCompseq.keySet();
 				}
 
-				// double[] maxAndAveRank = new double[2];
-				// maxAndAveRank[0] = 0; // max
-				// maxAndAveRank[1] = 0; // mean
-
-				// int numNullRanks = 0; // keep track of how many null rankings
-				// there are
-				// boolean allNull = true;
-
-				// for ( Double d : expressRankings.get(ee).get(g) ) {
-				// for ( DesignElement de :
-				// expressRankings.get(ee).get(g).keySet() ) {
+				
 				for (DesignElement de : cde) {
-					// System.out.println("Checking DE: " + de.getId());
-					// if (checkUniqueProbeMappings) {
-					// CompositeSequence cse = (CompositeSequence) de;
-					//						
-					// Map<CompositeSequence, Map<PhysicalLocation,
-					// Collection<BlatAssociation>>> ddd =
-					// compositeSequenceService.getGenesWithSpecificity(cse);
-					// }
-
-					// Double d = expressRankings.get(ee).get(g).get(de);
 					Double[] d = expressRankingsGeneCompseq.get(de);
 
 					// subtract this entry from the list of probes, and if
 					// necessary, the entire experiment
 					if (d == null) {
-						// numNullRanks++;
-						// System.out.println("Null rank value "+g.getId()+",
-						// with probeID: "+ de.getId());
-
+						// Null rank value - just skip
 					} else {
 
-						// System.out.println(ee.getId()+"\t"+g.getId()+"\t"+d[0]);
 						if (!allProbeRankings.containsKey(g)) {
-							allProbeRankings
-									.put(
+							allProbeRankings.put(
 											g,
 											new HashMap<DesignElement, Collection<Double[]>>());
 
-							// allProbeRankings.put(g, new
-							// HashMap<DesignElement,Collection<Double>>());
-							// allProbeRankingsMaxrank.put( g, new
-							// HashMap<DesignElement,Collection<Double>>());
 						}
 
 						if (!allProbeRankings.get(g).containsKey(de)) {
 							allProbeRankings.get(g).put(de,
 									new ArrayList<Double[]>());
-							// allProbeRankingsMaxrank.get( g).put(de, new
-							// ArrayList<Double>());
 						}
 
 						allProbeRankings.get(g).get(de).add(d);
-						// allProbeRankingsMaxrank.get( g).get(de).add(d[1]);
 
-						// calculate the maximum and average rankings
-						// maxAndAveRank[1] += d;
-						// if (maxAndAveRank[0] < d) maxAndAveRank[0] = d;
-
-						// allNull = false;
 					}
-
 				}
 
-				// check if genes for this experiment are null-ranked. if so,
-				// skip
-				// if (allNull) {
-				// System.out.println("Null: No exps for this gene
-				// "+g.getId()+", exp: "+ ee.getId());
-				// continue;
-				// }
-
-				// maxAndAveRank[1] = maxAndAveRank[1] /
-				// (expressRankings.get(ee).get(g).size() - numNullRanks);
-
-				// update hash of expression levels
-				// if (allGeneRankings.containsKey(g)) {
-				// if (allGeneRankings.get(g)[1] < maxAndAveRank[0])
-				// allGeneRankings.get(g)[1] = maxAndAveRank[0];
-				// allGeneRankings.get(g)[1] += maxAndAveRank[1];
-				//	
-				// geneCounts.get(g)[0]++;
-				// geneCounts.get(g)[1] +=
-				// expressRankings.get(ee).get(g).size();
-				// }
-				// new gene, must create new entities in hash
-				// else {
-				// allGeneRankings.put(g, maxAndAveRank);
-				//	
-				//	
-				// // number of experiments and number samples for this gene
-				// int[] counts = new int[2];
-				// counts[0] = 1;
-				// counts[1] = expressRankings.get(ee).get(g).size();
-				//	
-				// geneCounts.put(g, counts);
-				// }
 
 			}
 		}
 
-		// allProbeRankings.get(g).put(de, new ArrayList<Double>());
+		// go through the data, calculate the rank information and print out to file
 		for (Gene g : allProbeRankings.keySet()) {
 
 			Map<DesignElement, Collection<Double[]>> allProbeRankingsGenes = allProbeRankings
 					.get(g);
 
-			// int numExperiments = geneCounts.get(g)[0];
-			// int numSamples = geneCounts.get(g)[1];
-			//
-			// double maxrank = allGeneRankings.get(g)[0];
-			// double meanrank = allGeneRankings.get(g)[1] / numExperiments;
-			//
-			// //px.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+maxrank);
-			// //pe.println(parFileEntries.get(g.getId())+","+numExperiments+","+numSamples+","+meanrank);
-
 			for (DesignElement de : allProbeRankingsGenes.keySet()) {
 
 				// element 0 is the mean, element 1 is the max ranking
-
 				// from list of probe expressios, do stats
-
 				int numOfExperiments = allProbeRankingsGenes.get(de).size();
 
 				double valExpMean_RankMean = 0;
@@ -1795,9 +1225,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				double valExpMax_RankMean = 0;
 				double valExpMax_RankMax = 0;
 
+				// calculate the mean rannkings
 				for (Double[] entry : allProbeRankingsGenes.get(de)) {
-
-					// if (entry[0] == null || entry[1] == null) continue;
 
 					double valRankMean = entry[0].doubleValue();
 
@@ -1824,15 +1253,16 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 						+ "," + valExpMean_RankMax + "," + valExpMax_RankMean
 						+ "," + valExpMax_RankMax);
 
-				// px.println(g.getId()+","+numExperiments+","+numSamples+","+maxrank);
-				// pe.println(g.getId()+","+numExperiments+","+numSamples+","+meanrank);
 			}
 
 		}
 
 	}
 
-	// the original - look at PARs/Genes as a whole, not distinguishing probes
+	/*
+	 * the original method - get the rankings for PARs/Genes as a whole,
+	 * not distinguishing probes
+	 */
 	private void outputRankings(Collection<ExpressionExperiment> eeCol,
 			Collection<Gene> pars, PrintStream px, PrintStream pe,
 			String rankMethodStr) {
@@ -1856,15 +1286,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		HashMap<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
 
 		for (ExpressionExperiment ee : expressRankings.keySet()) {
-System.out.println(ee.getId());
 			for (Gene g : expressRankings.get(ee).keySet()) {
 				
 				double[] maxAndAveRank = new double[2];
 				maxAndAveRank[0] = 0; // max
 				maxAndAveRank[1] = 0; // mean
 
-				int numNullRanks = 0; // keep track of how many null rankings
-										// there are
+				int numNullRanks = 0; // keep track of how many null rankings there are
 				boolean allNull = true;
 
 				for (Double d : expressRankings.get(ee).get(g)) {
@@ -1873,8 +1301,6 @@ System.out.println(ee.getId());
 					// necessary, the entire experiment
 					if (d == null) {
 						numNullRanks++;
-						// System.out.println("Null rank value "+g.getId()+",
-						// numNullRanks: "+ numNullRanks);
 
 					} else {
 
@@ -1888,11 +1314,8 @@ System.out.println(ee.getId());
 
 				}
 
-				// check if genes for this experiment are null-ranked. if so,
-				// skip
+				// check if genes for this experiment are null-ranked. if so, skip
 				if (allNull) {
-					// System.out.println("Null: No exps for this gene
-					// "+g.getId()+", exp: "+ ee.getId());
 					continue;
 				}
 
@@ -1941,13 +1364,14 @@ System.out.println(ee.getId());
 			pe.println(label + "," + numExperiments + "," + numSamples + ","
 					+ meanrank);
 
-			// px.println(g.getId()+","+numExperiments+","+numSamples+","+maxrank);
-			// pe.println(g.getId()+","+numExperiments+","+numSamples+","+meanrank);
 
 		}
 
 	}
 
+	/*
+	 * Return a map for column name to index number
+	 */
 	private static HashMap getIndices(String header) {
 		String[] labels = header.trim().split("\t");
 		HashMap<String, Integer> hash = new HashMap<String, Integer>(
@@ -1980,7 +1404,6 @@ System.out.println(ee.getId());
 		BufferedReader in;
 		Collection<String[]> fRecords = new ArrayList<String[]>();
 		HashMap fHash = null;
-		String[] fHeaders = null;
 
 		String header;
 
@@ -1989,7 +1412,6 @@ System.out.println(ee.getId());
 			String line;
 			header = in.readLine();
 			fHash = getIndices(header);
-			fHeaders = header.trim().split("\t");
 
 			while ((line = in.readLine()) != null) {
 				if (line.startsWith("#"))
@@ -2013,18 +1435,27 @@ System.out.println(ee.getId());
 		}
 
 		headerLookup = fHash;
-//		headers = fHeaders;
 		records = fRecords;
 	}
 
-	// reads a par/gene/experiments file and saves the results to hash
+	/*
+	 * Reads a par/gene/experiments file and saves the results to hash
+	 * this file maps each PAR to a gene and a list of experiments that has both
+	 * 
+	 * The format should by the like the following
+	 * ParID	GeneID	Experiments
+	 * 1126681	12860	441,442,443,445,519,521
+	 * 1130907	166867	443
+	 * 1134105	7379	442
+	 * 1134841	14121	442
+	 * 1135031	119682	441,442,519,521
+	 */
 	// parToCoExps
 	private static void readpargeneFile(String inFile) {
 
 		parToCoExps = new HashMap<Long, long[]>();
 
 		BufferedReader in;
-//		Collection<String[]> fRecords = new ArrayList<String[]>();
 
 		String header;
 
@@ -2037,7 +1468,6 @@ System.out.println(ee.getId());
 				if (line.startsWith("#"))
 					continue;
 				String[] s = line.trim().split("\t");
-				// fRecords.add(s);
 				String[] expIdsStr = s[2].split(",");
 				long[] expIds = new long[expIdsStr.length];
 
@@ -2066,9 +1496,20 @@ System.out.println(ee.getId());
 	}
 	
 	/*
+	 * UNSTABLE
+	 * 
 	 * This method outputs the pairwise correlations between pars and genes
+	 * The correlations are calculated here using Pearson.
+	 * 
+	 * This loads all experiments at once, therefore it calls the database
+	 * less but this method crashes very frequently!!!!!
+	 * 
+	 * Note: this method requires that a PAR/gene/experiment map file be used
+	 * Note: this method takes a LONG time to finish (order of 10+ days) and
+	 * it might run out of memory.  May need to split into other jobs or resume
+	 * from previous runs.
 	 */
-	private void outputAllPARGeneCoexpressionCalculated(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
+	private void outputAllPARGeneCoexpressionCalculated_unstable(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
 		Iterator<Gene> pItr = pars.iterator();
 		Iterator<Gene> gItr = genes.iterator();
 
@@ -2105,34 +1546,23 @@ System.out.println(ee.getId());
 			Map<Long, Collection<DoubleVectorValueObject>> expParMap  = new HashMap<Long, Collection<DoubleVectorValueObject>>();
 			Map<Long, Collection<DoubleVectorValueObject>> expGeneMap = new HashMap<Long, Collection<DoubleVectorValueObject>>();
 			
-//System.out.println("Calling API");
 			Collection<DoubleVectorValueObject> dvvos = processedExpressionDataVectorService.getProcessedDataArrays(exps, pargene);
-//System.out.println("Finished API");
 			
-			// for ever probe, assign it to either par or gene for the experiment
+			// for every probe, assign it to either par or gene for the experiment
 			for (DoubleVectorValueObject dvvo : dvvos) {
 				ExpressionExperiment ee = dvvo.getExpressionExperiment();
 				expressionExperimentService.thawLite(ee);
 				Long eeId = new Long(ee.getId());
 				ee = null;
 				
-//System.out.println(ee.getId());
-				//try {
-				//	expressionExperimentService.thaw(ee);
-				//} catch (ubic.gemma.model.expression.experiment.ExpressionExperimentServiceException e) {
-				//	System.out.println("Thaw failed for " + ee);
-				//	continue;
-				//}
-//System.out.println("Dvvo" + dvvo.toString());
-				
 				Collection<Gene> genelist = dvvo.getGenes();
 				
+				// go through the gene list to determine if PAR or gene and put into lists
+				// the data returned by getProcessedDataArrays does not tell us this directly
 				boolean isParGene = false;
 				for (Gene g: genelist) {
-//System.out.println("\t" + g.getId() + "\t" + g.getName());
 					long id = g.getId();
 					if (id == gene.getId()) {
-						//geneData.put(dvvo.getDesignElement(), dvvo.getData());
 						if (!expGeneMap.containsKey(eeId)) {
 							expGeneMap.put(eeId, new ArrayList<DoubleVectorValueObject>());
 						}
@@ -2160,6 +1590,7 @@ System.out.println(ee.getId());
 				
 			}
 			
+			// go through list of PAR/gene 
 			for (Long eeId: expParMap.keySet()) {
 				
 				
@@ -2169,21 +1600,18 @@ System.out.println(ee.getId());
 					continue;
 				}
 				
-				//iterate through the pars
+				//iterate through the par probes
 				for (DoubleVectorValueObject parDvvo : expParMap.get(eeId)) {
 					DesignElement pd = parDvvo.getDesignElement();
 					
-					//double[] pdata = parData.get(pd);
 					double[] pdata = parDvvo.getData();
-					
 					int parProbeMappings  = parDvvo.getGenes().size();
 					
 					
-					//iterate through the genes
+					//iterate through the gene probes
 					for (DoubleVectorValueObject geneDvvo : expGeneMap.get(eeId)) {
 						DesignElement gd = geneDvvo.getDesignElement();
 						
-						//double[] gdata = geneData.get(gd);
 						double[] gdata = geneDvvo.getData();
 						
 						int geneProbeMappings = geneDvvo.getGenes().size();
@@ -2202,17 +1630,15 @@ System.out.println(ee.getId());
 							badIndices[i] = false;
 						}
 						
-						// check data integrity - remove missing values
-						//boolean integrity = true;
+						// check data integrity - tag if missing value in column
 						for (int i=0; i<pdata.length; i++) {
 							if ((new Double(pdata[i])).isNaN() || (new Double(gdata[i])).isNaN()) {
 								badIndices[i] = true;
 								numbadIndices++;
-								//integrity = false;
-								//break;
 							}
 						}
 						
+						// make sure there are at least 3 samples in vector
 						if (pdata.length - numbadIndices < 3) {
 							System.out.println("Not enough samples ("
 									+ (pdata.length - numbadIndices)
@@ -2220,13 +1646,13 @@ System.out.println(ee.getId());
 									+pd.getId()+"\tGeneProbeID:"+gd.getId());
 						}
 						
+						// remove bad vector entries from both if either is labeled as bad
 						if (0 < numbadIndices) {
 							double[] newpdata = new double[pdata.length - numbadIndices];
 							double[] newgdata = new double[pdata.length - numbadIndices];
 							
 							int j=0;
 							for (int i=0; i<pdata.length; i++) {
-								//System.out.println(i+"--"+j+"__"+badIndices[i]);
 								if (badIndices[i]) {
 									//System.out.println("skipping...");
 									//continue;
@@ -2240,8 +1666,6 @@ System.out.println(ee.getId());
 							pdata = newpdata;
 							gdata = newgdata;
 						}
-						
-						
 						
 						
 						// do co-expression with these two pairs!
@@ -2258,15 +1682,12 @@ System.out.println(ee.getId());
 								+ "," + gd.getId()
 								+ "," + corr
 								);
-
-
 						
 					}
 					
 					// just to save some memory when finished with this
 					expParMap.put(eeId, null);
 					
-					//System.out.println();
 				}
 			}
 		}
@@ -2277,13 +1698,21 @@ System.out.println(ee.getId());
 	}
 	
 	
-	
 	/*
+	 * STABLE
+	 * 
 	 * This method outputs the pairwise correlations between pars and genes
-	 * this was found to be too slow when calling on getProcessedDataArrays for each experiment.  It should
-	 * input all experiments instead of feeding them one by one
+	 * The correlations are calculated here using Pearson.
+	 * 
+	 * This loads all the data one experiment at a time.  It is slower than the
+	 * other method but it is much more stable.
+	 * 
+	 * Note: this method requires that a PAR/gene/experiment map file be used
+	 * Note: this method takes a LONG time to finish (order of 10+ days) and
+	 * it might run out of memory.  May need to split into other jobs or resume
+	 * from previous runs.
 	 */
-	private void out_pargene_allcoexpressions_orig_slow(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
+	private void outputAllPARGeneCoexpressionCalculated(Collection<Gene> pars, Collection<Gene> genes, PrintStream pap) {
 		Iterator<Gene> pItr = pars.iterator();
 		Iterator<Gene> gItr = genes.iterator();
 
@@ -2299,21 +1728,9 @@ System.out.println(ee.getId());
 			}
 
 			Collection<ExpressionExperiment> exps = new ArrayList<ExpressionExperiment>();
-			//Collection<BioAssaySet> exps2 = new ArrayList<BioAssaySet>();
-
 			for (int i = 0; i < expIds.length; i++) {
-				// gene2GeneCoexpressionService.
-				// GeneCoexpressionAnalysis gca;
-				// Gene2GeneCoexpression g = getNewGGCOInstance();
-				// g.setFirstGene(par);
-				// g.setSecondGene(gene);
-				// Double d = g.getPvalue();
-				// if (d==null) d = new Double(-5);
 				exps.add(expressionExperimentService.load(expIds[i]));
-				//exps2.add((BioAssaySet) expressionExperimentService
-				//		.load(expIds[i]));
 			}
-			// System.out.println();
 
 			Collection<Gene> pargene = new ArrayList<Gene>();
 			pargene.add(par);
@@ -2328,34 +1745,7 @@ System.out.println(ee.getId());
 				continue;
 			}
 			
-//			Collection<ExpressionExperiment> ees = new ArrayList<ExpressionExperiment>();
-			//Collection<Gene> gs = new ArrayList<Gene>();
-			
-			//Gene pp = parService.load((long) 1126681);
-			//Gene gg = parService.load((long) 12860);
-			
-			// just a random par/gene pair
-			//ees.add(expressionExperimentService.load((long) 441));
-			//ees.add(expressionExperimentService.load((long) 442));
-			//gs.add(pp);
-			//gs.add(gg);
-			
-			// has link data
-			//ees.add(expressionExperimentService.load((long) 1));
-			//ees.add(expressionExperimentService.load((long) 4));
-			//ees.add(expressionExperimentService.load((long) 111));
-			//ees.add(expressionExperimentService.load((long) 468));
-			//ees.add(expressionExperimentService.load((long) 440));
-			//gs.add(parService.load((long) 1445507));
-			//gs.add(parService.load((long) 442313));
-			// ---> weird because these probes maps to MANY other genes (like 10 to 30+)
-			
-			
-			// just a random par/gene pair
-			//ees.add(expressionExperimentService.load((long) 167));
-			//gs.add(parService.load((long) 1186837));
-			//gs.add(parService.load((long) 4641158));
-			
+			// for each experiment, call getProcessedDataArrays
 			for (ExpressionExperiment ee: exps) {
 				Collection<ExpressionExperiment> ees = new ArrayList<ExpressionExperiment>();
 				ees.add(ee);
@@ -2368,15 +1758,13 @@ System.out.println(ee.getId());
 				
 				Map<DesignElement, Integer> probemappingCount = new HashMap<DesignElement, Integer>();
 				
+				// separate data into PAR or gene - the returned object does not
+				// differenciate which probes belong to PAR or gene
 				for (DoubleVectorValueObject dvvo : dvvos) {
-					//System.out.println(">>");
-					//System.out.println("Probe: " + dvvo.getDesignElement().getName() +" - "+ dvvo.getDesignElement().getId());
 					Collection<Gene> genelist = dvvo.getGenes();
 					
-					//System.out.println("Genes:");
 					boolean isParGene = false;
 					for (Gene g: genelist) {
-						//System.out.println("\t" + g.getId() + "\t" + g.getName());
 						long id = g.getId();
 						if (id == gene.getId()) {
 							geneData.put(dvvo.getDesignElement(), dvvo.getData());
@@ -2417,13 +1805,10 @@ System.out.println(ee.getId());
 						}
 						
 						// check data integrity - remove missing values
-						//boolean integrity = true;
 						for (int i=0; i<pdata.length; i++) {
 							if ((new Double(pdata[i])).isNaN() || (new Double(gdata[i])).isNaN()) {
 								badIndices[i] = true;
 								numbadIndices++;
-								//integrity = false;
-								//break;
 							}
 						}
 						
@@ -2440,51 +1825,17 @@ System.out.println(ee.getId());
 							
 							int j=0;
 							for (int i=0; i<pdata.length; i++) {
-								//System.out.println(i+"--"+j+"__"+badIndices[i]);
 								if (badIndices[i]) {
-									//System.out.println("skipping...");
-									//continue;
 								} else {
 									newpdata[j] = pdata[i];
 									newgdata[j] = gdata[i];
 									j++;
 								}
 							}
-							/*
-							System.out.println("Old");
-							for (int i=0; i<pdata.length; i++) {
-								System.out.print("\t"+pdata[i]);
-							}
-							System.out.println();
-							for (int i=0; i<pdata.length; i++) {
-								System.out.print("\t"+gdata[i]);
-							}
-							System.out.println();
-							for (int i=0; i<pdata.length; i++) {
-								System.out.print("\t"+badIndices[i]);
-							}
-							System.out.println();
-							
-							System.out.println("New");
-							for (int i=0; i<newpdata.length; i++) {
-								System.out.print("\t"+newpdata[i]);
-							}
-							System.out.println();
-							for (int i=0; i<newpdata.length; i++) {
-								System.out.print("\t"+newgdata[i]);
-							}
-							System.out.println();
-							System.exit(0);*/
 							pdata = newpdata;
 							gdata = newgdata;
 						}
 						
-						
-						//if (integrity != true) {
-						//	System.out.println("Dataset cannot be used, has missing values: ParProbeID:"
-						//		+pd.getId()+"\tGeneProbeID:"+gd.getId());
-						//	continue;
-						//}
 						
 						
 						// do co-expression with these two pairs!
@@ -2492,8 +1843,6 @@ System.out.println(ee.getId());
 						DoubleArrayList gdal = new DoubleArrayList(gdata);
 						double corr = ubic.basecode.math.DescriptiveWithMissing.correlation(pdal, gdal);
 						
-						//System.out.println(pd.getId() + "\t" + gd.getId()+ "\t" + corr);
-						//NumGenesMapProbe,ParProbe,GeneProbe,Pearson");
 						int parProbeMappings  = probemappingCount.get(pd).intValue();
 						int geneProbeMappings = probemappingCount.get(gd).intValue();
 						
@@ -2512,7 +1861,6 @@ System.out.println(ee.getId());
 					}
 					
 					
-					//System.out.println();
 				}
 			}
 		}
@@ -2522,6 +1870,9 @@ System.out.println(ee.getId());
 
 	}
 	
+	/*
+	 * Loads experiments from a list on a file
+	 */
 	private Collection<ExpressionExperiment> loadExpressionExperimentsByFile (String ExperimentListFile) {
 
 		Collection<ExpressionExperiment> eeCol = new ArrayList<ExpressionExperiment>();
