@@ -9,6 +9,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -27,6 +28,7 @@ import cern.colt.list.DoubleArrayList;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionValueObject;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
+import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
@@ -38,6 +40,7 @@ import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PhysicalLocation;
 //import ubic.gemma.model.genome.PhysicalLocationService;
@@ -78,6 +81,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	private boolean checkAllPairsCoexp = false;			// 
 	
 	private boolean checkExperimentTypes = false;		// 
+	private boolean checkTroubledExperiments = false;	//
 	private boolean checkUniqueProbeMappings = false;	// 
 
 
@@ -104,71 +108,88 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 	@SuppressWarnings("static-access")
 	@Override
 	protected void buildOptions() {
-		// TODO Auto-generated method stub
 
 		Option taxonOption = OptionBuilder.hasArg().isRequired()
 				.withDescription("taxon name").withDescription("taxon to use")
 				.withLongOpt("taxon").create('t');
 		addOption(taxonOption);
 
-		Option inFileOption = OptionBuilder.hasArg().withDescription(
-				"infile name").withDescription("file to read").withLongOpt(
+		Option inFileOption = OptionBuilder.hasArg()
+				.withDescription("infile name").withDescription("file to read").withLongOpt(
 				"inFile").create('i');
 		addOption(inFileOption);
 
-		Option outFileDirOption = OptionBuilder.hasArg().withDescription(
-				"outdirectory name").withDescription("directory to write to")
+		Option outFileDirOption = OptionBuilder.hasArg()
+				.withDescription("outdirectory name").withDescription("directory to write to")
 				.withLongOpt("outFileDir").create('o');
 		addOption(outFileDirOption);
 
-		Option pargeneexpFileOption = OptionBuilder.hasArg().withDescription(
-				"PAR-gene-experiment map filename")
+		Option pargeneexpFileOption = OptionBuilder.hasArg()
+				.withDescription("PAR-gene-experiment map filename")
 				.withDescription("file of Par/Gene/Exps to read").withLongOpt(
 				"pargeneexpFile").create('p');
 		addOption(pargeneexpFileOption);
 		
-		Option ExperimentListFileOption = OptionBuilder.hasArg().withDescription(
-				"experiment list filename")
+		Option ExperimentListFileOption = OptionBuilder.hasArg()
+				.withDescription("experiment list filename")
 				.withDescription("file of expression experiments to read").withLongOpt(
 				"pargeneexpFile").create('e');
 		addOption(ExperimentListFileOption);
 		
-		Option outputStemOption = OptionBuilder.hasArg().withDescription(
-				"output file stem name")
+		Option outputStemOption = OptionBuilder.hasArg()
+				.withDescription("output file stem name")
 				.withDescription("output file stem name").withLongOpt(
 				"stem").create('s');
 		addOption(outputStemOption);
 
-		Option checkParOption = OptionBuilder.create("checkPAR");
+		Option checkParOption = OptionBuilder
+				.withDescription("PAR rankings")
+				.create("checkPAR");
 		addOption(checkParOption);
 
-		Option checkPARprobeOption = OptionBuilder.create("checkPARprobe");
+		Option checkPARprobeOption = OptionBuilder
+				.withDescription("PAR probe level rankings")
+				.create("checkPARprobe");
 		addOption(checkPARprobeOption);
 
-		Option checkGeneCorankOption = OptionBuilder.create("checkGeneCorank");
+		Option checkGeneCorankOption = OptionBuilder
+				.withDescription("PAR and Gene rankings")
+				.create("checkGeneCorank");
 		addOption(checkGeneCorankOption);
 
-		Option checkGeneRankOption = OptionBuilder.create("checkGeneRank");
+		Option checkGeneRankOption = OptionBuilder
+				.withDescription("Gene rankings")
+				.create("checkGeneRank");
 		addOption(checkGeneRankOption);
 
 		Option checkExperimentTypesOption = OptionBuilder
+				.withDescription("Prints detailed information on experiments")
 				.create("checkExperimentTypes");
 		addOption(checkExperimentTypesOption);
+		
+		Option checkTroubledExperimentsOption = OptionBuilder
+				.withDescription("Determines which experiments are troubled")
+				.create("checkTroubledExperiments");
+		addOption(checkTroubledExperimentsOption);
 
 		Option checkUniqueProbeMappingsOption = OptionBuilder
+				.withDescription("[Optional: used with PARprobe]")
 				.create("checkUniqueProbeMappings");
 		addOption(checkUniqueProbeMappingsOption);
 		
 		Option checkAllCoexpOption = OptionBuilder
-		.create("checkAllCoexp");
+				.withDescription("Co-expression links for all PARs")
+				.create("checkAllCoexp");
 		addOption(checkAllCoexpOption);
 		
 		Option checkAllCoexpInDBOption = OptionBuilder
-		.create("checkAllCoexpInDB");
+				.withDescription("Co-expression links in DB for PAR/gene pairs")
+				.create("checkAllCoexpInDB");
 		addOption(checkAllCoexpInDBOption);
 
 		Option checkAllPairsCoexpOption = OptionBuilder
-		.create("checkAllPairsCoexp");
+				.withDescription("All co-expression values for PAR/gene pairs")
+				.create("checkAllPairsCoexp");
 		addOption(checkAllPairsCoexpOption);
 
 		
@@ -182,23 +203,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		this.parService = (GeneService) this.getBean("geneService");
 
 		/*
-		 * Add processing o
+		 * Process arguments
 		 */
 
+		// File IO
 		if (hasOption("i")) {
 			inFile = getOptionValue("i");
-
-			// if ( == null) {
-			// log.error("ERROR: Cannot find file " + inFile);
-			// }
-		}
-
-		if (hasOption("o")) {
-			outFileDir = getOptionValue("o");
-
-			// if ( == null) {
-			// log.error("ERROR: Cannot find directory " + outFileDir);
-			// }
 		}
 
 		if (hasOption("p")) {
@@ -207,6 +217,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		
 		if (hasOption("e")) {
 			ExperimentListFile = getOptionValue("e");
+		}
+		
+		if (hasOption("o")) {
+			outFileDir = getOptionValue("o");
 		}
 		
 		if (hasOption("s")) {
@@ -221,19 +235,19 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			}
 		}
 
-		this.checkPAR = this.hasOption("checkPAR");
+		
 		this.checkPARprobe = this.hasOption("checkPARprobe");
+		this.checkUniqueProbeMappings = this.hasOption("checkUniqueProbeMappings");
+		this.checkPAR = this.hasOption("checkPAR");
 		this.checkGeneCorank = this.hasOption("checkGeneCorank");
 		this.checkGeneRank = this.hasOption("checkGeneRank");
-
-		this.checkExperimentTypes = this.hasOption("checkExperimentTypes");
-
-		this.checkUniqueProbeMappings = this
-				.hasOption("checkUniqueProbeMappings");
 		this.checkAllCoexp = this.hasOption("checkAllCoexp");
 		this.checkAllCoexpInDB = this.hasOption("checkAllCoexpInDB");
 		this.checkAllPairsCoexp = this.hasOption("checkAllPairsCoexp");
 		
+		this.checkExperimentTypes = this.hasOption("checkExperimentTypes");
+		this.checkTroubledExperiments = this.hasOption("checkTroubledExperiments");
+
 	}
 
 	@Override
@@ -242,11 +256,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
 		Exception exc = processCommandLine("test", args);
 
+		
+		// get services used
 		this.parService = (GeneService) this.getBean("geneService");
 		this.taxonService = (TaxonService) this.getBean("taxonService");
-		// this.expressionExperimentSetService = (
-		// ExpressionExperimentSetService ) this.getBean(
-		// "expressionExperimentSetService" );
 		this.expressionExperimentService = (ExpressionExperimentService) this
 				.getBean("expressionExperimentService");
 		this.processedExpressionDataVectorService = (ProcessedExpressionDataVectorService) this
@@ -257,33 +270,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				.getBean("arrayDesignService");
 		this.blatAssociationService = (BlatAssociationService) this
 				.getBean("blatAssociationService");
-		// this.gene2GeneCoexpressionService = ( Gene2GeneCoexpressionService )
-		// this.getBean( "gene2GeneCoexpressionService" );
 		this.probe2ProbeCoexpressionService = (Probe2ProbeCoexpressionService) this
 				.getBean("probe2ProbeCoexpressionService");
 
-		// CompositeSequenceService.getGenes or getGenesWithSpecificity.
-		/*
-		 * //CompositeSequence cz = compositeSequenceService.load(new
-		 * Long(2365242)); Collection<CompositeSequence> cccz = new ArrayList<CompositeSequence>();
-		 * //cccz.add(cz); cccz.add(compositeSequenceService.load(new
-		 * Long(2365242))); cccz.add(compositeSequenceService.load(new
-		 * Long(406118))); Map<CompositeSequence, Map<PhysicalLocation,
-		 * Collection<BlatAssociation>>> ddd =
-		 * compositeSequenceService.getGenesWithSpecificity(cccz);
-		 * //compositeSequenceService.get
-		 * 
-		 * for (CompositeSequence cs : ddd.keySet()) { System.out.println(cs);
-		 * for (PhysicalLocation pl : ddd.get(cs).keySet()) {
-		 * System.out.println("\t"+pl); for (BlatAssociation ba :
-		 * ddd.get(cs).get(pl)) { blatAssociationService.thaw(ba);
-		 * System.out.println("\t\t"+ba); } } }
-		 */
-		
-		
-		
-		
 
+		
 		// Load up experiments - all experiments or from a list
 		Collection<ExpressionExperiment> eeCol;
 		if (ExperimentListFile == null) {
@@ -294,6 +285,33 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		System.out.println("Experiments loaded:" + eeCol.size());
 		
 		
+		// test for troubled experiments
+		if (checkTroubledExperiments) {
+			
+			// use expressionexperiment value objects which seem to have the same id as expressionexperiments
+			Collection<Long> ees = new HashSet<Long>();
+			for (ExpressionExperiment ee : eeCol) {
+				ees.add(ee.getId());
+			}
+
+	        //int size = ees.size();
+	        Map<Long, AuditEvent> trouble = expressionExperimentService.getLastTroubleEvent( ees );
+			
+	        System.out.println("Called trouble event");
+	        
+	        for (Long l: ees) {
+	        	AuditEvent ae = trouble.get(l);
+	        	if (ae == null) {
+	        		System.out.println(l +"\tok");
+	        	} else {
+	        		System.out.println(l +"\ttrouble");
+	        	}
+	        }
+	        
+			return null;
+		}
+		
+		
 		// prints out experiment information (exits program when finished)
 		if (checkExperimentTypes) {
 			printExperimentTypes(eeCol);
@@ -301,12 +319,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		}
 		
 		
-		// log.info(taxonService.loadAll());
-		// For my mac
-		// String inFile =
-		// "/Users/mokada/development/PARs/data/human-par-gene-relations.txt";
-		// String outFileDir =
-		// "/Users/mokada/development/PARs/data/outputfiles";
+		
+		
+		
+		// Creates output files
 		int batchSize = 50;
 
 		PrintStream pxx = null; // declare a print stream object
@@ -361,17 +377,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			System.exit(0);
 		}
 
-		// allow a user to enter a filename through the command line
-		// if (0 < args.length && args[0] != null) {
-		// inFile = args[0];
-		// } *** replaced with java options
 
+		
+		// Read PAR file
 		System.out.println("Reading file: " + inFile);
 		readPARFile(inFile);
 		if (pargeneexpFile != null) readpargeneFile(pargeneexpFile);
 
 		// Establish the column numbers
-
 		int ParIDIdx = getIndex("ParID");
 		int ParNameIdx = getIndex("ParName");
 		int ChromIdx = getIndex("Chrom");
@@ -402,12 +415,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		pcA.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,CoexpGeneId,PosCorr,NegCorr");
 		pap.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ExperimentId,NumParMapProbe,NumGenesMapProbe,VectorSize,ParProbe,GeneProbe,Pearson");
 
-		// System.out.println("\n\nExperiments by taxon\n\n");
-		// taxon = taxonService.findByCommonName( "human" );
-		// Add to options
-
 		
-
+		
+		
 		// Get the distribution of ranks for ALL human genes!!!!
 		// ///////////////////////////////////////////////// Start
 		// mess!!!!!!!!!!
@@ -431,7 +441,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		 *  // work with a small batch while (geneItr.hasNext() && 0 < count) {
 		 * 
 		 * Gene g = (Gene) geneItr.next();
-		 *  // TODO: place as log if (g == null) { System.out.println("Gene
 		 * doesn't exist: "+ g.getId()); continue; }
 		 * 
 		 * pars.add(g);
@@ -456,12 +465,18 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		 */
 		// ///////////////////////////////////////////////// End mess!!!!!!!!!!
 
+		
+		
+		// Iterate through the gene list in batches
+		
 		Iterator recordItr = records.iterator();
 		int batch = 0;
 
 		String[] record;
 		while (recordItr.hasNext()) {
 
+			// A map that displays the original input PAR file information for a PAR
+			// eg. parFileEntries(1124999) = "1124999,R49730.par.8.239068.239461,8,239068, ... false,true"
 			parFileEntries = new HashMap<Long, String>(batchSize);
 
 			HashMap<Gene, Gene> parToGene = new HashMap<Gene, Gene>();
@@ -474,24 +489,15 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			while (recordItr.hasNext() && 0 < count) {
 
 				record = (String[]) recordItr.next();
-				// System.out.println(record);
 
 				// accessing data elements
-				int ParID = Integer.parseInt(record[ParIDIdx]);
-				int GeneId = Integer.parseInt(record[GeneIdIdx]);
+				long ParID = Long.decode(record[ParIDIdx]);
+				long GeneId = Long.decode(record[GeneIdIdx]);
 
-				// it's not necessary to parse thees to int/boolean as it'll
-				// printed off to file anyway
 				String ParName = record[ParNameIdx];
 				String Chrom = record[ChromIdx];
-				// int Nuc = Integer.parseInt( record[NucIdx] );
 				String Nuc = record[NucIdx];
 				String GeneSymbol = record[GeneSymbolIdx];
-				// int Distance = Integer.parseInt( record[DistanceIdx] );
-				// boolean GeneContainsPar = Boolean.parseBoolean(
-				// record[GeneContainsParIdx] );
-				// boolean SameStrand = Boolean.parseBoolean(
-				// record[SameStrandIdx] );
 				String Distance = record[DistanceIdx];
 				String GeneContainsPar = record[GeneContainsParIdx];
 				String SameStrand = record[SameStrandIdx];
@@ -500,16 +506,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 						+ Chrom + "," + Nuc + "," + GeneSymbol + "," + Distance
 						+ "," + GeneContainsPar + "," + SameStrand;
 
-				// HashMap<Integer, String> parFileEntries = new
-				// HashMap<Integer, String>(batchSize);
 
-				parFileEntries.put(Long.valueOf(ParID), allEntries); // .put(ParID,
-																		// record);
+				parFileEntries.put(ParID, allEntries);
 
-				Gene par = this.parService.load(Long.valueOf(ParID)); // this.parService.load(ParID);
+				Gene par = this.parService.load(ParID);
 				Gene g = this.parService.load(GeneId);
 
-				// TODO: place as log
 				if (par == null || g == null) {
 					System.out.println("PAR or Gene doesn't exist: " + par
 							+ "\t" + g);
@@ -526,8 +528,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			}
 
 			// print results to file
-
-			
+			/*
 			pxx.println("Batch Number: "+ batch);
 			pxe.println("Batch Number: "+ batch);
 			pex.println("Batch Number: "+ batch);
@@ -543,9 +544,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			pco.println("Batch Number: " + batch);
 			pcA.println("Batch Number: " + batch);
 			pap.println("Batch Number: " + batch);
+			*/
 			
-			// ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank
-
+			
 			batch++;
 
 			pxx.flush();
@@ -564,32 +565,36 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			pcA.flush();
 			pap.flush();
 
+			
+			
+			/*
+			 * Do experiments, depends on which switch is selected
+			 */
+			
+			// PAR rankings at probe level
 			if (checkPARprobe) {
 				outputRankingsProbelevel(eeCol, pars, ppr);
 			}
 
+			// PAR rankings
 			if (checkPAR) {
 				outputRankings(eeCol, pars, pxx, pxe, "max");
 				outputRankings(eeCol, pars, pex, pee, "mean");
 			}
 			
+			// Gene rankings
 			if (checkGeneRank) {
 				outputRankings(eeCol, genes, pxx, pxe, "max");
 				outputRankings(eeCol, genes, pex, pee, "mean");
 			}
 
+			// PAR and Gene rankings together
 			if (checkGeneCorank) {
 				outputPARGeneCorank(eeCol, pars, genes, pgp_xx, pgp_xe, "max");
 				outputPARGeneCorank(eeCol, pars, genes, pgp_ex, pgp_ee, "mean");
-
-				// not working
-				// outputAll_geneCorank(eeCol, pars, genes, pgp_xx);
-
-				// outputAll_geneCorank(eeCol, parToGene, pxx, pxe, "max");
-				// outputAll_geneCorank(eeCol, parToGene, pex, pee, "mean");
 			}
 
-			
+			// PAR-gene co-expression Links found in database
 			if (checkAllCoexpInDB) {
 				//if (parToCoExps != null) {
 				if (pargeneexpFile == null) {
@@ -598,9 +603,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				}
 				//check all coexpressions given a par or look at each par-gene combination
 				outputPARGeneCoexpressionLinks(pars, genes, pco);
-				
 			}
 			
+			
+			// All co-expression between PAR and all genes with Links found in database
 			if (checkAllCoexp) {
 				outputAllGeneCoexpressionLinks(pars, eeCol, 1, pcA);
 			}
@@ -610,11 +616,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					System.out.println("Error, need to supply pargeneexp file");
 					System.exit(0);
 				}
-					
 				outputAllPARGeneCoexpressionCalculated(pars, genes, pap);
 			}
 
 		}
+		
+		
+		
 		pxx.close();
 		pxe.close();
 		pex.close();
@@ -638,11 +646,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		return null;
 	}
 
+	
+	
+	
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		PARMapperAnalyzeCLI p = new PARMapperAnalyzeCLI();
 		Exception e = p.doWork(args);
 		if (e != null) {
@@ -916,7 +926,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				//Map<Gene, CoexpressionCollectionValueObject> 
 				coexp = pca.linkAnalysis(pargene, exps2, stringency, false, false, 0);
 			} catch (java.lang.IndexOutOfBoundsException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 				System.out.println("Error performing linkAnalysis "
 						+ e.getMessage());
@@ -1829,7 +1838,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			String rankMethodStr) {
 
 		RankMethod method;
-
+		
 		// todo: make these boolean
 		if (rankMethodStr.equalsIgnoreCase("max")) {
 			method = RankMethod.max;
@@ -1847,8 +1856,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		HashMap<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
 
 		for (ExpressionExperiment ee : expressRankings.keySet()) {
+System.out.println(ee.getId());
 			for (Gene g : expressRankings.get(ee).keySet()) {
-
+				
 				double[] maxAndAveRank = new double[2];
 				maxAndAveRank[0] = 0; // max
 				maxAndAveRank[1] = 0; // mean
@@ -1991,13 +2001,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			in.close();
 
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + inFile + " not found - "
 					+ e.getMessage());
 			System.exit(0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + inFile + " reads a bit wonky - "
 					+ e.getMessage());
@@ -2044,13 +2052,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			in.close();
 
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + inFile + " not found - "
 					+ e.getMessage());
 			System.exit(0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + inFile + " reads a bit wonky - "
 					+ e.getMessage());
@@ -2541,13 +2547,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			in.close();
 
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + ExperimentListFile + " not found - "
 					+ e.getMessage());
 			System.exit(0);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("File " + ExperimentListFile + " reads a bit wonky - "
 					+ e.getMessage());
