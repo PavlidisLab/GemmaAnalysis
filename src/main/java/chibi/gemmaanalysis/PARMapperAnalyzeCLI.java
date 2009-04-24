@@ -319,7 +319,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		}
 		
 		
-		
+//		 Read PAR file
+		System.out.println("Reading file: " + inFile);
+		readPARFile(inFile);
+		if (pargeneexpFile != null) readpargeneFile(pargeneexpFile);
 		
 		
 		// Creates output files
@@ -342,47 +345,83 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		PrintStream pcA = null; //correlation between par and all others in Link analysis stored in DB
 		PrintStream pap = null; //correlation between all par/gene pairs - calculates all
 
+		
+		// Open the file print streams and create the columns
 		try {
 			// Connect print stream to the output stream
-			pxx = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.xx.txt"));
-			pxe = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.xe.txt"));
-			pex = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.ex.txt"));
-			pee = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.ee.txt"));
+			if (checkPAR || checkGeneRank) {
+				pxx = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.xx.txt"));
+				pxe = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.xe.txt"));
+				pex = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.ex.txt"));
+				pee = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.ee.txt"));
+				
+				String outputHeader = "ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,NumExperiments,NumSamples,Rank";
+				pxx.println(outputHeader);
+				pxe.println(outputHeader);
+				pex.println(outputHeader);
+				pee.println(outputHeader);
 
-			ppr = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.probelevel.txt"));
-
-			pgp_xx = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.geneVsPar.xx.txt"));
-			pgp_xe = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.geneVsPar.xe.txt"));
-			pgp_ex = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.geneVsPar.ex.txt"));
-			pgp_ee = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.geneVsPar.ee.txt"));
-
-			pco = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.genecoexpression.txt"));
-			pcA = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.genecoexpressionAll.txt"));
-			pap = new PrintStream(new FileOutputStream(outFileDir
-					+ "/" + stem + ".output.genecoexpressionAllPairs.txt"));
-
+			}
+			
+			if (checkPARprobe) {
+				//for probe level rannkings
+				ppr = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.probelevel.txt"));
+				
+				ppr.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,CompSeqId,NumExperiments,RankEMean_MethMean,RankEMean_MethMax,RankEMax_MethMean,RankEMax_MethMax");
+			}
+			
+			if (checkGeneCorank) {
+				// for Gene vs Par rannkings
+				pgp_xx = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.geneVsPar.xx.txt"));
+				pgp_xe = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.geneVsPar.xe.txt"));
+				pgp_ex = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.geneVsPar.ex.txt"));
+				pgp_ee = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.geneVsPar.ee.txt"));
+				
+				pgp_xx.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
+				pgp_xe.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
+				pgp_ex.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
+				pgp_ee.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
+			}
+			
+			if (checkAllCoexpInDB) {
+				pco = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.genecoexpression.txt"));
+				
+				pco.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,PosCorr,NegCorr");
+			}
+			
+			if (checkAllCoexp) {
+				pcA = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.genecoexpressionAll.txt"));
+				
+				pcA.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,CoexpGeneId,PosCorr,NegCorr");
+			}
+			
+			if (checkAllPairsCoexp) {
+				pap = new PrintStream(new FileOutputStream(outFileDir
+						+ "/" + stem + ".output.genecoexpressionAllPairs.txt"));
+				
+				pap.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ExperimentId,NumParMapProbe,NumGenesMapProbe,VectorSize,ParProbe,GeneProbe,Pearson");
+			}
+			
+			
 		} catch (Exception e) {
 			System.err.println("Error writing to file");
 			System.exit(0);
 		}
 
 
+
 		
-		// Read PAR file
-		System.out.println("Reading file: " + inFile);
-		readPARFile(inFile);
-		if (pargeneexpFile != null) readpargeneFile(pargeneexpFile);
 
 		// Establish the column numbers
 		int ParIDIdx = getIndex("ParID");
@@ -394,27 +433,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		int DistanceIdx = getIndex("Distance");
 		int GeneContainsParIdx = getIndex("GeneContainsPar");
 		int SameStrandIdx = getIndex("SameStrand");
-
-		// Output column ordering
-		String outputHeader = "ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,NumExperiments,NumSamples,Rank";
-		pxx.println(outputHeader);
-		pxe.println(outputHeader);
-		pex.println(outputHeader);
-		pee.println(outputHeader);
-
-		// for probe level rannkings
-		ppr.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,CompSeqId,NumExperiments,RankEMean_MethMean,RankEMean_MethMax,RankEMax_MethMean,RankEMax_MethMax");
-
-		// for Gene vs Par rannkings
-		pgp_xx.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
-		pgp_xe.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
-		pgp_ex.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
-		pgp_ee.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ParNumExperiments,ParNumSamples,ParRank,GeneNumExperiments,GeneNumSamples,GeneRank");
-		
-		pco.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,PosCorr,NegCorr");
-		pcA.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,CoexpGeneId,PosCorr,NegCorr");
-		pap.println("ParID,GeneId,ParName,Chrom,Nuc,GeneSymbol,Distance,GeneContainsPar,SameStrand,ExperimentId,NumParMapProbe,NumGenesMapProbe,VectorSize,ParProbe,GeneProbe,Pearson");
-
 		
 		
 		
@@ -549,23 +567,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			
 			batch++;
 
-			pxx.flush();
-			pxe.flush();
-			pex.flush();
-			pee.flush();
-
-			ppr.flush();
-
-			pgp_xx.flush();
-			pgp_xe.flush();
-			pgp_ex.flush();
-			pgp_ee.flush();
-
-			pco.flush();
-			pcA.flush();
-			pap.flush();
-
 			
+
+						
 			
 			/*
 			 * Do experiments, depends on which switch is selected
@@ -573,23 +577,36 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			
 			// PAR rankings at probe level
 			if (checkPARprobe) {
+				ppr.flush();
 				outputRankingsProbelevel(eeCol, pars, ppr);
 			}
 
 			// PAR rankings
 			if (checkPAR) {
+				pxx.flush();
+				pxe.flush();
+				pex.flush();
+				pee.flush();
 				outputRankings(eeCol, pars, pxx, pxe, "max");
 				outputRankings(eeCol, pars, pex, pee, "mean");
 			}
 			
 			// Gene rankings
 			if (checkGeneRank) {
+				pxx.flush();
+				pxe.flush();
+				pex.flush();
+				pee.flush();
 				outputRankings(eeCol, genes, pxx, pxe, "max");
 				outputRankings(eeCol, genes, pex, pee, "mean");
 			}
 
 			// PAR and Gene rankings together
 			if (checkGeneCorank) {
+				pgp_xx.flush();
+				pgp_xe.flush();
+				pgp_ex.flush();
+				pgp_ee.flush();
 				outputPARGeneCorank(eeCol, pars, genes, pgp_xx, pgp_xe, "max");
 				outputPARGeneCorank(eeCol, pars, genes, pgp_ex, pgp_ee, "mean");
 			}
@@ -602,12 +619,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					System.exit(0);
 				}
 				//check all coexpressions given a par or look at each par-gene combination
+				pco.flush();
 				outputPARGeneCoexpressionLinks(pars, genes, pco);
 			}
 			
 			
 			// All co-expression between PAR and all genes with Links found in database
 			if (checkAllCoexp) {
+				pcA.flush();
 				outputAllGeneCoexpressionLinks(pars, eeCol, 1, pcA);
 			}
 			
@@ -617,6 +636,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 					System.out.println("Error, need to supply pargeneexp file");
 					System.exit(0);
 				}
+				pap.flush();
 				outputAllPARGeneCoexpressionCalculated(pars, genes, pap);
 			}
 
@@ -624,23 +644,22 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 		
 		
 		
-		pxx.close();
-		pxe.close();
-		pex.close();
-		pee.close();
+		if (pxx != null) pxx.close();
+		if (pxe != null) pxe.close();
+		if (pex != null) pex.close();
+		if (pee != null) pee.close();
 
-		ppr.close();
+		if (ppr != null) ppr.close();
 		
 		
-		pgp_xx.close();
-		
-		pgp_xe.close();
-		pgp_ex.close();
-		pgp_ee.close();
+		if (pgp_xx != null) pgp_xx.close();
+		if (pgp_xe != null) pgp_xe.close();
+		if (pgp_ex != null) pgp_ex.close();
+		if (pgp_ee != null) pgp_ee.close();
 
-		pco.close();
-		pcA.close();
-		pap.close();
+		if (pco != null) pco.close();
+		if (pcA != null) pcA.close();
+		if (pap != null) pap.close();
 
 		
 
