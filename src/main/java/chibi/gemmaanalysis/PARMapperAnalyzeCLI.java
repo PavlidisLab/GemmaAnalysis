@@ -318,8 +318,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 			return null;
 		}
 		
-		
-//		 Read PAR file
+		// Read PAR file
 		System.out.println("Reading file: " + inFile);
 		readPARFile(inFile);
 		if (pargeneexpFile != null) readpargeneFile(pargeneexpFile);
@@ -1147,10 +1146,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 				.getRanksProbes(eeCol, pars);
 
 		// need to map experiments to genes to calculate max/mean across experiments
-		Map<Gene, Double[]> allGeneRankings = new HashMap<Gene, Double[]>();
-		Map<Gene, int[]> geneCounts = new HashMap<Gene, int[]>();
-
-
 		Map<Gene, Map<DesignElement, Collection<Double[]>>> allProbeRankings = 
 			new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
 
