@@ -2,6 +2,9 @@ package chibi.gemmaanalysis;
 
 import java.util.Collection;
 
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PhysicalLocation;
 import ubic.gemma.model.genome.PhysicalLocationService;
@@ -20,69 +23,99 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  */
 public class PARMapper extends AbstractSpringAwareCLI {
 
-    GeneService parService;
-    TaxonService taxonService;
-    PhysicalLocationService physicalLocationservice;
+	GeneService parService;
 
-    @Override
-    protected void buildOptions() {
-    }
+	TaxonService taxonService;
 
-    @Override
-    protected Exception doWork( String[] args ) {
-        Exception exc = processCommandLine( "PARMapper", args );
-        if ( exc != null ) return exc;
+	Taxon taxon;
 
-        this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
-        this.parService = ( GeneService ) this.getBean( "geneService" );
-        this.physicalLocationservice = ( PhysicalLocationService ) this.getBean( "physicalLocationService" );
+	boolean useStrand = true;
 
-        /*
-         * FIXME don't hard-code this.
-         */
-        Taxon taxon = taxonService.findByCommonName( "mouse" );
-        if ( taxon == null ) {
-            throw new IllegalArgumentException();
-        }
-        Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
-        log.info( pars.size() + " " + taxon.getCommonName() + " PARS" );
+	PhysicalLocationService physicalLocationservice;
 
-        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar\tSameStrand" );
+	@SuppressWarnings("static-access")
+	@Override
+	protected void buildOptions() {
 
-        // test case
-        // ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load( 1450985 );
+		Option taxonOption = OptionBuilder.hasArg().isRequired()
+				.withDescription("taxon name").withDescription("taxon to use")
+				.withLongOpt("taxon").create('t');
+		addOption(taxonOption);
 
-        for ( ProbeAlignedRegion par : pars ) {
-            parService.thaw( par );
+		Option useStrandOption = OptionBuilder.create("useStrand");
+		addOption(useStrandOption);
 
-            PhysicalLocation loc = par.getPhysicalLocation();
+	}
 
-            physicalLocationservice.thaw( loc );
+	@Override
+	protected Exception doWork(String[] args) {
+		Exception exc = processCommandLine("PARMapper", args);
+		if (exc != null)
+			return exc;
 
-            RelativeLocationData nearest = parService.findNearest( loc );
-            if ( nearest != null ) {
-                Gene gene = nearest.getNearestGene();
+		this.taxonService = (TaxonService) this.getBean("taxonService");
+		this.parService = (GeneService) this.getBean("geneService");
+		this.physicalLocationservice = (PhysicalLocationService) this
+				.getBean("physicalLocationService");
 
-                System.out
-                        .println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
-                                + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
-                                + nearest.getRange() + "\t" + nearest.isContainedWithinGene() + "\t"
-                                + nearest.isOnSameStrand() );
-            }
-        }
-        return null;
-    }
+		/*
+		 * Add processing o
+		 */
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        PARMapper p = new PARMapper();
-        Exception e = p.doWork( args );
-        if ( e != null ) {
-            throw new RuntimeException( e );
-        }
+		if (hasOption('t')) {
+			String taxonName = getOptionValue('t');
+			taxon = taxonService.findByCommonName(taxonName);
+			if (taxon == null) {
+				log.error("ERROR: Cannot find taxon " + taxonName);
+			}
+		}
 
-    }
+		this.useStrand = this.hasOption("useStrand");
+
+		Collection<ProbeAlignedRegion> pars = parService
+				.loadProbeAlignedRegions(taxon);
+		log.info(pars.size() + " " + taxon.getCommonName() + " PARS");
+
+		System.out
+				.println("ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar\tSameStrand");
+
+		// test case
+		// ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load(
+		// 1450985 );
+
+		for (ProbeAlignedRegion par : pars) {
+			parService.thaw(par);
+
+			PhysicalLocation loc = par.getPhysicalLocation();
+
+			physicalLocationservice.thaw(loc);
+
+			RelativeLocationData nearest = parService.findNearest(loc,
+					this.useStrand);
+			if (nearest != null) {
+				Gene gene = nearest.getNearestGene();
+
+				System.out.println(par.getId() + "\t" + par.getName() + "\t"
+						+ loc.getChromosome().getName() + "\t"
+						+ loc.getNucleotide() + "\t" + gene.getId() + "\t"
+						+ gene.getOfficialSymbol() + "\t" + nearest.getRange()
+						+ "\t" + nearest.isContainedWithinGene() + "\t"
+						+ nearest.isOnSameStrand());
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) {
+		PARMapper p = new PARMapper();
+		Exception e = p.doWork(args);
+		if (e != null) {
+			throw new RuntimeException(e);
+		}
+
+	}
 
 }
