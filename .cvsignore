@@ -1,3 +1,4 @@
 .fatjar
 target
 null
+*.jar
