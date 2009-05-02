@@ -29,13 +29,10 @@ import ubic.gemma.model.association.Gene2GOAssociation;
 import ubic.gemma.model.association.Gene2GOAssociationImpl;
 import ubic.gemma.model.common.description.Characteristic;
 import ubic.gemma.model.common.description.CharacteristicService;
-import ubic.gemma.model.expression.biomaterial.BioMaterial;
 import ubic.gemma.model.expression.biomaterial.BioMaterialImpl;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExperimentalFactorService;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentImpl;
-import ubic.gemma.model.expression.experiment.FactorValue;
 import ubic.gemma.model.expression.experiment.FactorValueImpl;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
@@ -82,27 +79,26 @@ public class InitializeCharacteristicEvidenceCodes extends AbstractSpringAwareCL
         experimentalFactorService = ( ExperimentalFactorService ) this.getBean( "experimentalFactorService" );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
 
         Exception err = processCommandLine( "Initialize Characteristic Evidence Codes", args );
         if ( err != null ) return err;
-        
-        Map<Characteristic, ExpressionExperiment> eeChars = characteristicService.findByParentClass( ExpressionExperimentImpl.class );
+
+        Map<Characteristic, Object> eeChars = characteristicService.findByParentClass( ExpressionExperimentImpl.class );
         initializeCharacteristicEvidenceCode( eeChars.keySet(), GOEvidenceCode.IC );
-        
-        Map<Characteristic, BioMaterial> bmChars = characteristicService.findByParentClass( BioMaterialImpl.class );
+
+        Map<Characteristic, Object> bmChars = characteristicService.findByParentClass( BioMaterialImpl.class );
         initializeCharacteristicEvidenceCode( bmChars.keySet(), GOEvidenceCode.IEA );
-        
-        Map<Characteristic, FactorValue> fvChars = characteristicService.findByParentClass( FactorValueImpl.class );
+
+        Map<Characteristic, Object> fvChars = characteristicService.findByParentClass( FactorValueImpl.class );
         initializeFactorValueCharacteristics( fvChars.keySet() );
-        
-        Map<Characteristic, Gene2GOAssociation> goChars = characteristicService.findByParentClass( Gene2GOAssociationImpl.class );
+
+        Map<Characteristic, Object> goChars = characteristicService.findByParentClass( Gene2GOAssociationImpl.class );
         intializeGene2GOAssociationCharacteristics( goChars );
-        
+
         initializeExperimentalFactorCategoryCharacteristics();
-        
+
         return null;
 
     }
@@ -110,42 +106,44 @@ public class InitializeCharacteristicEvidenceCodes extends AbstractSpringAwareCL
     private void initializeCharacteristicEvidenceCode( Collection<Characteristic> chars, GOEvidenceCode ec ) {
         for ( Characteristic c : chars ) {
             c.setEvidenceCode( ec );
-            characteristicService.update( c );
+            if ( !justTesting ) characteristicService.update( c );
         }
     }
-    
+
     private void initializeFactorValueCharacteristics( Collection<Characteristic> chars ) {
         for ( Characteristic c : chars ) {
-            if ( c.getDescription() != null && ( c.getDescription().startsWith( "GEO" ) || c.getDescription().startsWith ( "Converted from GEO" ) ) ) {
+            if ( c.getDescription() != null
+                    && ( c.getDescription().startsWith( "GEO" ) || c.getDescription().startsWith( "Converted from GEO" ) ) ) {
                 c.setEvidenceCode( GOEvidenceCode.IEA );
-                characteristicService.update( c );
+
+                if ( !justTesting ) characteristicService.update( c );
             } else {
                 c.setEvidenceCode( GOEvidenceCode.IC );
-                characteristicService.update( c );
+                if ( !justTesting ) characteristicService.update( c );
             }
         }
     }
 
-    private void intializeGene2GOAssociationCharacteristics( Map<Characteristic, Gene2GOAssociation> charToParent ) {
+    private void intializeGene2GOAssociationCharacteristics( Map<Characteristic, Object> charToParent ) {
         for ( Characteristic c : charToParent.keySet() ) {
-            Gene2GOAssociation go = charToParent.get( c );
+            Gene2GOAssociation go = ( Gene2GOAssociation ) charToParent.get( c );
             c.setEvidenceCode( go.getEvidenceCode() );
-            characteristicService.update( c );
+            if ( !justTesting ) characteristicService.update( c );
         }
     }
-    
+
     private void initializeExperimentalFactorCategoryCharacteristics() {
         Collection<ExperimentalFactor> experimentalFactors = experimentalFactorService.loadAll();
         for ( ExperimentalFactor ef : experimentalFactors ) {
             Characteristic c = ef.getCategory();
-            if ( c == null )
-                continue;
-            if ( c.getDescription() != null && ( c.getDescription().startsWith( "GEO" ) || c.getDescription().startsWith ( "Converted from GEO" ) ) ) {
+            if ( c == null ) continue;
+            if ( c.getDescription() != null
+                    && ( c.getDescription().startsWith( "GEO" ) || c.getDescription().startsWith( "Converted from GEO" ) ) ) {
                 c.setEvidenceCode( GOEvidenceCode.IEA );
-                characteristicService.update( c );
+                if ( !justTesting ) characteristicService.update( c );
             } else {
                 c.setEvidenceCode( GOEvidenceCode.IC );
-                characteristicService.update( c );
+                if ( !justTesting ) characteristicService.update( c );
             }
         }
     }

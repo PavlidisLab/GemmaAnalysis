@@ -24,6 +24,7 @@ import java.io.PrintStream;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -34,10 +35,11 @@ import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PhysicalLocation;
+import ubic.gemma.model.genome.PhysicalLocationService;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneProduct;
 import ubic.gemma.model.genome.gene.GeneService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
@@ -53,8 +55,8 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
 
     private String arrayDesignName = null;
     private String outFileName = null;
-    private String taxonName = null;
     private Collection<GeneProduct> miRNAs = new HashSet<GeneProduct>();
+    PhysicalLocationService plService;
 
     @Override
     protected void processOptions() {
@@ -64,9 +66,6 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
         }
         if ( hasOption( 'o' ) ) {
             this.outFileName = getOptionValue( 'o' );
-        }
-        if ( hasOption( 't' ) ) {
-            this.taxonName = getOptionValue( 't' );
         }
 
     }
@@ -81,31 +80,22 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
                 "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
         addOption( OutOption );
 
-        Option TaxonOption = OptionBuilder.hasArg().isRequired().withArgName( "taxonName" ).withDescription(
-                "The name of the speci " ).withLongOpt( "taxonName" ).create( 't' );
-        addOption( TaxonOption );
-
     }
 
-    private Taxon getTaxon( String name ) {
-        Taxon taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( name );
-        TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
-        taxon = taxonService.find( taxon );
-        if ( taxon == null ) {
-            log.info( "NO Taxon found!" );
-        }
-        return taxon;
-    }
-
+    /**
+     * @param targetLocation
+     * @return
+     */
     private Collection<GeneProduct> checkMappedRNAs( PhysicalLocation targetLocation ) {
         Collection<GeneProduct> returnedRNAs = new HashSet<GeneProduct>();
         if ( targetLocation == null ) {
             return returnedRNAs;
         }
+
         for ( GeneProduct miRNA : miRNAs ) {
             // if(!miRNA.getName().equals("mmu-let-7b")) continue;
             PhysicalLocation location = miRNA.getPhysicalLocation();
+            plService.thaw( location );
             if ( targetLocation.computeOverlap( location ) >= location.getNucleotideLength() )
                 returnedRNAs.add( miRNA );
         }
@@ -124,17 +114,10 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
         GeneService geneService = ( GeneService ) this.getBean( "geneService" );
         BlatAssociationService blatAssociationService = ( BlatAssociationService ) this
                 .getBean( "blatAssociationService" );
+        plService = ( PhysicalLocationService ) this.getBean( "physicalLocationService" );
 
-        Taxon taxon = this.getTaxon( this.taxonName );
-        if ( taxon == null ) {
-            System.err.println( " Taxon " + this.taxonName + " doesn't exist" );
-            return null;
-        }
-        Collection<Gene> genes = geneService.getMicroRnaByTaxon( taxon );
-
-        for ( Gene gene : genes ) {
-            miRNAs.addAll( gene.getProducts() );
-        }
+        CompositeSequenceService compositeSequenceService = ( CompositeSequenceService ) this
+                .getBean( "compositeSequenceService" );
 
         ArrayDesign arrayDesign = adService.findByShortName( this.arrayDesignName );
         if ( arrayDesign == null ) {
@@ -142,48 +125,89 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
             return null;
         }
 
-        HashMap<CompositeSequence, HashSet<GeneProduct>> results = new HashMap<CompositeSequence, HashSet<GeneProduct>>();
+        Taxon taxon = adService.getTaxon( arrayDesign.getId() );
+
+        log.info( "Loading microRNAs for " + taxon.getCommonName() );
+        Collection<Gene> genes = geneService.getMicroRnaByTaxon( taxon );
+
+        for ( Gene gene : genes ) {
+            geneService.thaw( gene );
+            miRNAs.addAll( gene.getProducts() );
+        }
+
+        log.info( "Got " + miRNAs.size() + " microRNAs" );
+
+        Map<CompositeSequence, Collection<GeneProduct>> results = new HashMap<CompositeSequence, Collection<GeneProduct>>();
 
         try {
 
             GoldenPathSequenceAnalysis analysis = new GoldenPathSequenceAnalysis( taxon );
             Collection<CompositeSequence> allCSs = adService.loadCompositeSequences( arrayDesign );
 
+            compositeSequenceService.thaw( allCSs );
+
+            int count = 0;
             for ( CompositeSequence cs : allCSs ) {
                 // if(!cs.getName().equals("1440357_at")) continue;
-                Collection bs2gps = cs.getBiologicalCharacteristic().getBioSequence2GeneProduct();
-                HashSet<GeneProduct> mappedRNAs = new HashSet<GeneProduct>();
-                for ( Object object : bs2gps ) {
-                    BioSequence2GeneProduct bs2gp = ( BioSequence2GeneProduct ) object;
-                    if ( bs2gp instanceof BlatAssociation ) {
-                        BlatAssociation blatAssociation = ( BlatAssociation ) bs2gp;
-                        blatAssociationService.thaw( blatAssociation );
-                        GeneProduct geneProduct = blatAssociation.getGeneProduct();
-                        PhysicalLocation targetLocation = geneProduct.getPhysicalLocation();
-                        mappedRNAs.addAll( checkMappedRNAs( targetLocation ) );
 
-                        BlatResult blatResult = blatAssociation.getBlatResult();
-                        if ( blatResult == null ) continue;
-                        long start = blatResult.getTargetStart();
-                        long end = blatResult.getTargetEnd();
-                        String chromosome = blatResult.getTargetChromosome().getName();
-                        Collection<Gene> alignedGenes = analysis.findRNAs( chromosome, start, end, blatResult
-                                .getStrand() );
-                        for ( Gene gene : alignedGenes ) {
-                            targetLocation = gene.getPhysicalLocation();
-                            mappedRNAs.addAll( checkMappedRNAs( targetLocation ) );
+                Collection bs2gps = cs.getBiologicalCharacteristic().getBioSequence2GeneProduct();
+                blatAssociationService.thaw( bs2gps );
+
+                Collection<GeneProduct> mappedRNAs = new HashSet<GeneProduct>();
+
+                for ( Object object : bs2gps ) {
+
+                    BlatAssociation blatAssociation = ( BlatAssociation ) object;
+                    blatAssociationService.thaw( blatAssociation );
+                    GeneProduct geneProduct = blatAssociation.getGeneProduct();
+                    PhysicalLocation targetLocation = geneProduct.getPhysicalLocation();
+
+                    if ( targetLocation != null ) {
+                        plService.thaw( targetLocation );
+                        mappedRNAs.addAll( checkMappedRNAs( targetLocation ) );
+                    }
+
+                    /*
+                     * Re-check (??)
+                     */
+                    BlatResult blatResult = blatAssociation.getBlatResult();
+                    if ( blatResult == null ) continue;
+
+                    long start = blatResult.getTargetStart();
+                    long end = blatResult.getTargetEnd();
+
+                    String chromosome = "chr" + blatResult.getTargetChromosome().getName();
+
+                    log.debug( chromosome );
+
+                    mappedRNAs.addAll( analysis.findMicroRNAGenesByLocation( chromosome, start, end, blatResult
+                            .getStrand() ) );
+
+                    Collection<Gene> alignedGenes = analysis.findRNAs( chromosome, start, end, blatResult.getStrand() );
+                    for ( Gene gene : alignedGenes ) {
+                        for ( GeneProduct gp : gene.getProducts() ) {
+                            PhysicalLocation loc = gp.getPhysicalLocation();
+                            mappedRNAs.addAll( checkMappedRNAs( loc ) );
                         }
                     }
                 }
+
                 if ( mappedRNAs.size() > 0 ) results.put( cs, mappedRNAs );
+
+                if ( ++count % 1000 == 0 ) {
+                    log.info( "Processed " + count + " probes" );
+                }
             }
 
+            /*
+             * Output phase
+             */
             PrintStream output = new PrintStream( new FileOutputStream( new File( this.outFileName ) ) );
             for ( CompositeSequence cs : results.keySet() ) {
-                output.print( cs.getName() );
-                HashSet<GeneProduct> mappedmiRNAs = results.get( cs );
+                output.print( cs.getName() + "\t" );
+                Collection<GeneProduct> mappedmiRNAs = results.get( cs );
                 for ( GeneProduct miRNA : mappedmiRNAs ) {
-                    output.print( "\t" + miRNA.getName() );
+                    output.print( miRNA.getName() + "," );
                 }
                 output.println();
             }

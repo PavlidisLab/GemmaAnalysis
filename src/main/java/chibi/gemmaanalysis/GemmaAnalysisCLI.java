@@ -25,7 +25,7 @@ import java.util.Arrays;
 import ubic.gemma.util.AbstractCLI;
 
 /**
- * Generic command line information for Gemma. This doesn't do anything but print some help.
+ * Generic command line information for GemmaAnalysis. This doesn't do anything but print some help.
  * 
  * @author paul
  * @author raymond
@@ -33,18 +33,10 @@ import ubic.gemma.util.AbstractCLI;
  */
 public class GemmaAnalysisCLI {
     private static final String[] apps = { "chibi.gemmaanalysis.Gene2GeneCoexpressionResultsCli",
-    "chibi.gemmaanalysis.GeneExpressionProfileWriterCLI",
-    "chibi.gemmaanalysis.LinkGOAnalysisCli",
-    "chibi.gemmaanalysis.LinkGOStatsCli",
-    "chibi.gemmaanalysis.LinkStatisticsCLI",
-    "chibi.gemmaanalysis.MetaLinkFinderCli",
-    "chibi.gemmaanalysis.MicroRNAFinderCli",
-    "chibi.gemmaanalysis.ProbeAlignedRegionAnalysisCLI",
-    "chibi.gemmaanalysis.ProbeMapperCli",
-    "chibi.gemmaanalysis.PSDCoexpressionResultsCli",
-    "chibi.gemmaanalysis.RandomGenesCli",
-    "chibi.gemmaanalysis.RankAnalysisCLI",
-    "chibi.gemmaanalysis.ComputeGoOverlapCli"};
+            "chibi.gemmaanalysis.GeneExpressionProfileWriterCLI", "chibi.gemmaanalysis.LinkStatisticsCLI",
+            "chibi.gemmaanalysis.MetaLinkFinderCli", "chibi.gemmaanalysis.MicroRNAFinderCli",
+            "chibi.gemmaanalysis.ProbeAlignedRegionAnalysisCLI", "chibi.gemmaanalysis.ProbeMapperCli",
+            "chibi.gemmaanalysis.PSDCoexpressionResultsCli", "chibi.gemmaanalysis.RandomGenesCli", };
 
     /**
      * @param args
@@ -54,7 +46,7 @@ public class GemmaAnalysisCLI {
 
         System.err
                 .print( "You've evoked the GemmaAnalysis CLI in a mode that doesn't do anything.\n"
-                        + "To operate Gemma tools, run a command like:\n\njava [jre options] -Done-jar.main.class=<classname> -jar /path/to/gemmaCLI.one-jar.jar [options]\n\n"
+                        + "To operate Gemma tools, run a command like:\n\njava [jre options] -classpath /path/to/gemmaAnalysisCli.jar [class name] [options]\n\n"
                         + "Here is a list of the classnames for some available tools:\n\n" );
         Arrays.sort( apps );
         for ( String a : apps ) {
@@ -83,7 +75,7 @@ public class GemmaAnalysisCLI {
             System.err.println( a + " :\t" + desc );
         }
         System.err
-                .println( "\nTo get help for a specific tool, use \n\njava -Done-jar.main.class=<classname> -jar /path/to/gemmaCLI.jar --help" );
+                .println( "\nTo get help for a specific tool, use \n\njava -jar /path/to/gemmaAnalysisCli.jar  -help" );
         System.err.print( "\n" + AbstractCLI.FOOTER + "\n=========================================\n" );
     }
 }

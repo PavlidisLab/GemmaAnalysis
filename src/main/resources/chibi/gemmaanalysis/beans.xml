@@ -4,9 +4,6 @@
     "http://www.springframework.org/dtd/spring-beans.dtd">
 <beans>
 	<bean id="linkStatisticsService" class="chibi.gemmaanalysis.LinkStatisticsService">
-		<property name="geneService">
-			<ref bean="geneService" />
-		</property>
 		<property name="p2pService">
 			<ref bean="probe2ProbeCoexpressionService" />
 		</property>

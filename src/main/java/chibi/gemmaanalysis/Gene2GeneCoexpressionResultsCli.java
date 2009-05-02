@@ -1,3 +1,21 @@
+/*
+ * The Gemma project
+ * 
+ * Copyright (c) 2007 University of British Columbia
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
 package chibi.gemmaanalysis;
 
 import java.io.BufferedReader;
@@ -28,6 +46,10 @@ import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
+/**
+ * @author raymond? xwan?
+ * @version $Id$
+ */
 public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     private static final int DEFAULT_STRINGINCY = 2;
@@ -108,7 +130,6 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -205,9 +226,9 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         Collection<String> rawLinesInFile = readGeneListFile( inFile );
         Collection<Gene> genes = new ArrayList<Gene>();
 
-        Iterator linesIt = rawLinesInFile.iterator();
+        Iterator<String> linesIt = rawLinesInFile.iterator();
         while ( linesIt.hasNext() ) {
-            String s = ( String ) linesIt.next();
+            String s = linesIt.next();
             Gene gene = geneService.findByOfficialSymbol( s, taxon );
             if ( gene == null ) {
                 log.error( "ERROR: Cannot find genes for " + s );

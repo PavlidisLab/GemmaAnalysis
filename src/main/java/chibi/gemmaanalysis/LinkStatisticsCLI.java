@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis.cli.deprecated;
+package chibi.gemmaanalysis;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -33,34 +33,29 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import chibi.gemmaanalysis.LinkConfirmationStatistics;
-import chibi.gemmaanalysis.LinkStatistics;
-import chibi.gemmaanalysis.LinkStatisticsService;
-
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGene;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
 
 /**
- * Used to count up links and to generate the link(gene pair) background distribution, which could be used to estimate
- * the false positive rates under different levels of confirmation. When shuffling, there are two steps to finish this
- * process. The first step is to prepare the working table. Then the analysis is done using the working table.
+ * Used to count up links and to generate real lists of links or random background distribution, which could be used to
+ * estimate the false positive rates under different levels of confirmation. When shuffling, there are two steps to
+ * finish this process. The first step is to prepare the working table. Then the analysis is done using the working
+ * table.
  * <p>
  * To create the working table:
  * 
  * <pre>
- * java -Xmx5G   -jar shuffleLinksCli.jar -s -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxxx -v 3
+ * java -Xmx5G -jar shuffleLinksCli.jar -s -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxxx -v 3
  * </pre>
- * 
  * <p>
  * The second step is to do the shuffling using the working table
  * </p>
  * 
  * <pre>
- * java -Xmx5G   -jar shuffleLinksCli.jar -i 100 -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxxx -v 3
+ * java -Xmx5G -jar shuffleLinksCli.jar -i 100 -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxxx -v 3
  * </pre>
- * 
  * <p>
  * Outputs are a file with the real links, and summary statistics to STOUT.
  * <p>
@@ -116,7 +111,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
     private boolean doRealAnalysis = false;
 
     private boolean filterNonSpecific = true;
-    
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
@@ -145,10 +140,8 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         // Option linkStringency = OptionBuilder.hasArg().withArgName( "Link support threshold (stringency)" )
         // .withDescription( "Link Stringency " ).withLongOpt( "linkStringency" ).create( 'l' );
         // addOption( linkStringency );
-        
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Shuffle Links ", args );
@@ -156,8 +149,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             return err;
         }
 
-        
-        LinkStatisticsService lss = (LinkStatisticsService) getBean("linkStatisticsService");
+        LinkStatisticsService lss = ( LinkStatisticsService ) getBean( "linkStatisticsService" );
 
         if ( !prepared ) {
             lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
@@ -188,13 +180,13 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
 
         if ( doRealAnalysis ) { // Currently this is really just for debugging purposes, though reading in from a
             // file might be useful.
-            LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false,
-                    filterNonSpecific );
+            LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false, filterNonSpecific );
             log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
 
             try {
-                Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data.txt" ) ) );
+                Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data."
+                        + taxon.getCommonName().replaceAll( "\\s", "_" ) + ".txt" ) ) );
                 realStats.writeLinks( linksOut, 0 );
             } catch ( IOException e ) {
                 return e;
@@ -206,8 +198,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         for ( int i = 0; i < numIterations; i++ ) {
             log.info( "*** Iteration " + i + " ****" );
 
-            LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon, true,
-                    filterNonSpecific );
+            LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon, true, filterNonSpecific );
             log.info( sr.getTotalLinkCount() + " gene links in total" );
 
             shuffleRuns.add( sr.getLinkConfirmationStats() );
@@ -234,7 +225,6 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
      * @return collection of known genes for the taxon selected on the command line. Known genes basically means NCBI
      *         genes (not PARs and not "predicted").
      */
-    @SuppressWarnings("unchecked")
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
         Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
@@ -266,16 +256,16 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
         if ( hasOption( "outputShuffledData" ) ) {
             this.doShuffledOutput = true;
         }
-        
-        if (hasOption('r')) {
+
+        if ( hasOption( 'r' ) ) {
             this.doRealAnalysis = true;
         }
-        
 
     }
-    
+
+    @Override
     protected String[] getAdditionalSpringConfigLocations() {
-        return new String[] {"classpath*:chibi/beans.xml"};
+        return new String[] { "classpath*:chibi/gemmaanalysis/beans.xml" };
     }
-    
+
 }

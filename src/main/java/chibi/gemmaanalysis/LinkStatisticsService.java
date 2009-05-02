@@ -44,7 +44,6 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.gene.GeneService;
 
 /**
  * Methods for analyzing links from the database.
@@ -68,8 +67,6 @@ public class LinkStatisticsService {
     protected void setCompositeSequenceService( CompositeSequenceService compositeSequenceService ) {
         this.compositeSequenceService = compositeSequenceService;
     }
-
-    private GeneService geneService = null;
 
     private Probe2ProbeCoexpressionService p2pService = null;
 
@@ -109,10 +106,6 @@ public class LinkStatisticsService {
 
     public void setEeService( ExpressionExperimentService eeService ) {
         this.eeService = eeService;
-    }
-
-    public void setGeneService( GeneService geneService ) {
-        this.geneService = geneService;
     }
 
     public void setP2pService( Probe2ProbeCoexpressionService service ) {
@@ -411,7 +404,6 @@ public class LinkStatisticsService {
      * @param links
      * @return map of cs to genes, by primary key.
      */
-    @SuppressWarnings("unchecked")
     private Map<Long, Collection<Long>> getCS2GeneMap( Collection<ProbeLink> links ) {
         log.info( "Getting CS -> Gene map" );
         Collection<Long> csIds = new HashSet<Long>();
@@ -497,7 +489,6 @@ public class LinkStatisticsService {
      * @return map of probes to genes which are 1) assayed and 2) have gene mappings (that is, alignments to the genome;
      *         this includes non-refseq genes etc.) and 3) used as inputs for the 'real' analysis we are comparing to.
      */
-    @SuppressWarnings("unchecked")
     private Map<Long, Collection<Long>> getRelevantProbe2GeneIds( ExpressionExperiment ee, LinkStatistics stats,
             boolean filterNonSpecific ) {
         /*
