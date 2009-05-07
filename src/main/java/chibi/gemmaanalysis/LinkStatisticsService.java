@@ -189,7 +189,7 @@ public class LinkStatisticsService {
                 }
             }
         }
-        log.info( "Filtered irrelevant probes: kept " + probeIdsToKeepLinksFor.size() + "/" + cs2genes.keySet().size()
+        log.debug( "Filtered irrelevant probes: kept " + probeIdsToKeepLinksFor.size() + "/" + cs2genes.keySet().size()
                 + " probes" );
         return probeIdsToKeepLinksFor;
     }
@@ -224,7 +224,6 @@ public class LinkStatisticsService {
      */
     private Collection<GeneLink> getGeneLinks( Collection<ProbeLink> links, LinkStatistics stats,
             Map<Long, Collection<Long>> cs2genes ) {
-        log.info( "Converting " + links.size() + " probe links to gene links ..." );
         Collection<GeneLink> result = new HashSet<GeneLink>();
 
         /*
@@ -284,21 +283,21 @@ public class LinkStatisticsService {
         for ( CompositeSequence cs : probesAssayed ) {
             assayedProbeIds.add( cs.getId() );
         }
-        log.info( assayedProbeIds.size() + " probes assayed " );
+        log.debug( assayedProbeIds.size() + " probes assayed " );
 
         /*
          * Further filter the list to only include probes that have alignments. This is a map of CS to genes (this is
          * probably not strictly needed as the next step also looks at genes.)
          */
         Map<Long, Collection<Long>> geneMap = getCs2GeneMapFromProbeIds( assayedProbeIds );
-        log.info( geneMap.size() + " probes with alignments" );
+        log.debug( geneMap.size() + " probes with alignments" );
 
         /*
          * Further filter to include only probes that are also for genes we used as potential inputs.
          */
         Collection<Long> probesToKeep = filterProbes( stats, geneMap, filterNonSpecific );
 
-        log.info( probesToKeep.size() + " probes after filtering." );
+        log.debug( probesToKeep.size() + " probes after filtering." );
 
         // return map so we can still have access to the genes. Remove all 'extraneous' genes.
         Collection<Long> geneIdsToKeep = stats.getGeneIds();
@@ -386,7 +385,7 @@ public class LinkStatisticsService {
             gl.setSecondGene( shuffleMap.get( gl.getSecondGene() ) );
         }
 
-        log.info( "Gene links used a total of " + usedGenes.size() + " genes, we shuffled using " + geneIdList.size()
+        log.debug( "Gene links used a total of " + usedGenes.size() + " genes, we shuffled using " + geneIdList.size()
                 + " available genes" );
 
         log.debug( geneLinks.size() + " links after shuffling" );
@@ -405,7 +404,7 @@ public class LinkStatisticsService {
      */
     private void shuffleProbeLinks( LinkStatistics stats, ExpressionExperiment ee,
             Collection<ProbeLink> linksToShuffle, Collection<Long> probeUniverse ) {
-        log.info( "Shuffling links for " + ee.getShortName() );
+        log.debug( "Shuffling links for " + ee.getShortName() );
 
         /*
          * Make a copy so we can make a shuffled mapping
