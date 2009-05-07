@@ -7,8 +7,11 @@
 		<property name="p2pService">
 			<ref bean="probe2ProbeCoexpressionService" />
 		</property>
-		<property name="eeService">
-			<ref bean="expressionExperimentService" />
+		<property name="probeCoexpressionAnalysisService">
+			<ref bean="probeCoexpressionAnalysisService" />
+		</property>
+		<property name="compositeSequenceService">
+			<ref bean="compositeSequenceService" />
 		</property>
 	</bean>
 </beans>

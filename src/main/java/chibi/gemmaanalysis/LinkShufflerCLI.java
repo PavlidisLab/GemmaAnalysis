@@ -60,9 +60,9 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
         if ( doRealAnalysis ) { // Currently this is really just for debugging
             // purposes, though reading in from a
             // file might be useful.
-            System.out.println( "Doing real analysis" );
+            log.info( "Doing real analysis" );
             LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false, true );
-            System.out.println( realStats.getTotalLinkCount() + " gene links in total" );
+            log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
 
             try {
@@ -79,7 +79,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
             System.out.println( "*** Iteration " + i + " ****" );
 
             LinkStatistics sr = lss.analyze( expressionExperiments, genes, taxon, true, true );
-            System.out.println( sr.getTotalLinkCount() + " gene links in total" );
+            log.info( sr.getTotalLinkCount() + " gene links in total" );
 
             shuffleRuns.add( sr.getLinkConfirmationStats() );
 

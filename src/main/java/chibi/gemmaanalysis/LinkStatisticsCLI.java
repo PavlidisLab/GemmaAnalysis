@@ -153,40 +153,24 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
 
         if ( !prepared ) {
             lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
+            log.info( "Done preparing, will exit" );
             return null;
         }
         Collection<Gene> genes = getKnownGenes();
-
-        // not supported
-        // if ( linkStringency != 0 ) {
-        //
-        // // not sure I understand what this is for.
-        // totalLinks = 0;
-        // linkCount = lss.getMatrix( ees, genes );
-        // negativeLinkCount = lss.getMatrix( ees, genes );
-        // System.gc();
-        // // doShuffling( candidates );
-        // lss.doGeneLevelShuffling( currentIteration, candidates );
-        // if ( doShuffledOutput ) {
-        // String fileName = "shuffledLinks_" + linkStringency + ".txt";
-        // Writer w = new FileWriter( new File( fileName ) );
-        // lss.saveMatrix( linkCount, negativeLinkCount, w, genes, this.linkStringency );
-        // }
-        // log.info( "Total Links " + totalLinks );
-        // log.info( "Covered Gene " + geneCoverage.size() );
-        // } else {
 
         LinkConfirmationStatistics confStats = null;
 
         if ( doRealAnalysis ) { // Currently this is really just for debugging purposes, though reading in from a
             // file might be useful.
+            log.info( "Running un-shuffled analysis" );
             LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false, filterNonSpecific );
             log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
 
             try {
-                Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data."
-                        + taxon.getCommonName().replaceAll( "\\s", "_" ) + ".txt" ) ) );
+                File outputFile = new File( "link-data." + taxon.getCommonName().replaceAll( "\\s", "_" ) + ".txt" );
+                log.info( "Writing 'real' links to " + outputFile );
+                Writer linksOut = new BufferedWriter( new FileWriter( outputFile ) );
                 realStats.writeLinks( linksOut, 0 );
             } catch ( IOException e ) {
                 return e;
@@ -205,8 +189,9 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
 
             if ( doShuffledOutput ) {
                 try {
-                    Writer linksOut = new BufferedWriter(
-                            new FileWriter( new File( "shuffled-link-data-" + i + ".txt" ) ) );
+                    File shuffledOutputFile = new File( "shuffled-link-data-" + i + ".txt" );
+                    log.info( "Writing shuffled links for iteration " + i + " to " + shuffledOutputFile );
+                    Writer linksOut = new BufferedWriter( new FileWriter( shuffledOutputFile ) );
                     sr.writeLinks( linksOut, 2 );
                 } catch ( IOException e ) {
                     return e;

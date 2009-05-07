@@ -93,6 +93,7 @@ public class LinkStatistics {
     /**
      * @param geneLinks
      * @param ee
+     * @return the number of links added.
      */
     public int addLinks( Collection<GeneLink> geneLinks, ExpressionExperiment ee ) {
         assert eeMap != null;
