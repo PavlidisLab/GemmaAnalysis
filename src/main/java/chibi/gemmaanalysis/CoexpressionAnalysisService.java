@@ -328,7 +328,7 @@ public class CoexpressionAnalysisService {
 
         // build and filter expression data matrix
         Collection<ArrayDesign> arrayDesignsUsed = eeService.getArrayDesignsUsed( ee );
-        ExpressionExperimentFilter filter = new ExpressionExperimentFilter( ee, arrayDesignsUsed, filterConfig );
+        ExpressionExperimentFilter filter = new ExpressionExperimentFilter( arrayDesignsUsed, filterConfig );
         ExpressionDataDoubleMatrix eeDoubleMatrix;
         try {
             eeDoubleMatrix = filter.getFilteredMatrix( dedvs );
