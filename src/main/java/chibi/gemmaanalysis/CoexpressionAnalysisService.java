@@ -116,7 +116,6 @@ public class CoexpressionAnalysisService {
      * @param correlationMethod
      * @return
      */
-    @SuppressWarnings("unchecked")
     public CoexpressionMatrices calculateCoexpressionMatrices( Collection<BioAssaySet> ees,
             Collection<Gene> queryGenes, Collection<Gene> targetGenes, FilterConfig filterConfig,
             CorrelationMethod correlationMethod ) {
@@ -316,7 +315,6 @@ public class CoexpressionAnalysisService {
      * @param filterConfig
      * @return an expression data double matrix
      */
-    @SuppressWarnings("unchecked")
     public ExpressionDataDoubleMatrix getExpressionDataMatrix( ExpressionExperiment ee, FilterConfig filterConfig ) {
         StopWatch watch = new StopWatch();
         watch.start();
@@ -347,7 +345,6 @@ public class CoexpressionAnalysisService {
      * @param css
      * @return gene to composite sequences map
      */
-    @SuppressWarnings("unchecked")
     public Map<Gene, Collection<CompositeSequence>> getGene2CsMap( Collection<CompositeSequence> css ) {
         Map<CompositeSequence, Collection<Gene>> cs2gene = csService.getGenes( css );
         // filter for specific cs 2 gene

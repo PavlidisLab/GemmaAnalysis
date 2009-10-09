@@ -38,6 +38,7 @@ import cern.colt.list.DoubleArrayList;
 
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionValueObject;
+import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -1004,13 +1005,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
                     // use the getGenesWithSpecificity service to obtain all
                     // physical locations - and other information not needed
-                    Map<CompositeSequence, Map<PhysicalLocation, Collection<BlatAssociation>>> gws = compositeSequenceService
+                    Map<CompositeSequence, Collection<BioSequence2GeneProduct>> gws = compositeSequenceService
                             .getGenesWithSpecificity( csCasted );
                     cde = new ArrayList<DesignElement>();
 
                     for ( CompositeSequence cs : gws.keySet() ) {
 
-                        int numLocations = gws.get( cs ).keySet().size();
+                        int numLocations = gws.get( cs ).size();
                         if ( numLocations == 1 ) {
                             // CS is unique
                             cde.add( cs );

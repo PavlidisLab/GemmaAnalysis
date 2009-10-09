@@ -47,7 +47,7 @@ public class AbstractCLITestCase extends TestCase {
     protected final String getTestFileBasePath() throws IOException {
         String path = ConfigUtils.getString( "gemma.home" );
         if ( path == null ) {
-            throw new IOException( "You must define the 'gemma.home' variable in your build.properties file" );
+            throw new IOException( "You must define the 'gemma.home' variable in your Gemma.properties file" );
         }
         return path;
     }
