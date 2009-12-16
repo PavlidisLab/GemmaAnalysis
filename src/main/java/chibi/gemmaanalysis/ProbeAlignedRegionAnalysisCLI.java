@@ -36,7 +36,7 @@ import org.apache.commons.lang.time.StopWatch;
 
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
-import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
+import ubic.gemma.model.association.coexpression.ProbeLink;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
@@ -282,7 +282,7 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
      * @param parIds
      * @param EEs
      * @return
-     */ 
+     */
     private Map<Long, List<Double>> getParId2eeRankMap( Collection<Long> parIds, Collection<ExpressionExperiment> EEs ) {
         Map<Long, List<Double>> parId2eeRankMap = new HashMap<Long, List<Double>>();
         for ( ExpressionExperiment EE : EEs ) {

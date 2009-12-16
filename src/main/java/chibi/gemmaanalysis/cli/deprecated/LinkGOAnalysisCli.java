@@ -43,7 +43,7 @@ import ubic.basecode.graphics.ColorMap;
 import ubic.basecode.graphics.ColorMatrix;
 import ubic.basecode.graphics.MatrixDisplay;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
-import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionDaoImpl.ProbeLink;
+import ubic.gemma.model.association.coexpression.ProbeLink;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;

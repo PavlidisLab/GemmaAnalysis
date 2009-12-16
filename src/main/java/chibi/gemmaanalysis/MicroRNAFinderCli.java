@@ -31,7 +31,6 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.externalDb.GoldenPathSequenceAnalysis;
-import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -125,10 +124,10 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
             return null;
         }
 
-        Taxon taxon = adService.getTaxon( arrayDesign.getId() );
+        Taxon taxon = arrayDesign.getPrimaryTaxon();
 
         log.info( "Loading microRNAs for " + taxon.getCommonName() );
-        Collection<Gene> genes = geneService.getMicroRnaByTaxon( taxon );
+        Collection<Gene> genes = geneService.loadMicroRNAs( taxon );
 
         for ( Gene gene : genes ) {
             geneService.thaw( gene );
