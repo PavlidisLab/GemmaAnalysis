@@ -33,7 +33,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
-import ubic.gemma.ontology.GeneOntologyService;
+import ubic.gemma.ontology.providers.GeneOntologyService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 import cern.colt.list.ObjectArrayList;
 

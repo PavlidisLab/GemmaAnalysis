@@ -35,6 +35,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
+import ubic.basecode.ontology.model.OntologyTerm;
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -44,8 +45,7 @@ import ubic.gemma.model.genome.PredictedGeneImpl;
 import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.gene.GeneService;
-import ubic.gemma.ontology.GeneOntologyService;
-import ubic.gemma.ontology.OntologyTerm;
+import ubic.gemma.ontology.providers.GeneOntologyService;
 import cern.colt.list.ObjectArrayList;
 
 /**

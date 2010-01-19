@@ -129,7 +129,7 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
 
         try {
             MatrixWriter matrixOut;
-            matrixOut = new MatrixWriter( outFilePrefix + ".corr.txt", formatter );
+            matrixOut = new MatrixWriter<ExpressionExperiment, Gene>( outFilePrefix + ".corr.txt", formatter );
             matrixOut.setSliceNameMap( eeNameMap );
             matrixOut.setRowNameMap( geneNameMap );
             matrixOut.setColNameMap( geneNameMap );

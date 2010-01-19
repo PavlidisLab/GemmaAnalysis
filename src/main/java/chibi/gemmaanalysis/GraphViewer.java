@@ -88,8 +88,8 @@ import prefuse.util.ui.JForcePanel;
 import prefuse.visual.DecoratorItem;
 import prefuse.visual.NodeItem;
 import prefuse.visual.VisualItem;
+import ubic.basecode.ontology.model.OntologyTerm;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.ontology.OntologyTerm;
 import cern.colt.list.ObjectArrayList;
 
 /**

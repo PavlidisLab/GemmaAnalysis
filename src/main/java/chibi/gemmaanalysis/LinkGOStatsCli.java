@@ -45,9 +45,9 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGene;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
-import ubic.gemma.ontology.GeneOntologyService;
 import ubic.gemma.ontology.GoMetric;
 import ubic.gemma.ontology.GoMetric.Metric;
+import ubic.gemma.ontology.providers.GeneOntologyService;
 
 /**
  * <p>

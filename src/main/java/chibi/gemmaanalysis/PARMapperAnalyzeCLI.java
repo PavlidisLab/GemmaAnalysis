@@ -34,8 +34,7 @@ import java.util.Map;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import cern.colt.list.DoubleArrayList;
-
+import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionValueObject;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
@@ -53,17 +52,14 @@ import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PhysicalLocation;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
 import ubic.gemma.model.genome.biosequence.SequenceType;
 import ubic.gemma.model.genome.gene.GeneService;
-import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
-
-import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
+import cern.colt.list.DoubleArrayList;
 
 /**
  * @author hmokada
