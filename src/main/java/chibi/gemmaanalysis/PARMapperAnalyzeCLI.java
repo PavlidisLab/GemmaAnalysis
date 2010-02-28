@@ -112,6 +112,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     // Gene2GeneCoexpressionService gene2GeneCoexpressionService;
     Probe2ProbeCoexpressionService probe2ProbeCoexpressionService;
 
+    ProbeLinkCoexpressionAnalyzer pca;
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
@@ -252,6 +254,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         this.blatAssociationService = ( BlatAssociationService ) this.getBean( "blatAssociationService" );
         this.probe2ProbeCoexpressionService = ( Probe2ProbeCoexpressionService ) this
                 .getBean( "probe2ProbeCoexpressionService" );
+
+        this.pca = ( ProbeLinkCoexpressionAnalyzer ) this.getBean( "probeLinkCoexpressionAnalyzer" );
 
         // Load up experiments - all experiments or from a list
         Collection<ExpressionExperiment> eeCol;
@@ -464,7 +468,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 Gene g = this.parService.load( GeneId );
 
                 if ( par == null || g == null ) {
-                    System.out.println( "PAR or Gene doesn't exist: " + par + "\t" + g );
+                    log.warn( "PAR or Gene doesn't exist: " + par + "\t" + g );
                     continue;
                 }
 
@@ -741,54 +745,45 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
     }
 
-    // Retrieves all coexpression data for a par and all genes that are in the same
-    // experiment above a coexpression threshold
-    //
-    // This method is different from the previous method outgenecoexpressions examining par-gene pairs.
-    // Here a given par is compared with all genes containing a link in the database (implying that they
-    // already have some coexpression)
+    /**
+     * Retrieves all coexpression data for a par and all genes that are in the same experiment above a coexpression
+     * threshold.
+     * <p>
+     * This method is different from the previous method outgenecoexpressions examining par-gene pairs. Here a given par
+     * is compared with all genes containing a link in the database (implying that they already have some coexpression)
+     * 
+     * @param pars
+     * @param ccCol
+     * @param stringency
+     * @param pco
+     */
     private void outputAllGeneCoexpressionLinks( Collection<Gene> pars, Collection<ExpressionExperiment> ccCol,
             int stringency, PrintStream pco ) {
 
-        Iterator<Gene> pItr = pars.iterator();
+        // convert collection type ... more convenient to do it here.
+        Collection<BioAssaySet> exps = new ArrayList<BioAssaySet>();
+        for ( ExpressionExperiment ee : ccCol ) {
+            exps.add( ee );
+        }
 
-        // for (Gene par: pars) {
-        while ( pItr.hasNext() ) {
-            Gene par = pItr.next();
-
-            Collection<BioAssaySet> exps = new ArrayList<BioAssaySet>();
-
-            for ( ExpressionExperiment ee : ccCol ) {
-                exps.add( ee );
-            }
-
+        for ( Gene par : pars ) {
             Collection<Gene> pargene = new ArrayList<Gene>();
             pargene.add( par );
 
             if ( pargene == null ) {
-                System.out.println( "No pargene" );
+                log.debug( "No pargene" );
                 continue;
             }
             if ( ccCol == null ) {
-                System.out.println( "No exps" );
+                log.debug( "No exps" );
                 continue;
             }
 
-            Map<Gene, CoexpressionCollectionValueObject> coexp;
-
-            try {
-                ProbeLinkCoexpressionAnalyzer pca = new ProbeLinkCoexpressionAnalyzer();
-                pca.setGeneService( parService );
-                pca.setProbe2ProbeCoexpressionService( probe2ProbeCoexpressionService );
-                coexp = pca.linkAnalysis( pargene, exps, stringency, false, false, 0 );
-            } catch ( java.lang.IndexOutOfBoundsException e ) {
-                e.printStackTrace();
-                System.out.println( "Error performing linkAnalysis " + e.getMessage() );
-                continue;
-            }
+            // this is where bug 1604 shows its face
+            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false,
+                    false, 0 ); // low stringency.
 
             if ( coexp == null || coexp.keySet().size() < 1 ) {
-                System.out.println( "No coexpression :(" );
                 continue;
             }
 
@@ -807,13 +802,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             for ( CoexpressionValueObject cvo : cvos ) {
                 String output = output_half + "," + cvo.getGeneId() + "," + csize + "," + cvo.getPositiveScore() + ","
                         + cvo.getNegativeScore();
-                System.out.println( output );
                 pco.println( output );
 
             }
 
             // print out the number of zeros
-            System.out.println( "Zerocount: " + par.getId() + "\t" + par.getId() + "\t" + "0:" + zeroCount );
+            log.info( "Zerocount: " + par.getId() + "\t" + par.getId() + "\t" + "0:" + zeroCount );
 
         }
     }
@@ -850,18 +844,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         Map<Gene, Collection<ExpressionExperiment>> numOfExpsPars = new HashMap<Gene, Collection<ExpressionExperiment>>();
         Map<Gene, Collection<ExpressionExperiment>> numOfExpsGenes = new HashMap<Gene, Collection<ExpressionExperiment>>();
 
-        if ( expressRankings.size() < 1 ) {
-            System.out.println( "No experiments for this batch:" );
-            Iterator<Gene> gItr = genes.iterator();
-            Iterator<Gene> pItr = pars.iterator();
-            Gene g, p;
-
-            while ( gItr.hasNext() ) {
-                g = gItr.next();
-                p = pItr.next();
-                // System.out.println(+g.getId()+"\t"+p.getId());
-            }
-
+        if ( expressRankings.isEmpty() ) {
+            log.info( "No experiments for this batch" );
             return;
         }
 
@@ -886,7 +870,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
                 // skip if both gene and PAR not in experiment
                 if ( ( !expressRankingsExperiment.containsKey( g ) ) || ( !expressRankingsExperiment.containsKey( p ) ) ) {
-                    System.out.println( "skipping, no info" );
+                    log.info( "skipping, no info" );
                     continue;
                 }
 
@@ -908,9 +892,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     candidatePARRanks.add( d );
                 }
 
-                // skip if both gene and PAR not in experiment
+                // skip if both gene or PAR not in experiment
                 if ( candidateGeneRanks.isEmpty() || candidatePARRanks.isEmpty() ) {
-                    System.out.println( "skipping again, at least one is empty" );
+                    log.info( "skipping again, at least one is empty" );
                     continue;
                 }
 
@@ -929,7 +913,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 numOfExpsPars.get( p ).add( ee );
                 numOfExpsGenes.get( g ).add( ee );
 
-                System.out.println( "----Exists!!!----" );
+                log.info( "----Exists!!!----" );
 
             }
         }
@@ -947,7 +931,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
             // weed out all those that don't have experiments
             if ( !allParRankings.containsKey( p ) ) {
-                System.out.println( "No Gene information for " + p.getId() );
+                log.info( "No Gene information for " + p.getId() );
                 continue;
             }
 
@@ -986,7 +970,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     }
 
-    /*
+    /**
      * outputs the ranks for PARs at the probe level. Note, this method calls getRanksProbes, which is not in the Gemma
      * CVS code base.
      */
@@ -1114,7 +1098,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     }
 
-    /*
+    /**
      * the original method - get the rankings for PARs/Genes as a whole, not distinguishing probes
      */
     private void outputRankings( Collection<ExpressionExperiment> eeCol, Collection<Gene> pars, PrintStream px,
