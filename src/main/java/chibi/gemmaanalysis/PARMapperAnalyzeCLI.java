@@ -92,13 +92,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     private boolean checkTroubledExperiments = false; //
     private boolean checkUniqueProbeMappings = false; // 
 
-    private static Map headerLookup;
+    private Map headerLookup;
     // private static String[] headers;
 
-    private static Collection<String[]> records;
+    private Collection<String[]> records;
 
-    private static Map<Long, long[]> parToCoExps;
-    private static Map parFileEntries;
+    private Map<Long, long[]> parToCoExps;
+    private Map parFileEntries;
 
     // Services used
     GeneService parService;
@@ -260,7 +260,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         } else {
             eeCol = loadExpressionExperimentsByFile( ExperimentListFile );
         }
-        System.out.println( "Experiments loaded:" + eeCol.size() );
+        log.info( "Experiments loaded: " + eeCol.size() );
 
         // test for troubled experiments
         if ( checkTroubledExperiments ) {
@@ -274,14 +274,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // int size = ees.size();
             Map<Long, AuditEvent> trouble = expressionExperimentService.getLastTroubleEvent( ees );
 
-            System.out.println( "Called trouble event" );
+            log.info( "Called trouble event" );
 
             for ( Long l : ees ) {
                 AuditEvent ae = trouble.get( l );
                 if ( ae == null ) {
-                    System.out.println( l + "\tok" );
+                    log.info( l + "\tok" );
                 } else {
-                    System.out.println( l + "\ttrouble" );
+                    log.info( l + "\ttrouble" );
                 }
             }
 
@@ -295,9 +295,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
 
         // Read PAR file
-        System.out.println( "Reading file: " + inFile );
         readPARFile( inFile );
-        if ( pargeneexpFile != null ) readpargeneFile( pargeneexpFile );
+        if ( pargeneexpFile != null ) {
+            try {
+                readpargeneFile( pargeneexpFile );
+            } catch ( Exception e ) {
+                return e;
+            }
+        }
 
         // Creates output files
         int batchSize = 50;
@@ -385,8 +390,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             }
 
         } catch ( Exception e ) {
-            System.err.println( "Error writing to file" );
-            System.exit( 0 );
+            return e;
         }
 
         // Establish the column numbers
@@ -416,7 +420,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
          */
         // ///////////////////////////////////////////////// End mess!!!!!!!!!!
         // Iterate through the gene list in batches
-        Iterator recordItr = records.iterator();
+        assert records.size() > 0;
+
+        Iterator<String[]> recordItr = records.iterator();
         int batch = 0;
 
         String[] record;
@@ -426,7 +432,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // eg. parFileEntries(1124999) = "1124999,R49730.par.8.239068.239461,8,239068, ... false,true"
             parFileEntries = new HashMap<Long, String>( batchSize );
 
-            HashMap<Gene, Gene> parToGene = new HashMap<Gene, Gene>();
+            Map<Gene, Gene> parToGene = new HashMap<Gene, Gene>();
 
             Collection<Gene> pars = new ArrayList<Gene>();
             Collection<Gene> genes = new ArrayList<Gene>();
@@ -435,11 +441,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // work with a small batch
             while ( recordItr.hasNext() && 0 < count ) {
 
-                record = ( String[] ) recordItr.next();
+                record = recordItr.next();
 
                 // accessing data elements
-                long ParID = Long.decode( record[ParIDIdx] );
-                long GeneId = Long.decode( record[GeneIdIdx] );
+                long ParID = Long.parseLong( record[ParIDIdx] );
+                long GeneId = Long.parseLong( record[GeneIdIdx] );
 
                 String ParName = record[ParNameIdx];
                 String Chrom = record[ChromIdx];
@@ -583,16 +589,21 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
     }
 
-    /*
-     * This method finds the array types for the expressions given It might be important to know which array designs
-     * make use of double stranded probes This is an example of what is printed to standard out #399: Molecular profiles
-     * (HG-U95A) of dystrophin-deficient and normal human muscle # 8: Affymetrix GeneChip Human Genome U95 Version [1 or
+    /**
+     * This method finds the array types for the expressions given. It might be important to know which array designs
+     * make use of double stranded probes. This is an example of what is printed to standard out
+     * 
+     * <pre>
+     * #399: Molecular profiles (HG-U95A) of dystrophin-deficient and normal human muscle # 8: Affymetrix GeneChip Human Genome U95 Version [1 or
      * 2] Set HG-U95A # AFFY_COLLAPSED 399 8 AFFY_COLLAPSED #403: Molecular heterogeneity in acute renal allograft
      * rejection # 197: LC-17 # EST 403 197 EST #406: Prostaglandin J2 alters gene expression patterns and 26S
      * proteasome... # 162: CAG Human 19k array v1.0 # mRNA 406 162 mRNA #409: Molecular portraits of human breast
      * tumors # 40: SVC # EST 409 40 EST #437: Serum stimulation of fibroblasts # 225: Stanford Human 10k prints 1-3 #
-     * DNA 437 225 DNA To determine which are double stranded, a separate process will have to be used to extract the
-     * names and the types.
+     * DNA 437 225 DNA
+     * </pre>
+     * <p>
+     * To determine which are double stranded, a separate process will have to be used to extract the names and the
+     * types.
      */
     private void printExperimentTypes( Collection<ExpressionExperiment> eeCol ) {
 
@@ -612,7 +623,12 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
     }
 
-    // called by printExperimentTypes to get the array type
+    /**
+     * called by printExperimentTypes to get the array type
+     * 
+     * @param a
+     * @return
+     */
     private SequenceType getSequenceType( ArrayDesign a ) {
         arrayDesignService.thawLite( a );
 
@@ -654,8 +670,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     }
 
-    // Retrieves all coexpression data for pars and genes that are in the same
-    // experiment
+    /**
+     * Retrieves all coexpression data for pars and genes that are in the same experiment
+     */
     private void outputPARGeneCoexpressionLinks( Collection<Gene> pars, Collection<Gene> genes, PrintStream pco ) {
 
         ProbeLinkCoexpressionAnalyzer pca = new ProbeLinkCoexpressionAnalyzer();
@@ -1201,7 +1218,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     /*
      * Return a map for column name to index number
      */
-    private static HashMap getIndices( String header ) {
+    private Map getIndices( String header ) {
         String[] labels = header.trim().split( "\t" );
         HashMap<String, Integer> hash = new HashMap<String, Integer>( labels.length );
 
@@ -1212,27 +1229,35 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         return hash;
     }
 
-    private static int getIndex( String header ) {
+    private int getIndex( String header ) {
         return ( ( Integer ) headerLookup.get( header ) ).intValue();
     }
 
-    /*
+    /**
      * This method reads the PAR file, the main source of information for this CLI. The PAR file is created by
-     * PARMapper.java The file format should be tabe delimited file like the following: ParID ParName Chrom Nuc GeneId
-     * GeneSymbol Distance GeneContainsPar SameStrand 1124999 R49730.par.8.239068.239461 8 239068 3887948 LOC100131718
-     * 462 false true 1125323 AA431402.par.9.35913976.35914288 9 35913976 400013 LOC158376 12294 false false 1126681
-     * W90363.par.2.215298022.215298505 2 215298022 12860 BARD1 3001 false true
+     * PARMapper.java The file format should be tabe delimited file like the following:
+     * <p>
+     * 
+     * <pre>
+     * ParID ParName Chrom Nuc GeneId GeneSymbol Distance GeneContainsPar SameStrand 
+     * 1124999 R49730.par.8.239068.239461 8 239068 3887948 LOC100131718 462 false true 
+     * 1125323 AA431402.par.9.35913976.35914288 9 35913976 400013 LOC158376 12294 false false 
+     * 1126681 W90363.par.2.215298022.215298505 2 215298022 12860 BARD1 3001 false true
+     * </pre>
+     * 
+     * </p>
      */
-    private static void readPARFile( String inFile ) {
+    private void readPARFile( String file ) {
+        log.info( "Reading file: " + inFile );
 
         BufferedReader in;
         Collection<String[]> fRecords = new ArrayList<String[]>();
-        HashMap fHash = null;
+        Map fHash = null;
 
         String header;
 
         try {
-            in = new BufferedReader( new FileReader( inFile ) );
+            in = new BufferedReader( new FileReader( file ) );
             String line;
             header = in.readLine();
             fHash = getIndices( header );
@@ -1247,66 +1272,61 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
         } catch ( FileNotFoundException e ) {
             e.printStackTrace();
-            System.out.println( "File " + inFile + " not found - " + e.getMessage() );
+            System.out.println( "File " + file + " not found - " + e.getMessage() );
             System.exit( 0 );
         } catch ( IOException e ) {
             e.printStackTrace();
-            System.out.println( "File " + inFile + " reads a bit wonky - " + e.getMessage() );
+            System.out.println( "File " + file + " reads a bit wonky - " + e.getMessage() );
             System.exit( 0 );
         }
 
         headerLookup = fHash;
-        records = fRecords;
+        this.records = fRecords;
     }
 
-    /*
-     * Reads a par/gene/experiments file and saves the results to hash this file maps each PAR to a gene and a list of
-     * experiments that has both The format should by the like the following ParID GeneID Experiments 1126681 12860
-     * 441,442,443,445,519,521 1130907 166867 443 1134105 7379 442 1134841 14121 442 1135031 119682 441,442,519,521
+    /**
+     * Reads a par/gene/experiments file and saves the results to hash. This file maps each PAR to a gene and a list of
+     * experiments that tests both. The format should by the like the following
+     * <p>
+     * 
+     * <pre>
+     * ParID GeneID Experiments 
+     * 1126681 12860 441,442,443,445,519,521 
+     * 1130907 166867 443 
+     * 1134105 7379 442 
+     * 1134841 14121 442 
+     * 1135031 119682 441,442,519,521
+     * </pre>
+     * 
+     * </p>
      */
-    // parToCoExps
-    private static void readpargeneFile( String inFile ) {
+    private void readpargeneFile( String file ) throws Exception {
 
         parToCoExps = new HashMap<Long, long[]>();
 
         BufferedReader in;
 
-        String header;
+        in = new BufferedReader( new FileReader( file ) );
+        String line;
+        in.readLine(); // header
 
-        try {
-            in = new BufferedReader( new FileReader( inFile ) );
-            String line;
-            header = in.readLine();
+        while ( ( line = in.readLine() ) != null ) {
+            if ( line.startsWith( "#" ) ) continue;
+            String[] s = line.trim().split( "\t" );
+            String[] expIdsStr = s[2].split( "," );
+            long[] expIds = new long[expIdsStr.length];
 
-            while ( ( line = in.readLine() ) != null ) {
-                if ( line.startsWith( "#" ) ) continue;
-                String[] s = line.trim().split( "\t" );
-                String[] expIdsStr = s[2].split( "," );
-                long[] expIds = new long[expIdsStr.length];
-
-                for ( int i = 0; i < expIdsStr.length; i++ ) {
-                    expIds[i] = Long.parseLong( expIdsStr[i] );
-                }
-
-                parToCoExps.put( new Long( Long.parseLong( s[0] ) ), expIds );
-                // parToCoExps.put(s[0], expIds);
+            for ( int i = 0; i < expIdsStr.length; i++ ) {
+                expIds[i] = Long.parseLong( expIdsStr[i] );
             }
-
-            in.close();
-
-        } catch ( FileNotFoundException e ) {
-            e.printStackTrace();
-            System.out.println( "File " + inFile + " not found - " + e.getMessage() );
-            System.exit( 0 );
-        } catch ( IOException e ) {
-            e.printStackTrace();
-            System.out.println( "File " + inFile + " reads a bit wonky - " + e.getMessage() );
-            System.exit( 0 );
+            parToCoExps.put( new Long( Long.parseLong( s[0] ) ), expIds );
         }
+
+        in.close();
 
     }
 
-    /*
+    /**
      * UNSTABLE This method outputs the pairwise correlations between pars and genes The correlations are calculated
      * here using Pearson. This loads all experiments at once, therefore it calls the database less but this method
      * crashes very frequently!!!!! Note: this method requires that a PAR/gene/experiment map file be used Note: this
@@ -1485,7 +1505,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     }
 
-    /*
+    /**
      * STABLE This method outputs the pairwise correlations between pars and genes The correlations are calculated here
      * using Pearson. This loads all the data one experiment at a time. It is slower than the other method but it is
      * much more stable. Note: this method requires that a PAR/gene/experiment map file be used Note: this method takes
@@ -1637,7 +1657,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     /*
      * Loads experiments from a list on a file
      */
-    private Collection<ExpressionExperiment> loadExpressionExperimentsByFile( String ExperimentListFile ) {
+    private Collection<ExpressionExperiment> loadExpressionExperimentsByFile( String eeListFile ) {
 
         Collection<ExpressionExperiment> eeCol = new ArrayList<ExpressionExperiment>();
         Collection<Long> eeids = new ArrayList<Long>();
@@ -1645,7 +1665,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         BufferedReader in;
 
         try {
-            in = new BufferedReader( new FileReader( ExperimentListFile ) );
+            in = new BufferedReader( new FileReader( eeListFile ) );
             String line;
 
             while ( ( line = in.readLine() ) != null ) {
@@ -1662,11 +1682,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
         } catch ( FileNotFoundException e ) {
             e.printStackTrace();
-            System.out.println( "File " + ExperimentListFile + " not found - " + e.getMessage() );
+            System.out.println( "File " + eeListFile + " not found - " + e.getMessage() );
             System.exit( 0 );
         } catch ( IOException e ) {
             e.printStackTrace();
-            System.out.println( "File " + ExperimentListFile + " reads a bit wonky - " + e.getMessage() );
+            System.out.println( "File " + eeListFile + " reads a bit wonky - " + e.getMessage() );
             System.exit( 0 );
         }
 

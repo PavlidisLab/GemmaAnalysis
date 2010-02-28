@@ -103,7 +103,6 @@ public class ProbeAlignedRegionAnalysisCLI extends AbstractSpringAwareCLI {
         addOption( inputFileOption );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Collection<Long> parIds = new HashSet<Long>();
