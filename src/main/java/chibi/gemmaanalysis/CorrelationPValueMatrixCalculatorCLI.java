@@ -13,7 +13,6 @@ import ubic.basecode.io.reader.DoubleMatrixReader;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
 
 /**
  * CLI for reading in a max correlation matrix to calculate p values from correlation histograms
@@ -30,10 +29,10 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option inFile = OptionBuilder.create( 'i' );
-        addOption( inFile );
-        Option outFile = OptionBuilder.create( 'o' );
-        addOption( outFile );
+        Option inFileo = OptionBuilder.create( 'i' );
+        addOption( inFileo );
+        Option outFileo = OptionBuilder.create( 'o' );
+        addOption( outFileo );
     }
 
     @Override
@@ -49,9 +48,8 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
     protected Exception doWork( String[] args ) {
         processCommandLine( "DoubleMatrixReader", args );
 
-        TaxonService taxonService = ( TaxonService ) getBean( "taxonService" );
         String taxonName = "human";
-        Taxon taxon = Taxon.Factory.newInstance();
+        taxon = Taxon.Factory.newInstance();
         taxon.setCommonName( taxonName );
         taxon = taxonService.find( taxon );
 
@@ -63,7 +61,7 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
             DoubleMatrix<String, String> matrix = in.read( inFile );
             DoubleMatrix<String, String> pMatrix = coexpService.calculateMaxCorrelationPValueMatrix( matrix, 0,
                     expressionExperiments );
-            MatrixWriter out = new MatrixWriter( outFile, formatter );
+            MatrixWriter<String, String> out = new MatrixWriter<String, String>( outFile, formatter );
             out.writeMatrix( pMatrix, true );
         } catch ( IOException e ) {
             return e;

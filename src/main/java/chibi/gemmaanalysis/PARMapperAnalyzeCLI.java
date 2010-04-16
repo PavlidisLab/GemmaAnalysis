@@ -634,7 +634,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
      * @return
      */
     private SequenceType getSequenceType( ArrayDesign a ) {
-        arrayDesignService.thawLite( a );
+        a = arrayDesignService.thawLite( a );
 
         Collection<CompositeSequence> csc = a.getCompositeSequences();
         Iterator cscItr = csc.iterator();
@@ -779,11 +779,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 continue;
             }
 
-            // this is where bug 1604 shows its face
+            // this is where bug 1604 showed its face
             Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false,
                     false, 0 ); // low stringency.
 
-            if ( coexp == null || coexp.keySet().size() < 1 ) {
+            if ( coexp == null || coexp.isEmpty() ) {
                 continue;
             }
 

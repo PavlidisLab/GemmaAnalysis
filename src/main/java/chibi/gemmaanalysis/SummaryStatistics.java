@@ -174,7 +174,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         int count = 0;
         for ( ArrayDesign design : ads ) {
             log.info( design + " : " + ++count + " of " + ads.size() );
-            adService.thawLite( design );
+            design = adService.thawLite( design );
             Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
 
             int i = 0;

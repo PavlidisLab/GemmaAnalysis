@@ -31,19 +31,18 @@ import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**
- * Simple command line to index the gemma db. Can index gene's, Expression experiments or array Designs
- * 
  * @author klc
  * @version $Id$
  */
 public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
 
-//These were the previous EE ids that had no experimentalDesign
-//The easiest way to get this set is to use a sql query like: select ee.id from expression_experiment as ee where ee.experimental_design is null
-//    private static final long[] EEwithNoED = { 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215,
-//            216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 620, 670, 671, 672,
-//            673, 675 };
-    
+    // These were the previous EE ids that had no experimentalDesign
+    // The easiest way to get this set is to use a sql query like: select ee.id from expression_experiment as ee where
+    // ee.experimental_design is null
+    // private static final long[] EEwithNoED = { 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215,
+    // 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 620, 670, 671, 672,
+    // 673, 675 };
+
     private static final long[] EEwithNoED = {};
 
     ExpressionExperimentService eeService;
@@ -53,7 +52,6 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
      * 
      * @see ubic.gemma.util.AbstractCLI#buildOptions()
      */
-    @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
 
@@ -67,7 +65,7 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
     @Override
     protected void processOptions() {
         super.processOptions();
-        
+
         this.eeService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
 
     }
@@ -96,7 +94,6 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
      * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Add Experimental Design", args );
@@ -105,11 +102,10 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
         }
         try {
 
-            for(Long eeId : EEwithNoED){
+            for ( Long eeId : EEwithNoED ) {
                 log.info( "Adding experimental design to ee: " + eeId );
                 addEd2EE( eeId );
             }
-                       
 
         } catch ( Exception e ) {
             log.error( e );
@@ -121,8 +117,8 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
     private void addEd2EE( Long eeID ) {
 
         ExpressionExperiment ee = eeService.load( eeID );
-        
-        //Is this necessary to test?
+
+        // Is this necessary to test?
         if ( ee.getExperimentalDesign() != null ) return;
 
         ExperimentalDesign ed = ExperimentalDesign.Factory.newInstance();

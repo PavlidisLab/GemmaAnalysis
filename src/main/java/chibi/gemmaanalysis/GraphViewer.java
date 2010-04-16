@@ -673,33 +673,26 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
 
     } // end of inner class TreeMapColorAction
 
-    @SuppressWarnings("unused")
     public void windowActivated( WindowEvent e ) {
     }
 
-    @SuppressWarnings("unused")
     public void windowClosed( WindowEvent e ) {
     }
 
-    @SuppressWarnings("unused")
     public void windowClosing( WindowEvent e ) {
         WINDOW_CLOSED = true;
         System.err.println( "CLOSING" );
     }
 
-    @SuppressWarnings("unused")
     public void windowDeactivated( WindowEvent e ) {
     }
 
-    @SuppressWarnings("unused")
     public void windowDeiconified( WindowEvent e ) {
     }
 
-    @SuppressWarnings("unused")
     public void windowIconified( WindowEvent e ) {
     }
 
-    @SuppressWarnings("unused")
     public void windowOpened( WindowEvent e ) {
     }
 }

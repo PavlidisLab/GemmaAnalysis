@@ -32,8 +32,6 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import ubic.gemma.analysis.sequence.BlatAssociationScorer;
 import ubic.gemma.analysis.sequence.ProbeMapper;
@@ -66,6 +64,7 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  * @see ArrayDesignProbeMapperCli for the tool we use day-to-day
  * @deprecated beause ArrayDesignProbeMapperCli has most of the functionality.
  */
+@Deprecated
 public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
     @Override
@@ -76,8 +75,6 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     ProbeMapper probeMapper;
 
     private static final String DEFAULT_DATABASE = "hg18";
-
-    private static Log log = LogFactory.getLog( ProbeMapperCli.class.getName() );
 
     /**
      * @param bestOutputFileName
@@ -246,7 +243,6 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
      * @throws FileNotFoundException
      * @throws IOException
      */
-    @SuppressWarnings("unchecked")
     private void runOnBioSequences() throws SQLException, FileNotFoundException, IOException {
         GoldenPathSequenceAnalysis goldenPathDb = new GoldenPathSequenceAnalysis( this.databaseName );
 
@@ -455,7 +451,6 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
      * @throws IllegalAccessException
      * @throws ClassNotFoundException
      */
-    @SuppressWarnings("unchecked")
     public Map<String, Collection<BlatAssociation>> runOnBlatResults( InputStream blatResultInputStream, Writer output )
             throws IOException, SQLException {
 

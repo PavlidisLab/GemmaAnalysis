@@ -167,7 +167,8 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             log.info( "Expression Experiment " + ee.getShortName() + " doesn't have required QT " );
         }
         return qtf;
-    } 
+    }
+
     String processEEForPercentage( ExpressionExperiment ee ) {
         // eeService.thaw( ee );
         QuantitationType qt = this.getQuantitationType( ee, StandardQuantitationType.PRESENTABSENT, false );
@@ -276,7 +277,6 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         return numberofArrays;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "AffYPlatFormAnalysisCli ", args );
