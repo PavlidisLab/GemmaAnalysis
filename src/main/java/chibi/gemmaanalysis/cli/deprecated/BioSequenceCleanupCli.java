@@ -107,8 +107,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         if ( err != null ) return err;
 
         Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
-        if ( this.arrayDesignName != null ) {
-            ads.add( locateArrayDesign( this.arrayDesignName ) );
+        if ( !this.arrayDesignsToProcess.isEmpty() ) {
+            ads.addAll( this.arrayDesignsToProcess );
         } else if ( file != null ) {
             try {
                 InputStream is = new FileInputStream( file );
@@ -117,7 +117,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                 String id = null;
                 Collection<Long> ids = new HashSet<Long>();
                 while ( ( id = br.readLine() ) != null ) {
-
                     if ( StringUtils.isBlank( id ) ) {
                         continue;
                     }

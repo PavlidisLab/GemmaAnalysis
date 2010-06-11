@@ -342,7 +342,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
         // print the histogram.
         int[] counts = new int[MAX_EXPS + 1];
-        for ( Long outer : ( List<Long> ) mat.getRowNames() ) {
+        for ( Long outer : mat.getRowNames() ) {
             double[] row = mat.getRowByName( outer );
             for ( double d : row ) {
                 counts[( int ) d]++;

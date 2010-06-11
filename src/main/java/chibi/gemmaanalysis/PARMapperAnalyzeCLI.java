@@ -700,7 +700,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // change expression exp objects to bioassaysets
             Collection<BioAssaySet> eexps = new ArrayList<BioAssaySet>();
             for ( int i = 0; i < expIds.length; i++ ) {
-                eexps.add( ( BioAssaySet ) expressionExperimentService.load( expIds[i] ) );
+                eexps.add( expressionExperimentService.load( expIds[i] ) );
             }
 
             Collection<Gene> pargene = new ArrayList<Gene>();

@@ -87,12 +87,13 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
                 "the taxon name" ).withLongOpt( "Taxon" ).create( 't' );
         addOption( taxonOption );
-        Option eeNameFile = OptionBuilder.hasArg().withArgName( "File having Expression Experiment Names" )
+        Option eeNameFileo = OptionBuilder.hasArg().withArgName( "File having Expression Experiment Names" )
                 .withDescription( "File having Expression Experiment Names" ).withLongOpt( "eeFileName" ).create( 'f' );
-        addOption( eeNameFile );
+        addOption( eeNameFileo );
 
     }
 
+    @Override
     protected void processOptions() {
         super.processOptions();
         if ( hasOption( 't' ) ) {
@@ -262,8 +263,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
             e.printStackTrace();
         }
     }
-
-    @SuppressWarnings("unchecked")
+ 
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Shuffle Links ", args );

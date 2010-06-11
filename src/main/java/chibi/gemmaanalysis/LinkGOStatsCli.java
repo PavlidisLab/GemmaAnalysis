@@ -401,8 +401,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
      * 
      * @return collection of known genes for the taxon selected on the command line. Known genes basically means NCBI
      *         genes (not PARs and not "predicted").
-     */
-    @SuppressWarnings("unchecked")
+     */ 
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
         Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
@@ -506,8 +505,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
      * @param filepath
      * @return
      * @throws IOException
-     */
-    @SuppressWarnings("unchecked")
+     */ 
     private Collection<GeneLink> loadLinks( String filepath ) throws IOException {
 
         File f = new File( filepath );
@@ -588,6 +586,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         return links;
     }
 
+    @Override
     protected void processOptions() {
         super.processOptions();
 

@@ -134,8 +134,7 @@ public class ProbeMapperGui extends JFrame {
             okButton.setText( "OK" );
             okButton.setBounds( 200, 13, 51, 26 );
             okButton.addActionListener( new ActionListener() {
-
-                @SuppressWarnings( { "unused", "synthetic-access" })
+                @SuppressWarnings( { "synthetic-access" })
                 public void actionPerformed( ActionEvent e ) {
                     inputFile = new File( inputFileNameTextField.getText() );
                     outputFile = new File( outputFileNameTextField.getText() );

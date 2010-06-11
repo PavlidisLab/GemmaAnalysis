@@ -30,7 +30,6 @@ import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGeneImpl;
 import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
@@ -59,8 +58,8 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     Map<Long, Collection<Long>> getGeneId2CSIdsMap( Map<Long, Collection<Long>> csId2geneIds ) {
         Map<Long, Collection<Long>> geneId2csIds = new HashMap<Long, Collection<Long>>();
         for ( Long csId : csId2geneIds.keySet() ) {
-            Collection<Long> geneIds = csId2geneIds.get( csId );
-            for ( Long geneId : geneIds ) {
+            Collection<Long> gids = csId2geneIds.get( csId );
+            for ( Long geneId : gids ) {
                 Collection<Long> csIds = geneId2csIds.get( geneId );
                 if ( csIds == null ) {
                     csIds = new HashSet<Long>();
@@ -110,9 +109,9 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
 
     /*
      * (non-Javadoc)
+     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Array design stat summary", args );
