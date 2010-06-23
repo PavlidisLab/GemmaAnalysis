@@ -265,7 +265,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
     int getNumberofArraysinEE( ExpressionExperiment ee, ArrayDesign ad ) {
         int numberofArrays = 0;
-        eeService.thaw( ee );
+        eeService.thawLite( ee );
         Collection<BioAssay> bioAssays = ee.getBioAssays();
         for ( BioAssay assay : bioAssays ) {
             ArrayDesign design = assay.getArrayDesignUsed();

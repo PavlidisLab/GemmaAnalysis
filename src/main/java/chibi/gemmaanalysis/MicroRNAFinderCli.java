@@ -130,7 +130,7 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
         Collection<Gene> genes = geneService.loadMicroRNAs( taxon );
 
         for ( Gene gene : genes ) {
-            geneService.thaw( gene );
+            gene = geneService.thaw( gene );
             miRNAs.addAll( gene.getProducts() );
         }
 

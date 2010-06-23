@@ -266,7 +266,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 String idString = strings[0];
                 Long id = Long.parseLong( idString );
                 BioSequence bs = bss.load( id );
-                bss.thaw( bs );
+                bs = bss.thaw( bs );
 
                 if ( bs == null ) continue;
 
