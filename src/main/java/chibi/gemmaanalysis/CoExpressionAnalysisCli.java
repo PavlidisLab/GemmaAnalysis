@@ -312,6 +312,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
 
     /*
      * (non-Javadoc)
+     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @SuppressWarnings("unchecked")
@@ -464,8 +465,8 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         MatrixDisplay dataMatrixDisplay = new MatrixDisplay( dataColorMatrix );
         MatrixDisplay rankMatrixDisplay = new MatrixDisplay( rankColorMatrix );
 
-        dataMatrixDisplay.saveImage( filebaseName + ".png", true );
-        rankMatrixDisplay.saveImage( filebaseName + ".ranks.png", true );
+        dataMatrixDisplay.saveImage( filebaseName + ".png", true, false );
+        rankMatrixDisplay.saveImage( filebaseName + ".ranks.png", true, false );
     }
 
     /**

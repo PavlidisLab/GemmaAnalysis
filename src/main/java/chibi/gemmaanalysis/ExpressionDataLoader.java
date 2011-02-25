@@ -34,7 +34,6 @@ import ubic.basecode.io.ByteArrayConverter;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
@@ -76,8 +75,8 @@ public class ExpressionDataLoader {
     private Collection<String> getActiveProbeIdSet() {
         Collection<String> probeIdSet = new HashSet<String>();
         for ( DesignElementDataVector dataVector : this.designElementDataVectors ) {
-            DesignElement designElement = dataVector.getDesignElement();
-            String probeId = ( ( CompositeSequence ) designElement ).getName();
+            CompositeSequence designElement = dataVector.getDesignElement();
+            String probeId = designElement.getName();
             probeIdSet.add( probeId );
         }
 
@@ -105,8 +104,8 @@ public class ExpressionDataLoader {
             writer.write( "Source: " + this.experiment.getSource() + "\n" );
 
             for ( DesignElementDataVector dataVector : this.designElementDataVectors ) {
-                DesignElement designElement = dataVector.getDesignElement();
-                String probId = ( ( CompositeSequence ) designElement ).getName();
+                CompositeSequence designElement = dataVector.getDesignElement();
+                String probId = designElement.getName();
                 byte[] expressionByteData = dataVector.getData();
                 ByteArrayConverter byteConverter = new ByteArrayConverter();
                 double[] expressionData = byteConverter.byteArrayToDoubles( expressionByteData );

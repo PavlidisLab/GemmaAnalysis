@@ -233,7 +233,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         // dataColorMatrix.setColorMap( ColorMap.GREENRED_COLORMAP );
         dataColorMatrix.setColorMap( ColorMap.BLACKBODY_COLORMAP );
         MatrixDisplay dataMatrixDisplay = new MatrixDisplay( dataColorMatrix );
-        dataMatrixDisplay.saveImage( imageName, true );
+        dataMatrixDisplay.saveImage( imageName, true, false );
 
     }
 
@@ -263,7 +263,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
             e.printStackTrace();
         }
     }
- 
+
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Shuffle Links ", args );

@@ -42,7 +42,6 @@ import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
@@ -59,9 +58,9 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
     private class SortedElement implements Comparable<SortedElement> {
         private Double mean, min, max, median, std, presentAbsentCall;
-        private DesignElement de;
+        private CompositeSequence de;
 
-        public SortedElement( DesignElement de, double min, double max, double mean, double median, double std,
+        public SortedElement( CompositeSequence de, double min, double max, double mean, double median, double std,
                 double presentAbsentCall ) {
             this.de = de;
             this.mean = mean;
@@ -96,7 +95,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             return std;
         }
 
-        public DesignElement getDE() {
+        public CompositeSequence getDE() {
             return de;
         }
 
@@ -113,8 +112,8 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
     private String arrayDesignName = null;
     private String outFileName = null;
-    private Map<DesignElement, DoubleArrayList> rankData = new HashMap<DesignElement, DoubleArrayList>();
-    private Map<DesignElement, DoubleArrayList> presentAbsentData = new HashMap<DesignElement, DoubleArrayList>();
+    private Map<CompositeSequence, DoubleArrayList> rankData = new HashMap<CompositeSequence, DoubleArrayList>();
+    private Map<CompositeSequence, DoubleArrayList> presentAbsentData = new HashMap<CompositeSequence, DoubleArrayList>();
     private DesignElementDataVectorService devService = null;
     private ExpressionExperimentService eeService = null;
     private Map<CompositeSequence, Collection<Gene>> probeToGeneAssociation = null;
@@ -180,7 +179,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         ByteArrayConverter bac = new ByteArrayConverter();
 
         for ( DesignElementDataVector vector : dataVectors ) {
-            DesignElement de = vector.getDesignElement();
+            CompositeSequence de = vector.getDesignElement();
             DoubleArrayList presentAbsentList = this.presentAbsentData.get( de );
             if ( presentAbsentList == null ) {
                 // return (" EE data vectors don't match array design for probe " + de.getName());
@@ -205,7 +204,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
         Collection<CompositeSequence> cs = new HashSet<CompositeSequence>();
         for ( ProcessedExpressionDataVector designElementDataVector : datavectors ) {
-            cs.add( ( CompositeSequence ) designElementDataVector.getDesignElement() );
+            cs.add( designElementDataVector.getDesignElement() );
         }
         CompositeSequenceService css = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
         return css.getGenes( cs );
@@ -224,7 +223,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         }
 
         for ( ProcessedExpressionDataVector vector : dataVectors ) {
-            DesignElement de = vector.getDesignElement();
+            CompositeSequence de = vector.getDesignElement();
             DoubleArrayList rankList = this.rankData.get( de );
             if ( rankList == null ) {
                 return ( " EE data vectors don't match array design for probe " + de.getName() );
@@ -312,7 +311,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         }
         log.info( "The total number of all arrays is " + numberofAllArrays );
         ObjectArrayList sortedList = new ObjectArrayList();
-        for ( DesignElement de : this.rankData.keySet() ) {
+        for ( CompositeSequence de : this.rankData.keySet() ) {
             DoubleArrayList rankList = this.rankData.get( de );
             DoubleArrayList presentAbsentList = this.presentAbsentData.get( de );
             if ( rankList.size() > 0 ) {

@@ -40,7 +40,6 @@ import ubic.basecode.graphics.MatrixDisplay;
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.basecode.math.CorrelationStats;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
@@ -48,7 +47,6 @@ import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
@@ -147,7 +145,6 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
      * @param cs2knowngenes
      * @return
      */
-    @SuppressWarnings("unchecked")
     Collection<Double> calculateCorrs( ExpressionExperiment ee, Map<Long, Collection<Long>> cs2knowngenes ) {
         ArrayList<Double> corrs = new ArrayList<Double>();
 
@@ -211,16 +208,15 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
      * @param ee
      * @param geneIds
      */
-    @SuppressWarnings("unchecked")
     void fillHistogram( ExpressionExperiment ee, Collection<Long> geneIds ) {
         int halfBin = binNum / 2;
         Collection<Long> csIds = new HashSet<Long>();
-        Collection<DesignElement> allCSs = new HashSet<DesignElement>();
+        Collection<CompositeSequence> allCSs = new HashSet<CompositeSequence>();
         Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : ads ) {
             allCSs.addAll( adService.loadCompositeSequences( ad ) );
         }
-        for ( DesignElement cs : allCSs ) {
+        for ( CompositeSequence cs : allCSs ) {
             csIds.add( cs.getId() );
         }
 
@@ -284,7 +280,7 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
             // dataColorMatrix.setColorMap( ColorMap.GREENRED_COLORMAP );
             dataColorMatrix.setColorMap( ColorMap.BLACKBODY_COLORMAP );
             MatrixDisplay dataMatrixDisplay = new MatrixDisplay( dataColorMatrix );
-            dataMatrixDisplay.saveImage( "correlationDist.png", true );
+            dataMatrixDisplay.saveImage( "correlationDist.png", true, true );
 
             out.write( "\n" );
             out.close();
@@ -293,7 +289,6 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Correlation Distribution ", args );

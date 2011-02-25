@@ -47,7 +47,6 @@ import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorSer
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorDao.RankMethod;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.designElement.DesignElement;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
@@ -977,26 +976,26 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     private void outputRankingsProbelevel( Collection<ExpressionExperiment> eeCol, Collection<Gene> pars, PrintStream p ) {
 
         // use getRanksProbes function to map genes to experiments
-        Map<ExpressionExperiment, Map<Gene, Map<DesignElement, Double[]>>> expressRankings = processedExpressionDataVectorService
+        Map<ExpressionExperiment, Map<Gene, Map<CompositeSequence, Double[]>>> expressRankings = processedExpressionDataVectorService
                 .getRanksByProbe( eeCol, pars );
 
         // need to map experiments to genes to calculate max/mean across experiments
-        Map<Gene, Map<DesignElement, Collection<Double[]>>> allProbeRankings = new HashMap<Gene, Map<DesignElement, Collection<Double[]>>>();
+        Map<Gene, Map<CompositeSequence, Collection<Double[]>>> allProbeRankings = new HashMap<Gene, Map<CompositeSequence, Collection<Double[]>>>();
 
         // go through the information that getRanksProbes returned
         for ( ExpressionExperiment ee : expressRankings.keySet() ) {
-            Map<Gene, Map<DesignElement, Double[]>> expressRankingsGene = expressRankings.get( ee );
+            Map<Gene, Map<CompositeSequence, Double[]>> expressRankingsGene = expressRankings.get( ee );
             for ( Gene g : expressRankingsGene.keySet() ) {
-                Map<DesignElement, Double[]> expressRankingsGeneCompseq = expressRankingsGene.get( g );
+                Map<CompositeSequence, Double[]> expressRankingsGeneCompseq = expressRankingsGene.get( g );
 
-                Collection<DesignElement> cde;
+                Collection<CompositeSequence> cde;
 
                 // Add filter here to obtain only unique probes - if user requests it
                 if ( checkUniqueProbeMappings ) {
                     Collection<CompositeSequence> csCasted = new ArrayList<CompositeSequence>();
 
                     // cast all composite sequences as design elements
-                    for ( DesignElement de : expressRankingsGeneCompseq.keySet() ) {
+                    for ( CompositeSequence de : expressRankingsGeneCompseq.keySet() ) {
                         csCasted.add( ( CompositeSequence ) de );
                     }
 
@@ -1004,7 +1003,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     // physical locations - and other information not needed
                     Map<CompositeSequence, Collection<BioSequence2GeneProduct>> gws = compositeSequenceService
                             .getGenesWithSpecificity( csCasted );
-                    cde = new ArrayList<DesignElement>();
+                    cde = new ArrayList<CompositeSequence>();
 
                     for ( CompositeSequence cs : gws.keySet() ) {
 
@@ -1024,7 +1023,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     cde = expressRankingsGeneCompseq.keySet();
                 }
 
-                for ( DesignElement de : cde ) {
+                for ( CompositeSequence de : cde ) {
                     Double[] d = expressRankingsGeneCompseq.get( de );
 
                     // subtract this entry from the list of probes, and if
@@ -1034,7 +1033,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     } else {
 
                         if ( !allProbeRankings.containsKey( g ) ) {
-                            allProbeRankings.put( g, new HashMap<DesignElement, Collection<Double[]>>() );
+                            allProbeRankings.put( g, new HashMap<CompositeSequence, Collection<Double[]>>() );
 
                         }
 
@@ -1053,9 +1052,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         // go through the data, calculate the rank information and print out to file
         for ( Gene g : allProbeRankings.keySet() ) {
 
-            Map<DesignElement, Collection<Double[]>> allProbeRankingsGenes = allProbeRankings.get( g );
+            Map<CompositeSequence, Collection<Double[]>> allProbeRankingsGenes = allProbeRankings.get( g );
 
-            for ( DesignElement de : allProbeRankingsGenes.keySet() ) {
+            for ( CompositeSequence de : allProbeRankingsGenes.keySet() ) {
 
                 // element 0 is the mean, element 1 is the max ranking
                 // from list of probe expressios, do stats
@@ -1407,14 +1406,14 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
                 // iterate through the par probes
                 for ( DoubleVectorValueObject parDvvo : expParMap.get( eeId ) ) {
-                    DesignElement pd = parDvvo.getDesignElement();
+                    CompositeSequence pd = parDvvo.getDesignElement();
 
                     double[] pdata = parDvvo.getData();
                     int parProbeMappings = parDvvo.getGenes().size();
 
                     // iterate through the gene probes
                     for ( DoubleVectorValueObject geneDvvo : expGeneMap.get( eeId ) ) {
-                        DesignElement gd = geneDvvo.getDesignElement();
+                        CompositeSequence gd = geneDvvo.getDesignElement();
 
                         double[] gdata = geneDvvo.getData();
 
@@ -1537,10 +1536,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 Collection<DoubleVectorValueObject> dvvos = processedExpressionDataVectorService
                         .getProcessedDataArrays( ees, pargene );
 
-                Map<DesignElement, double[]> parData = new HashMap<DesignElement, double[]>();
-                Map<DesignElement, double[]> geneData = new HashMap<DesignElement, double[]>();
+                Map<CompositeSequence, double[]> parData = new HashMap<CompositeSequence, double[]>();
+                Map<CompositeSequence, double[]> geneData = new HashMap<CompositeSequence, double[]>();
 
-                Map<DesignElement, Integer> probemappingCount = new HashMap<DesignElement, Integer>();
+                Map<CompositeSequence, Integer> probemappingCount = new HashMap<CompositeSequence, Integer>();
 
                 // separate data into PAR or gene - the returned object does not
                 // differenciate which probes belong to PAR or gene
@@ -1568,10 +1567,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     probemappingCount.put( dvvo.getDesignElement(), new Integer( dvvo.getGenes().size() ) );
                 }
 
-                for ( DesignElement pd : parData.keySet() ) {
+                for ( CompositeSequence pd : parData.keySet() ) {
                     double[] pdata = parData.get( pd );
 
-                    for ( DesignElement gd : geneData.keySet() ) {
+                    for ( CompositeSequence gd : geneData.keySet() ) {
                         double[] gdata = geneData.get( gd );
 
                         // check if vectors the same length
