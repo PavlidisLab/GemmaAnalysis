@@ -87,7 +87,7 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
                     for ( Integer cmp : dateCorrelations.keySet() ) {
                         Double dateCorr = dateCorrelations.get( cmp );
-                        System.out.println( "PCA\t" + ee.getId() + "\t" + ee.getShortName() + "\tRunDate\tRunDate\t"
+                        System.out.println( "PCA\t" + ee.getId() + "\t" + ee.getShortName() + "\tRunDate\tRunDate\tPC"
                                 + cmp + "\t" + String.format( "%.2f", dateCorr ) );
                     }
 
