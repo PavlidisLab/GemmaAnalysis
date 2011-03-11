@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -996,7 +996,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
                     // cast all composite sequences as design elements
                     for ( CompositeSequence de : expressRankingsGeneCompseq.keySet() ) {
-                        csCasted.add( ( CompositeSequence ) de );
+                        csCasted.add( de );
                     }
 
                     // use the getGenesWithSpecificity service to obtain all

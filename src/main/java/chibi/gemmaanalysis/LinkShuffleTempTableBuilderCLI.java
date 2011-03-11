@@ -100,7 +100,8 @@ public class LinkShuffleTempTableBuilderCLI extends ExpressionExperimentManipula
 
 	}
 
-	protected String[] getAdditionalSpringConfigLocations() {
+	@Override
+    protected String[] getAdditionalSpringConfigLocations() {
 		return new String[] { "classpath*:chibi/beans.xml" };
 	}
 

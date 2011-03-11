@@ -36,7 +36,6 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.gemma.analysis.expression.coexpression.CoexpressionMetaValueObject;
 import ubic.gemma.analysis.expression.coexpression.CoexpressionValueObjectExt;
 import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
 import ubic.gemma.model.association.coexpression.Gene2GeneCoexpressionService;
@@ -302,11 +301,10 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
                 geneCount++;
             }
             // use subset list of genes, size SUBSETSIZE
-            CoexpressionMetaValueObject cmvo = geneCoexpressionService.coexpressionSearch( 717L, geneSubset,
-                    stringency, 0, queryGenesOnly );
-            Collection<CoexpressionValueObjectExt> cvoExtCol = cmvo.getKnownGeneResults();
+            Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( 717L,
+                    geneSubset, stringency, 0, queryGenesOnly, true );
 
-            Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cvoExtCol );
+            Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cmvo );
 
             printDegreeCount( coexpressionList );
 

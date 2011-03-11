@@ -171,6 +171,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
 
     }
 
+    @Override
     protected String[] getAdditionalSpringConfigLocations() {
         return new String[] { "classpath*:chibi/beans.xml" };
     }

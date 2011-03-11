@@ -260,7 +260,7 @@ public class ProbeMapperGui extends JFrame {
             inputFileBrowseButton.setBounds( 451, 8, 87, 26 );
             inputFileBrowseButton.addActionListener( new ActionListener() {
 
-                @SuppressWarnings( { "unused", "synthetic-access" })
+                @SuppressWarnings( { "synthetic-access" })
                 public void actionPerformed( ActionEvent e ) {
 
                     JFileChooser fc = new JFileChooser();

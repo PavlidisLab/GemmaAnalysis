@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -121,7 +122,7 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         Map<Gene, String> geneNameMap = matrices.getGeneNameMap();
         Map<ExpressionExperiment, String> eeNameMap = matrices.getEeNameMap();
 
-        DecimalFormat formatter = ( DecimalFormat ) DecimalFormat.getNumberInstance( Locale.US );
+        DecimalFormat formatter = ( DecimalFormat ) NumberFormat.getNumberInstance( Locale.US );
         formatter.applyPattern( "0.0000" );
         DecimalFormatSymbols symbols = formatter.getDecimalFormatSymbols();
         symbols.setNaN( "NaN" );

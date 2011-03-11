@@ -14,13 +14,9 @@ import java.util.HashSet;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
-import ubic.gemma.model.association.coexpression.Gene2GeneCoexpressionService;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
-import ubic.gemma.util.AbstractCLI.ErrorCode;
 
 public class RandomGenesCli extends AbstractSpringAwareCLI {
 
@@ -76,6 +72,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         return null;
     }
 
+    @Override
     protected void processOptions() {
         super.processOptions();
 

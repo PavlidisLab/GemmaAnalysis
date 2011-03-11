@@ -641,6 +641,7 @@ public class CoexpressionAnalysisService {
             this.gene2 = gene2;
         }
 
+        @Override
         public String toString() {
             String s1 = gene1.getOfficialSymbol();
             String s2 = gene2.getOfficialSymbol();

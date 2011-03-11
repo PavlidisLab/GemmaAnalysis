@@ -25,7 +25,6 @@ import java.math.BigInteger;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.cli.Option;
@@ -34,7 +33,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
-import ubic.gemma.analysis.service.CompositeSequenceGeneMapperService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -128,11 +126,9 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * 
      * @param taxon
      */
-    @SuppressWarnings("unchecked")
     public void probesPerGene( Taxon taxon ) {
         GeneService geneService = ( GeneService ) this.getBean( "geneService" );
-        CompositeSequenceGeneMapperService compositeSequenceGeneMapperService = ( CompositeSequenceGeneMapperService ) this
-                .getBean( "compositeSequenceGeneMapperService" );
+
         Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
         Map<Long, Integer> counts = new HashMap<Long, Integer>();
         int i = 0;
@@ -154,7 +150,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * 
      * @param taxon
      */
-    @SuppressWarnings("unchecked")
     public void genesPerProbe( Taxon taxon ) {
         ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
         Collection<ArrayDesign> allAds = adService.loadAll();
@@ -263,7 +258,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * 
      * @param taxon
      */
-    @SuppressWarnings("unchecked")
     public void genePairOccurrenceDistributions( Taxon taxon ) {
 
         Collection<ExpressionExperiment> eeColl = expressionExperimentService.loadAll();

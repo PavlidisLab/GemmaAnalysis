@@ -1,4 +1,4 @@
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -10,10 +10,7 @@ import java.util.Iterator;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
-import ubic.gemma.analysis.expression.coexpression.CoexpressionMetaValueObject;
 import ubic.gemma.analysis.expression.coexpression.CoexpressionValueObjectExt;
 import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
 import ubic.gemma.model.analysis.expression.coexpression.GeneCoexpressionAnalysisService;
@@ -42,8 +39,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
     private boolean details;
 
     private boolean queryGenesOnly;
-
-    private static Log log = LogFactory.getLog( PSDCoexpressionResultsCli.class );
 
     protected GeneService geneService;
 
@@ -146,7 +141,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -282,60 +276,14 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return genes;
     }
 
-    // /**
-    // * Uses precomputed file of IDs; calls helper method, <code>readGeneListFile()</code>
-    // *
-    // * @param inFile - Precomputed file of IDs
-    // * @param i - number of random genes to use
-    // * @return - list of 'i' random number of genes from precomputed list of IDs
-    // * @throws IOException
-    // */
-    // private Collection<Gene> getRandomKnownGenes( String inFile, int i ) throws IOException {
-    // Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
-    // Collection<Gene> genes = new HashSet<Gene>();
-    // String line;
-    // int geneCount = 0;
-    // SecureRandom randomSeed;
-    // try {
-    // randomSeed = SecureRandom.getInstance( "SHA1PRNG" );
-    //
-    // while ( geneCount < 1000 ) {
-    //
-    // randomSeed.generateSeed( 10 );
-    // int randomInt = randomSeed.nextInt( rawLinesInFile.length );
-    //
-    // line = ( String ) rawLinesInFile[randomInt];
-    //
-    // Gene gene = geneService.load( Long.parseLong( line ) );
-    // if ( gene == null ) {
-    // log.error( "ERROR: Cannot find genes for ID: " + line );
-    // continue;
-    // }
-    // geneService.thaw( gene );
-    //
-    // // because we are using a HashSet, no duplicates are allowed - which is what we want
-    // genes.add( gene );
-    // geneCount++;
-    // }
-    //
-    // } catch ( NoSuchAlgorithmException e ) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // }
-    //
-    // return genes;
-    // }
-
-    @SuppressWarnings("unchecked")
     private void outputCoexpressionResults( Collection<Gene> geneList, Taxon taxon, int stringency,
             boolean queryGenesOnly ) throws IOException {
         log.debug( "Running Gene Coexpression..." );
 
-        CoexpressionMetaValueObject cmvo = geneCoexpressionService.coexpressionSearch( analysisID, geneList,
-                stringency, 0, queryGenesOnly );
-        Collection<CoexpressionValueObjectExt> cvoExtCol = cmvo.getKnownGeneResults();
+        Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( analysisID,
+                geneList, stringency, 0, queryGenesOnly, true );
         log.debug( "Printing results..." );
-        printCoexpressionResults( cvoExtCol );
+        printCoexpressionResults( cmvo );
     }
 
     private void printCoexpressionResults( Collection<CoexpressionValueObjectExt> cvoExtCol ) {
@@ -346,32 +294,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     }
 
-    // @SuppressWarnings("unchecked")
-    // private Long getCannedAnalysisID( Taxon taxon2 ) {
-    // Collection<GeneCoexpressionAnalysis> analysisCol = geneCoexpressionAnalysisService.findByTaxon( taxon );
-    // GeneCoexpressionAnalysis analysis2Use = null;
-    // // use the 1st canned analysis that isn't virtual for the given taxon (should be the all"Taxon" analysis)
-    // for ( GeneCoexpressionAnalysis analysis : analysisCol ) {
-    // if ( analysis instanceof GeneCoexpressionVirtualAnalysis )
-    // continue;
-    // else {
-    // analysis2Use = analysis;
-    // break;
-    // }
-    // }
-    // // use the brain analysis
-    // // for (GeneCoexpressionAnalysis analysis : analysisCol){
-    // // if (analysis instanceof GeneCoexpressionVirtualAnalysis && analysis.getId() == 737){
-    // // analysis2Use = analysis;
-    // // break;
-    // // }
-    // // else
-    // // continue;
-    // // }
-    //
-    // return analysis2Use.getId();
-    // }
-
     private void createColumnHeadings() {
         // output column headings for main coexpression results file
         if ( details == true )
@@ -380,35 +302,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
             System.out.println( "Query_Gene\tCoexpressed_Gene" );
     }
 
-    /**
-     * map of queryGene to nicely formated result - coexpressed gene, # of datasets, etc
-     * 
-     * @param cvoExtCol
-     * @return mapping of the query gene to all expressed
-     */
-    // private Map<String, Collection<String>> organizeCoexpressionValueObjectResults(
-    // Collection<CoexpressionValueObjectExt> cvoExtCol ) {
-    // Map<String, Collection<String>> results = new HashMap<String, Collection<String>>();
-    // for ( CoexpressionValueObjectExt cvo : cvoExtCol ) {
-    // // see if query gene official symbol is already a key in the map
-    // String queryGene = cvo.getQueryGene().getOfficialSymbol();
-    // // Long foundGene = cvo.getFoundGene().getId();
-    // String coexpressedResult = coexpressedResult( cvo );
-    //
-    // if ( results.containsKey( queryGene ) )
-    // // yes, in map, then add the found gene object to the Collection value corresponding to the key (query
-    // // gene)
-    // results.get( queryGene ).add( coexpressedResult );
-    // else {
-    // // no, not in map, then add the query gene as new key and insert the first found gene for the Collection
-    // // value
-    // results.put( queryGene, new HashSet<String>() );
-    // results.get( queryGene ).add( coexpressedResult );
-    // }
-    //
-    // }
-    // return results;
-    // }
     private String coexpressedResult( CoexpressionValueObjectExt cvo ) {
         String queryGene = cvo.getQueryGene().getOfficialSymbol();
         String foundGene = cvo.getFoundGene().getOfficialSymbol();
@@ -417,110 +310,10 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         // String[] fields;
         if ( details == true ) {
             return cvo.toString();
-            // // only positive correlation
-            // if ( cvo.getPosLinks() > 0 && cvo.getNegLinks() <= 0 ) {
-            // buf.append( cvo.getPosLinks() + "\t" );
-            // }
-            // // only negative correlation
-            // else if ( cvo.getNegLinks() > 0 && cvo.getPosLinks() <= 0 ) {
-            // buf.append( "\t" + cvo.getNegLinks() );
-            // }
-            // // negative and positive
-            // else
-            // buf.append( cvo.getPosLinks() + "\t" + cvo.getNegLinks() );
-            // fields = new String[] { cvo.getQueryGene().getOfficialSymbol(), foundGene, numDSTested.toString(),
-            // buf.toString() };
-            // return StringUtils.join( fields, "\t" );
-        } else {
-            return queryGene + "\t" + foundGene;
+
         }
+        return queryGene + "\t" + foundGene;
+
     }
 
-    /**
-     * @param coexpressionList.keySet()
-     */
-    // private void printCoexpressionResults( Map<String, Collection<String>> coexpressionList ) {
-    //
-    // for ( String queryGene : coexpressionList.keySet() ) {
-    // for ( String result : coexpressionList.get( queryGene ) )
-    // System.out.println( result );
-    //
-    // }
-    //
-    // }
-    /**
-     * prints out, in a file, the degree count for each query gene. Degree count = number of coexpressed genes
-     * 
-     * @param coexpressionList
-     * @throws IOException
-     * @throws InterruptedException
-     */
-    // private void printDegreeCount( Map<String, Collection<String>> coexpressionList ) throws IOException {
-    // try {
-    // String dir = "../";
-    // String query = "";
-    // if ( queryGenesOnly == true ) query = "-qgOnly";
-    // String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
-    // BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
-    // Collection<String> foundResults;
-    // Formatter fmt;
-    //
-    // Set<String> querySet = coexpressionList.keySet();
-    // for ( String queryGene : querySet ) {
-    //
-    // foundResults = coexpressionList.get( queryGene );
-    //
-    // // cut out all the details; reassigns foundResults; original foundResults - garbaged collected?
-    // if ( details == true ) foundResults = trimToFoundGenesOnly( foundResults );
-    //
-    // out.write( queryGene + "\t" );
-    // // total degree
-    // int degree = foundResults.size();
-    // out.write( degree + "\t" );
-    //
-    // // # of coexpressed genes within query gene set
-    // // make shallow copy
-    // Collection<String> intersection = new TreeSet<String>( foundResults );
-    //
-    // intersection.retainAll( rawGeneList );
-    // out.write( intersection.size() + "\t" );
-    //
-    // // # of coexpressed genes not within query gene set
-    // Collection<String> difference = new TreeSet<String>( foundResults );
-    //
-    // difference.removeAll( rawGeneList );
-    // out.write( difference.size() + "\t" );
-    //
-    // // output results
-    // fmt = new Formatter();
-    // String percentQueryGenes = ( fmt.format( "%.4f", ( intersection.size() / ( double ) degree ) * 100 ) )
-    // .toString();
-    // out.write( percentQueryGenes + "\n" );
-    //
-    // }
-    //
-    // out.close();
-    // } catch ( IOException e ) {
-    //
-    // e.printStackTrace();
-    // }
-    // }
-    /**
-     * makes new copy array with trimmed results
-     * 
-     * @param foundResults
-     * @return
-     */
-    // private Collection<String> trimToFoundGenesOnly( Collection<String> foundResults ) {
-    // Collection<String> trimmedResult = new TreeSet<String>();
-    // for ( String result : foundResults )
-    // trimmedResult.add( StringUtils.substringBefore( result, "\t" ) );
-    // return trimmedResult;
-    // }
-    // private boolean isNumber( String string ) {
-    // for ( int i = 0; i < string.length(); i++ ) {
-    // if ( !Character.isDigit( string.charAt( i ) ) ) return false;
-    // }
-    // return true;
-    // }
 }

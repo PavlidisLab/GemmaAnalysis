@@ -93,6 +93,7 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
     /**
      * 
      */
+    @Override
     protected void processOptions() {
         super.processOptions();
         if ( hasOption( 'l' ) ) {
