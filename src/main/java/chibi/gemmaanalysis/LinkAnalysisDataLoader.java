@@ -65,7 +65,7 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         try {
             writer = new BufferedWriter( new FileWriter( this.analysisResultsPath + paraFileName ) );
         } catch ( IOException e ) {
-            log.error( "File for output expression data " + this.analysisResultsPath + paraFileName
+            throw new RuntimeException( "File for output expression data " + this.analysisResultsPath + paraFileName
                     + "could not be opened" );
         }
         try {
@@ -129,11 +129,11 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         return matrix;
     }
 
-    public DoubleMatrix getDataMatrix() {
+    public DoubleMatrix<String, String> getDataMatrix() {
         return this.dataMatrix;
     }
 
     public GeneAnnotations getGeneAnnotations() {
         return this.geneAnnotations;
-    };
+    }
 }

@@ -92,7 +92,7 @@ public class ExpressionDataLoader {
         try {
             writer = new BufferedWriter( new FileWriter( this.analysisResultsPath + paraFileName ) );
         } catch ( IOException e ) {
-            log.error( "File for output expression data " + this.analysisResultsPath + paraFileName
+            throw new RuntimeException( "File for output expression data " + this.analysisResultsPath + paraFileName
                     + "could not be opened" );
         }
 

@@ -97,7 +97,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     private Collection<String[]> records;
 
     private Map<Long, long[]> parToCoExps;
-    private Map parFileEntries;
+    private Map<Long, String> parFileEntries;
 
     // Services used
     GeneService parService;
@@ -498,36 +498,23 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
             // PAR rankings at probe level
             if ( checkPARprobe ) {
-                ppr.flush();
                 outputRankingsProbelevel( eeCol, pars, ppr );
             }
 
             // PAR rankings
             if ( checkPAR ) {
-                pxx.flush();
-                pxe.flush();
-                pex.flush();
-                pee.flush();
                 outputRankings( eeCol, pars, pxx, pxe, "max" );
                 outputRankings( eeCol, pars, pex, pee, "mean" );
             }
 
             // Gene rankings
             if ( checkGeneRank ) {
-                pxx.flush();
-                pxe.flush();
-                pex.flush();
-                pee.flush();
                 outputRankings( eeCol, genes, pxx, pxe, "max" );
                 outputRankings( eeCol, genes, pex, pee, "mean" );
             }
 
             // PAR and Gene rankings together
             if ( checkGeneCorank ) {
-                pgp_xx.flush();
-                pgp_xe.flush();
-                pgp_ex.flush();
-                pgp_ee.flush();
                 outputPARGeneCorank( eeCol, pars, genes, pgp_xx, pgp_xe, "max" );
                 outputPARGeneCorank( eeCol, pars, genes, pgp_ex, pgp_ee, "mean" );
             }
@@ -540,13 +527,11 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     System.exit( 0 );
                 }
                 // check all coexpressions given a par or look at each par-gene combination
-                pco.flush();
                 outputPARGeneCoexpressionLinks( pars, genes, pco );
             }
 
             // All co-expression between PAR and all genes with Links found in database
-            if ( checkAllCoexp ) {
-                pcA.flush();
+            if ( checkAllCoexp ) { 
                 outputAllGeneCoexpressionLinks( pars, eeCol, 1, pcA );
             }
 
@@ -556,7 +541,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     System.out.println( "Error, need to supply pargeneexp file" );
                     System.exit( 0 );
                 }
-                pap.flush();
                 outputAllPARGeneCoexpressionCalculated( pars, genes, pap );
             }
 
@@ -706,15 +690,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             pargene.add( par );
             pargene.add( gene );
 
-            if ( pargene == null ) {
-                System.out.println( "No pargene" );
-                continue;
-            }
-            if ( eexps == null ) {
-                System.out.println( "No exps" );
-                continue;
-            }
-
             // System.out.println("Linkanalysis " + par.getId() + "\t" + gene.getId());
 
             // search Gemma for links
@@ -769,15 +744,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             Collection<Gene> pargene = new ArrayList<Gene>();
             pargene.add( par );
 
-            if ( pargene == null ) {
-                log.debug( "No pargene" );
-                continue;
-            }
-            if ( ccCol == null ) {
-                log.debug( "No exps" );
-                continue;
-            }
-
             // this is where bug 1604 showed its face
             Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false,
                     false, 0 ); // low stringency.
@@ -790,7 +756,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             Collection<CoexpressionValueObject> cvos = ccvo.getAllGeneCoexpressionData( 0 );
 
             int zeroCount = 0;
-            String output_half = ( String ) parFileEntries.get( par.getId() );
+            String output_half = parFileEntries.get( par.getId() );
 
             int csize = cvos.size();
             if ( csize == 0 ) {
@@ -1188,7 +1154,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             double maxrank = allGeneRankings.get( g )[0];
             double meanrank = allGeneRankings.get( g )[1] / numExperiments;
 
-            String label = ( String ) parFileEntries.get( g.getId() );
+            String label = parFileEntries.get( g.getId() );
             if ( label == null ) label = g.getId().toString();
 
             px.println( label + "," + numExperiments + "," + numSamples + "," + maxrank );
@@ -1201,9 +1167,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     /*
      * Return a map for column name to index number
      */
-    private Map getIndices( String header ) {
+    private Map<String, Integer> getIndices( String header ) {
         String[] labels = header.trim().split( "\t" );
-        HashMap<String, Integer> hash = new HashMap<String, Integer>( labels.length );
+        Map<String, Integer> hash = new HashMap<String, Integer>( labels.length );
 
         for ( int i = 0; i < labels.length; i++ ) {
             hash.put( labels[i], i );
@@ -1341,15 +1307,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             Collection<Gene> pargene = new ArrayList<Gene>();
             pargene.add( par );
             pargene.add( gene );
-
-            if ( pargene == null ) {
-                System.out.println( "No pargene" );
-                continue;
-            }
-            if ( exps == null ) {
-                System.out.println( "No exps" );
-                continue;
-            }
 
             Map<Long, Collection<DoubleVectorValueObject>> expParMap = new HashMap<Long, Collection<DoubleVectorValueObject>>();
             Map<Long, Collection<DoubleVectorValueObject>> expGeneMap = new HashMap<Long, Collection<DoubleVectorValueObject>>();
@@ -1518,15 +1475,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             Collection<Gene> pargene = new ArrayList<Gene>();
             pargene.add( par );
             pargene.add( gene );
-
-            if ( pargene == null ) {
-                System.out.println( "No pargene" );
-                continue;
-            }
-            if ( exps == null ) {
-                System.out.println( "No exps" );
-                continue;
-            }
 
             // for each experiment, call getProcessedDataArrays
             for ( ExpressionExperiment ee : exps ) {

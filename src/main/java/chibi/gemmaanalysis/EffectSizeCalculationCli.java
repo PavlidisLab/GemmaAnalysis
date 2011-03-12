@@ -40,7 +40,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
 
     private CoexpressionAnalysisService coexpressionAnalysisService;
 
-    private GeneOntologyService goService;;
+    private GeneOntologyService goService; 
 
     public static final int DEFAULT_STRINGENCY = 3;
 

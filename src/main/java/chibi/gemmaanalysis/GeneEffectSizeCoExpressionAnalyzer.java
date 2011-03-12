@@ -64,9 +64,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         }
     }
 
-    private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>();;
+    private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>(); 
 
-    private Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Long>>();;
+    private Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Long>>(); 
 
     // Cached the mean value and STD value for DesignElementDataVector.
     private Map<Long, Double> dedv2cachedMeanValue = new HashMap<Long, Double>();

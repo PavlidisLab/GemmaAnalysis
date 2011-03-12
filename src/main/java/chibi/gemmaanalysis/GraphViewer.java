@@ -639,6 +639,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
             super( group );
         }
 
+        @Override
         public void run( double frac ) {
             Iterator iter = m_vis.items( m_group );
             while ( iter.hasNext() ) {
@@ -659,6 +660,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
             super( group, VisualItem.FILLCOLOR );
         }
 
+        @Override
         public int getColor( VisualItem item ) {
             if ( item instanceof NodeItem ) {
                 NodeItem nitem = ( NodeItem ) item;
