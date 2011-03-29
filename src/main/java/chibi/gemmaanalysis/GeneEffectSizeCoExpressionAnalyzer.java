@@ -28,9 +28,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.dataStructure.matrix.ObjectMatrix;
@@ -58,15 +55,11 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         public ProcessedExpressionDataVector query = null;
         public ProcessedExpressionDataVector coexpressed = null;
 
-        public ExpressedData( ProcessedExpressionDataVector query, ProcessedExpressionDataVector coexpressed ) {
-            this.query = query;
-            this.coexpressed = coexpressed;
-        }
     }
 
-    private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>(); 
+    private Map<Long, Map<Long, Collection<DoubleVectorValueObject>>> ee2gene2dedvs = new HashMap<Long, Map<Long, Collection<DoubleVectorValueObject>>>();
 
-    private Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Long>>(); 
+    private Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = new HashMap<DoubleVectorValueObject, Collection<Long>>();
 
     // Cached the mean value and STD value for DesignElementDataVector.
     private Map<Long, Double> dedv2cachedMeanValue = new HashMap<Long, Double>();
@@ -96,7 +89,6 @@ public class GeneEffectSizeCoExpressionAnalyzer {
     private Map<Long, String> eeNames = new HashMap<Long, String>();
     private Map<Long, Integer> eeSampleSizes = new HashMap<Long, Integer>();
 
-    private static Log log = LogFactory.getLog( GeneEffectSizeCoExpressionAnalyzer.class.getName() );
     private ExpressionExperimentService eeService = null;
     public static int MINIMUM_SAMPLE = 5;
 
@@ -106,12 +98,12 @@ public class GeneEffectSizeCoExpressionAnalyzer {
 
         int k = 0;
         for ( Gene queryGene : queryGenes ) {
-            queryGenesData.addRowName( queryGene.getId(), k );
+            queryGenesData.setRowName( queryGene.getId(), k );
             k++;
         }
         k = 0;
         for ( ExpressionExperiment ee : ees ) {
-            queryGenesData.addColumnName( ee.getId(), k );
+            queryGenesData.setColumnName( ee.getId(), k );
             k++;
         }
         for ( int i = 0; i < queryGenesData.rows(); i++ ) {
@@ -134,13 +126,13 @@ public class GeneEffectSizeCoExpressionAnalyzer {
             k = 0;
             for ( Gene coExpressedGene : coExpressedGenes ) {
                 correlationData.addRowName( coExpressedGene.getId() );
-                coExpressedData.addRowName( coExpressedGene.getId(), k );
+                coExpressedData.setRowName( coExpressedGene.getId(), k );
                 k++;
             }
             k = 0;
             for ( ExpressionExperiment ee : ees ) {
                 correlationData.addColumnName( ee.getId() );
-                coExpressedData.addColumnName( ee.getId(), k );
+                coExpressedData.setColumnName( ee.getId(), k );
                 k++;
             }
             queryGene2correlationData.put( queryGene.getId(), correlationData );
@@ -188,6 +180,11 @@ public class GeneEffectSizeCoExpressionAnalyzer {
                         coExpressionGeneNames = queryGene2coExpressedData.get( geneId ).getRowNames();
                     }
                 }
+
+                if ( coExpressionGeneNames == null ) {
+                    continue;
+                }
+
                 for ( Object geneId : coExpressionGeneNames ) {
                     gene2dedvs.put( ( Long ) geneId, new HashSet<DoubleVectorValueObject>() );
                 }

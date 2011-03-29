@@ -183,7 +183,6 @@ public class ProbeMapperGui extends JFrame {
             cancelButton.setText( "Cancel" );
             cancelButton.setBounds( 256, 13, 73, 26 );
             cancelButton.addActionListener( new ActionListener() {
-                @SuppressWarnings("unused")
                 public void actionPerformed( ActionEvent e ) {
                     exit();
                 }

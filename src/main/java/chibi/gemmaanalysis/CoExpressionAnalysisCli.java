@@ -154,7 +154,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
     private Collection<Gene> getGenes( Object[] geneNames, Taxon taxon ) {
         HashSet<Gene> genes = new HashSet<Gene>();
         for ( int i = 0; i < geneNames.length; i++ ) {
-            Gene gene = getGene( geneService, ( String ) geneNames[i], taxon );
+            Gene gene = getGene( ( String ) geneNames[i], taxon );
             if ( gene != null ) genes.add( gene );
         }
         return genes;
@@ -166,7 +166,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @param taxon
      * @return
      */
-    private Gene getGene( GeneService geneService, String geneName, Taxon taxon ) {
+    private Gene getGene( String geneName, Taxon taxon ) {
         Gene gene = Gene.Factory.newInstance();
         gene.setOfficialSymbol( geneName.trim() );
         gene.setTaxon( taxon );
@@ -194,7 +194,6 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
 
     private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
-    @SuppressWarnings("unchecked")
     Collection<Gene> getCoExpressedGenes( Collection<Gene> queryGenes ) {
         Set<Gene> coExpressedGenes = new HashSet<Gene>();
         Collection<Long> geneIds = new HashSet<Long>();
@@ -221,7 +220,6 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @param ee
      * @return
      */
-    @SuppressWarnings("unchecked")
     private Map<DoubleVectorValueObject, Collection<Long>> getDesignElementDataVector( ExpressionExperiment ee ) {
 
         Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
@@ -371,17 +369,17 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
             return e;
         }
 
-        if ( queryGeneNames.size() == 0 ) {
+        if ( queryGeneNames.isEmpty() ) {
             log.info( "No gene is read from the input file" );
             return null;
         }
         Collection<Gene> queryGenes = this.getGenes( queryGeneNames.toArray(), taxon );
-        if ( queryGenes.size() == 0 ) {
+        if ( queryGenes.isEmpty() ) {
             log.info( "Can't load any of genes" + queryGeneNames );
             return null;
         }
         Collection<Gene> coExpressedGenes = null;
-        if ( coExpressedGeneNames.size() != 0 ) {
+        if ( !coExpressedGeneNames.isEmpty() ) {
             coExpressedGenes = this.getGenes( coExpressedGeneNames.toArray(), taxon );
         } else {
             // coexpressed genes using vote count
@@ -390,8 +388,9 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         log.info( "Start the Query for " + queryGenes.size() + " genes" );
         Map<DoubleVectorValueObject, Collection<Long>> dedv2genes = getDedv2GenesMap( queryGenes, coExpressedGenes,
                 allEEs );
-        if ( dedv2genes.size() == 0 || queryGenes.size() == 0 || coExpressedGenes.size() == 0 || allEEs.size() == 0 )
-            return null;
+
+        if ( dedv2genes.isEmpty() || queryGenes.isEmpty() || coExpressedGenes.isEmpty() || allEEs == null
+                || allEEs.isEmpty() ) return null;
         GeneEffectSizeCoExpressionAnalyzer coExpression = new GeneEffectSizeCoExpressionAnalyzer( queryGenes,
                 coExpressedGenes, new HashSet( allEEs ) );
 
