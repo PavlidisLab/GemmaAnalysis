@@ -127,6 +127,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile.close();
 
         } catch ( Exception e ) {
+            log.error( e, e );
             return e;
         }
         return null;
@@ -134,6 +135,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
     @Override
     protected void processExperiment( ExpressionExperiment ee ) {
+        Writer detailFile = null;
         try {
             /*
              * Check if it has a batch factor.
@@ -276,7 +278,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Print out a summary
              */
-            Writer detailFile = initOutputFile( "batch.proc.detail." + ee.getId() + "."
+            detailFile = initOutputFile( "batch.proc.detail." + ee.getId() + "."
                     + ee.getShortName().replaceAll( "[\\W\\s]+", "_" ) + ".txt" );
 
             detailFile
@@ -300,7 +302,16 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile.flush();
             successObjects.add( ee );
         } catch ( Exception e ) {
+            log.error( e, e );
             errorObjects.add( ee + e.getMessage() );
+        } finally {
+            if ( detailFile != null ) {
+                try {
+                    detailFile.close();
+                } catch ( IOException e ) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
