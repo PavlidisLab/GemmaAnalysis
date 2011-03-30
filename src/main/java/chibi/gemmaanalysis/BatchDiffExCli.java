@@ -19,39 +19,79 @@
 
 package chibi.gemmaanalysis;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.analysis.expression.diff.GenericAncovaAnalyzer;
 import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
-import ubic.gemma.analysis.preprocess.batcheffects.BatchInfoPopulationService;
 import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
+import ubic.gemma.model.analysis.expression.diff.ProbeAnalysisResult;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
- * TODO Document Me
+ * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
+ * with including it; and repeating those, after batch correction
  * 
  * @author paul
  * @version $Id$
  */
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
+    private static final int LOGGING_FREQ = 20000;
+
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        BatchDiffExCli c = new BatchDiffExCli();
+        c.doWork( args );
+
+    }
+
     ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
 
     LinearModelAnalyzer lma;
 
     ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    /**
+     * @param revisedResultDetails
+     * @param ef
+     * @param r
+     * @param c
+     * @return
+     */
+    private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
+            ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
+        Double pval = r.getCorrectedPvalue();
+        if ( pval < 0.01 ) {
+            c++;
+        }
+        /*
+         * Map of probe -> factor -> pval
+         */
+        CompositeSequence probe = ( ( ProbeAnalysisResult ) r ).getProbe();
+        if ( !revisedResultDetails.containsKey( probe ) ) {
+            revisedResultDetails.put( probe, new HashMap<ExperimentalFactor, Double>() );
+        }
+        revisedResultDetails.get( probe ).put( ef, pval );
+        return c;
+    }
 
     /*
      * (non-Javadoc)
@@ -69,133 +109,204 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
                 .getBean( "processedExpressionDataVectorService" );
 
-        for ( BioAssaySet bas : this.expressionExperiments ) {
-            if ( !( bas instanceof ExpressionExperiment ) ) {
-                continue;
-            }
-            ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-            log.info( "Processing: " + ee );
+        try {
+            Writer summaryFile = initOutputFile( "batch.proc.summary.txt" );
+            summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            /*
-             * Check if it has a batch factor.
-             */
-            ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
-            if ( null == batchFactor ) {
-                // this.errorObjects.add( "No batch factor: " + ee.getShortName() );
-                continue;
-            }
-
-            /* TODO use this */
-            expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
-            expressionExperimentBatchCorrectionService.checkCorrectability( ee );
-
-            /*
-             * Extract data
-             */
-            Collection<ProcessedExpressionDataVector> vectos = processedExpressionDataVectorService
-                    .getProcessedDataVectors( ee );
-            ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
-
-            /*
-             * first do an analysis without batch. Let's ignore interactions to keep things simple.
-             */
-            Collection<ExperimentalFactor> factors2 = new HashSet<ExperimentalFactor>();
-            for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
-                if ( ef.equals( batchFactor ) ) continue;
-                factors2.add( ef );
-            }
-            DifferentialExpressionAnalysisConfig config2 = new DifferentialExpressionAnalysisConfig();
-            config2.setFactorsToInclude( factors2 );
-            DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, config2 ).iterator().next();
-            Map beforeResultCount = new HashMap();
-            for ( ExpressionAnalysisResultSet brs : beforeResults.getResultSets() ) {
-                assert brs.getExperimentalFactors().size() == 1;
-                ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
-                Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
-                int c = 0;
-                for ( DifferentialExpressionAnalysisResult r : results ) {
-                    Double pval = r.getCorrectedPvalue();
-                    if ( pval < 0.01 ) {
-                        c++;
-                    }
+            for ( BioAssaySet bas : this.expressionExperiments ) {
+                if ( !( bas instanceof ExpressionExperiment ) ) {
+                    continue;
                 }
-                System.out.println( "Before\t" + ef.getId() + "\t" + ef.getName() + "\t" + c );
-                beforeResultCount.put( ef, c );
-            }
+                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
+                log.info( "Processing: " + ee );
 
-            /*
-             * Then do it with batch.
-             */
-            Collection<ExperimentalFactor> factors = ee.getExperimentalDesign().getExperimentalFactors();
-            assert factors.contains( batchFactor );
-            DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
-            configIncludingBatch.setFactorsToInclude( factors );
-            DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch ).iterator().next();
+                /*
+                 * Check if it has a batch factor.
+                 */
+                ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
+                if ( null == batchFactor ) {
+                    // this.errorObjects.add( "No batch factor: " + ee.getShortName() );
+                    continue;
+                }
 
-            /*
-             * Determine how many genes are diff ex wrt batch.
-             */
-            int batchEffectCount = 0;
-            for ( ExpressionAnalysisResultSet brs : withBatchEffectResults.getResultSets() ) {
-                assert brs.getExperimentalFactors().size() == 1;
-                ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
-                Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
-                if ( ef.equals( batchFactor ) ) {
+                /* TODO use this, or skip it... we have this information elsewhere already */
+                expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
+                expressionExperimentBatchCorrectionService.checkCorrectability( ee );
+
+                /*
+                 * Extract data
+                 */
+                Collection<ProcessedExpressionDataVector> vectos = processedExpressionDataVectorService
+                        .getProcessedDataVectors( ee );
+                ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
+
+                /*
+                 * first do an analysis without batch; this is our baseline. Let's ignore interactions to keep things
+                 * simple.
+                 */
+                Collection<ExperimentalFactor> factors2 = new HashSet<ExperimentalFactor>();
+                for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
+                    if ( ef.equals( batchFactor ) ) continue;
+                    factors2.add( ef );
+                }
+                int j = 0;
+                DifferentialExpressionAnalysisConfig configWithoutBatch = new DifferentialExpressionAnalysisConfig();
+                configWithoutBatch.setFactorsToInclude( factors2 );
+                DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, configWithoutBatch ).iterator().next();
+                Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+                for ( ExpressionAnalysisResultSet brs : beforeResults.getResultSets() ) {
+                    assert brs.getExperimentalFactors().size() == 1;
+                    ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
+                    Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
+                    int c = 0;
                     for ( DifferentialExpressionAnalysisResult r : results ) {
-                        Double pval = r.getCorrectedPvalue();
-                        if ( pval < 0.01 ) {
-                            batchEffectCount++;
+                        c = tally( beforeResultDetails, ef, r, c );
+                        if ( ++j % LOGGING_FREQ == 0 ) {
+                            log.info( j + " processed" );
                         }
                     }
-                    System.out.println( "Batch\t" + ef.getId() + "\t" + ef.getName() + "\t" + batchEffectCount );
-                    break;
+                    summaryFile.write( "Before\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                            + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
                 }
-                log.info( "Factor: " + ef );
-            }
 
-            /*
-             * Correct for batch effects and repeat the analysis
-             */
-            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( ee, mat );
-            assert comBat != null;
-            DifferentialExpressionAnalysis revisedResult = lma.run( ee, comBat, config2 ).iterator().next();
+                /*
+                 * Then do it with batch.
+                 */
+                Collection<ExperimentalFactor> factors = ee.getExperimentalDesign().getExperimentalFactors();
+                assert factors.contains( batchFactor );
+                DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
+                configIncludingBatch.setFactorsToInclude( factors );
+                DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch )
+                        .iterator().next();
 
-            /*
-             * Enumer # of probes for each factor ...
-             */
-            Map revisedResultCount = new HashMap();
-            for ( ExpressionAnalysisResultSet brs : revisedResult.getResultSets() ) {
-                assert brs.getExperimentalFactors().size() == 1;
-                ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
-                Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
-                int c = 0;
-                for ( DifferentialExpressionAnalysisResult r : results ) {
-                    Double pval = r.getCorrectedPvalue();
-                    if ( pval < 0.01 ) {
-                        c++;
+                /*
+                 * Determine how many genes are diff ex wrt batch. The other factors are tracked; this shows how we
+                 * would do if we tried to simply directly include batch in the model
+                 */
+                Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+
+                for ( ExpressionAnalysisResultSet brs : withBatchEffectResults.getResultSets() ) {
+                    assert brs.getExperimentalFactors().size() == 1;
+                    ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
+                    Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
+
+                    int c = 0;
+                    for ( DifferentialExpressionAnalysisResult r : results ) {
+                        c = tally( batchEffectDetails, ef, r, c );
+
+                        if ( ++j % LOGGING_FREQ == 0 ) {
+                            log.info( j + " processed" );
+                        }
+
+                    }
+                    summaryFile.write( "Batch\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                            + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
+                }
+
+                /*
+                 * Correct for batch effects
+                 */
+                ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( ee, mat );
+                assert comBat != null;
+
+                /*
+                 * Check if we have removed the batch effect: there should be no diff ex wrt batch. This is just a
+                 * sanity check, really. The other factors are tracked just for completeness.
+                 */
+                DifferentialExpressionAnalysis revisedResultWithBatch = lma.run( ee, comBat, configIncludingBatch )
+                        .iterator().next();
+
+                Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectAfterCorrDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+
+                for ( ExpressionAnalysisResultSet brs : revisedResultWithBatch.getResultSets() ) {
+                    assert brs.getExperimentalFactors().size() == 1;
+                    ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
+                    Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
+                    int c = 0;
+                    for ( DifferentialExpressionAnalysisResult r : results ) {
+                        c = tally( batchEffectAfterCorrDetails, ef, r, c );
+
+                        if ( ++j % LOGGING_FREQ == 0 ) {
+                            log.info( j + " processed" );
+                        }
+
+                    }
+                    summaryFile.write( "BatchAftCorr\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId()
+                            + "\t" + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
+                }
+
+                /*
+                 * Now without batch as a factor, which is what we really want.
+                 */
+                DifferentialExpressionAnalysis revisedResult = lma.run( ee, comBat, configWithoutBatch ).iterator()
+                        .next();
+                Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+                for ( ExpressionAnalysisResultSet brs : revisedResult.getResultSets() ) {
+                    assert brs.getExperimentalFactors().size() == 1;
+                    ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
+                    Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
+                    int c = 0;
+                    for ( DifferentialExpressionAnalysisResult r : results ) {
+                        c = tally( revisedResultDetails, ef, r, c );
+
+                        if ( ++j % LOGGING_FREQ == 0 ) {
+                            log.info( j + " processed" );
+                        }
+
+                    }
+                    summaryFile.write( "After\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                            + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
+
+                }
+
+                /*
+                 * Print out a summary
+                 */
+                Writer detailFile = initOutputFile( "batch.proc.detail." + ee.getId() + "."
+                        + ee.getShortName().replaceAll( "[\\W\\s]+", "_" ) + ".txt" );
+
+                detailFile
+                        .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
+
+                for ( CompositeSequence c : beforeResultDetails.keySet() ) {
+                    for ( ExperimentalFactor ef : factors ) {
+                        detailFile.write( ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                                + ef.getName() + "\t" + c.getId() + "\t" + c.getName() + "\t" );
+
+                        Double bpval = beforeResultDetails.get( c ).get( ef ); // will be null for 'batch'
+                        Double batpval = batchEffectDetails.get( c ).get( ef ); // when batch was included.
+                        Double batapval = batchEffectAfterCorrDetails.get( c ).get( ef ); // when batch was included.
+                        Double aftpval = revisedResultDetails.get( c ).get( ef ); // will be null for 'batch'
+
+                        detailFile
+                                .write( String.format( "%.4g\t%.4g\t%.4g\t%.4g\n", bpval, batpval, batapval, aftpval ) );
+
                     }
                 }
-                System.out.println( "After\t" + ef.getId() + "\t" + ef.getName() + "\t" + c );
-                revisedResultCount.put( ef, c );
+                detailFile.close();
+                successObjects.add( ee );
             }
+            summaryFile.close();
 
-            /*
-             * Print summary of results
-             */
-
-            successObjects.add( ee );
+        } catch ( Exception e ) {
+            return e;
         }
-
         return null;
     }
 
     /**
-     * @param args
+     * @param fileName
+     * @return
+     * @throws IOException
      */
-    public static void main( String[] args ) {
-        BatchDiffExCli c = new BatchDiffExCli();
-        c.doWork( args );
-
+    protected Writer initOutputFile( String fileName ) throws IOException {
+        File f = new File( fileName );
+        if ( f.exists() ) {
+            f.delete();
+        }
+        f.createNewFile();
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
     }
 
 }
