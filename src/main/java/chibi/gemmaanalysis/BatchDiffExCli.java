@@ -146,6 +146,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 return;
             }
 
+            if ( ee.getBioAssays().size() < 4 ) {
+                // too small.
+                return;
+            }
+
             /* TODO use this, or skip it... we have this information elsewhere already */
             expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
             expressionExperimentBatchCorrectionService.checkCorrectability( ee );
