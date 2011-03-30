@@ -223,6 +223,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Correct for batch effects
              */
+            log.info( "ComBat-ing" );
             ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( ee, mat );
             assert comBat != null;
 
