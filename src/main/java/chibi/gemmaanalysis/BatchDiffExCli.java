@@ -74,11 +74,12 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ef
      * @param r
      * @param c
-     * @return
+     * @return c
      */
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
         Double pval = r.getCorrectedPvalue();
+        if ( pval == null ) return c;
         if ( pval < 0.01 ) {
             c++;
         }
