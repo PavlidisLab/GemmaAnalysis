@@ -138,6 +138,12 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     protected void processExperiment( ExpressionExperiment ee ) {
         Writer detailFile = null;
         try {
+
+            if ( ee.getExperimentalDesign().getExperimentalFactors().size() < 2 ) {
+                // need at least two factors, one of which has to be the batch.
+                return;
+            }
+
             /*
              * Check if it has a batch factor.
              */
