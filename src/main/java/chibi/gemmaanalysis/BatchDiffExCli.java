@@ -138,22 +138,31 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         Writer detailFile = null;
         try {
 
-            if ( ee.getExperimentalDesign().getExperimentalFactors().size() < 2 ) {
-                // need at least two factors, one of which has to be the batch.
-                return;
-            }
+            Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
-            /*
-             * Check if it has a batch factor.
-             */
             ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
             if ( null == batchFactor ) {
-                // this.errorObjects.add( "No batch factor: " + ee.getShortName() );
+                this.errorObjects.add( "No batch factor: " + ee.getShortName() );
                 return;
             }
 
-            if ( ee.getBioAssays().size() < 4 ) {
-                // too small.
+            if ( experimentalFactors.size() < 2 ) {
+                // need at least two factors, one of which has to be the batch.
+                this.errorObjects.add( "Too few factors: " + ee.getShortName() );
+                return;
+            }
+
+            if ( ee.getBioAssays().size() < 8 ) {
+                this.errorObjects.add( "Too small (" + ee.getBioAssays().size() + " samples): " + ee.getShortName() );
+                return;
+            }
+
+            if ( experimentalFactors.size() > 4 ) {
+                /*
+                 * This could be modified to select just a few factors, at random ... but that's probably
+                 */
+                this.errorObjects.add( "Too many factors (" + experimentalFactors.size() + " factors): "
+                        + ee.getShortName() );
                 return;
             }
 
@@ -173,7 +182,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * simple.
              */
             Collection<ExperimentalFactor> factors2 = new HashSet<ExperimentalFactor>();
-            for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
+            for ( ExperimentalFactor ef : experimentalFactors ) {
                 if ( ef.equals( batchFactor ) ) continue;
                 factors2.add( ef );
             }
@@ -200,7 +209,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Then do it with batch.
              */
-            Collection<ExperimentalFactor> factors = ee.getExperimentalDesign().getExperimentalFactors();
+            Collection<ExperimentalFactor> factors = experimentalFactors;
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
             configIncludingBatch.setFactorsToInclude( factors );
