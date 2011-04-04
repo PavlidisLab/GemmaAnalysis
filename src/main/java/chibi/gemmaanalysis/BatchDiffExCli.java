@@ -79,8 +79,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
         Double pval = r.getCorrectedPvalue();
-        if ( pval == null ) return c;
-        if ( pval < 0.01 ) {
+        if ( pval != null && pval < 0.01 ) {
             c++;
         }
         /*
@@ -303,8 +302,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                             + "\t" + c.getId() + "\t" + c.getName() + "\t" );
 
                     Double bpval = beforeResultDetails.get( c ).get( ef ); // will be null for 'batch'
+
                     Double batpval = batchEffectDetails.get( c ).get( ef ); // when batch was included.
+
                     Double batapval = batchEffectAfterCorrDetails.get( c ).get( ef ); // when batch was included.
+
                     Double aftpval = revisedResultDetails.get( c ).get( ef ); // will be null for 'batch'
 
                     detailFile.write( String.format( "%.4g\t%.4g\t%.4g\t%.4g\n", bpval, batpval, batapval, aftpval ) );
@@ -322,7 +324,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 try {
                     detailFile.close();
                 } catch ( IOException e ) {
-                    e.printStackTrace();
+                    log.error( e, e );
                 }
             }
         }
