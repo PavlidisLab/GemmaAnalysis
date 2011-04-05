@@ -130,6 +130,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             log.error( e, e );
             return e;
         }
+
+        summarizeProcessing();
+
         return null;
     }
 
@@ -167,8 +170,15 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
 
             /* TODO use this, or skip it... we have this information elsewhere already */
-            expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
-            expressionExperimentBatchCorrectionService.checkCorrectability( ee );
+            // expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
+
+            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee );
+            if ( !correctable ) {
+                this.errorObjects
+                        .add( "Batch effect is not correctable; possibly contains batches with only one sample: "
+                                + ee.getShortName() );
+                return;
+            }
 
             /*
              * Extract data
