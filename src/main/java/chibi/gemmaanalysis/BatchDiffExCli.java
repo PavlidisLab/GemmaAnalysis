@@ -70,6 +70,28 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
     /**
+     * This only affects the summaries that are output.
+     */
+    private double summaryQvalThreshold = 0.01;
+
+    Writer summaryFile;
+
+    /**
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    private Writer initOutputFile( String fileName ) throws IOException {
+        File f = new File( fileName );
+        if ( f.exists() ) {
+            f.delete();
+        }
+        f.createNewFile();
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
+    }
+
+    /**
      * @param revisedResultDetails
      * @param ef
      * @param r
@@ -79,7 +101,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
         Double pval = r.getCorrectedPvalue();
-        if ( pval != null && pval < 0.01 ) {
+
+        if ( pval != null && pval < summaryQvalThreshold ) {
             c++;
         }
         /*
@@ -92,8 +115,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         revisedResultDetails.get( probe ).put( ef, pval );
         return c;
     }
-
-    Writer summaryFile;
 
     /*
      * (non-Javadoc)
@@ -174,9 +195,16 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee );
             if ( !correctable ) {
+
+                /*
+                 * TODO: consider a partial correction, where we either 1) remove samples that are by themselves in
+                 * batches of 2) group such into the nearest batch (in terms of time)
+                 */
+
                 this.errorObjects
                         .add( "Batch effect is not correctable; possibly contains batches with only one sample: "
                                 + ee.getShortName() );
+
                 return;
             }
 
@@ -185,6 +213,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              */
             Collection<ProcessedExpressionDataVector> vectos = processedExpressionDataVectorService
                     .getProcessedDataVectors( ee );
+
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
 
             /*
@@ -223,6 +252,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
             configIncludingBatch.setFactorsToInclude( factors );
+            configIncludingBatch.setOnLogScale( true );
+
             DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch ).iterator()
                     .next();
 
@@ -348,20 +379,4 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
         }
     }
-
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
-     */
-    protected Writer initOutputFile( String fileName ) throws IOException {
-        File f = new File( fileName );
-        if ( f.exists() ) {
-            f.delete();
-        }
-        f.createNewFile();
-        log.info( "New file: " + f.getAbsolutePath() );
-        return new FileWriter( f );
-    }
-
 }
