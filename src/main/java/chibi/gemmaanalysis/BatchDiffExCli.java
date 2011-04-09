@@ -33,6 +33,7 @@ import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
 import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
+import ubic.gemma.datastructure.matrix.MatrixWriter;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
@@ -216,6 +217,10 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
 
+            String rawDataFileName = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" )
+                    + ".originaldata.txt";
+            saveData( mat, rawDataFileName );
+
             /*
              * first do an analysis without batch; this is our baseline. Let's ignore interactions to keep things
              * simple.
@@ -252,7 +257,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
             configIncludingBatch.setFactorsToInclude( factors );
-            configIncludingBatch.setOnLogScale( true );
 
             DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch ).iterator()
                     .next();
@@ -285,12 +289,18 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * Correct for batch effects
              */
             log.info( "ComBat-ing" );
-            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( ee, mat );
+            boolean parametric = true;
+            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric );
             assert comBat != null;
+
+            String correctedDataFileName = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" )
+                    + ".correcteddata.txt";
+            saveData( comBat, correctedDataFileName );
 
             /*
              * Check if we have removed the batch effect: there should be no diff ex wrt batch. This is just a sanity
-             * check, really. The other factors are tracked just for completeness.
+             * check, really. The other factors are tracked just for completeness. Note that Combat log transforms the
+             * data if necessary, but transforms it back.
              */
             DifferentialExpressionAnalysis revisedResultWithBatch = lma.run( ee, comBat, configIncludingBatch )
                     .iterator().next();
@@ -378,5 +388,12 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 }
             }
         }
+    }
+
+    private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
+        MatrixWriter<Double> mw = new MatrixWriter<Double>();
+        FileWriter fw = new FileWriter( new File( filename ) );
+        mw.write( fw, mat, null, false, true );
+
     }
 }
