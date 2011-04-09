@@ -92,6 +92,13 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         return new FileWriter( f );
     }
 
+    private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
+        MatrixWriter<Double> mw = new MatrixWriter<Double>();
+        FileWriter fw = new FileWriter( new File( filename ) );
+        mw.write( fw, mat, null, false, true );
+
+    }
+
     /**
      * @param revisedResultDetails
      * @param ef
@@ -158,6 +165,12 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         return null;
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @seeubic.gemma.apps.DifferentialExpressionAnalysisCli#processExperiment(ubic.gemma.model.expression.experiment.
+     * ExpressionExperiment)
+     */
     @Override
     protected void processExperiment( ExpressionExperiment ee ) {
         Writer detailFile = null;
@@ -217,9 +230,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
 
-            String rawDataFileName = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" )
-                    + ".originaldata.txt";
-            saveData( mat, rawDataFileName );
+            StringBuilder summaryBuf = new StringBuilder();
 
             /*
              * first do an analysis without batch; this is our baseline. Let's ignore interactions to keep things
@@ -246,7 +257,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                         log.info( j + " processed" );
                     }
                 }
-                summaryFile.write( "Before\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                summaryBuf.append( "Before\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
             }
 
@@ -281,7 +292,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     }
 
                 }
-                summaryFile.write( "Batch\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                summaryBuf.append( "Batch\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
             }
 
@@ -292,10 +303,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             boolean parametric = true;
             ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric );
             assert comBat != null;
-
-            String correctedDataFileName = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" )
-                    + ".correcteddata.txt";
-            saveData( comBat, correctedDataFileName );
 
             /*
              * Check if we have removed the batch effect: there should be no diff ex wrt batch. This is just a sanity
@@ -320,7 +327,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     }
 
                 }
-                summaryFile.write( "BatchAftCorr\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                summaryBuf.append( "BatchAftCorr\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
             }
 
@@ -342,7 +349,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     }
 
                 }
-                summaryFile.write( "After\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                summaryBuf.append( "After\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
 
             }
@@ -350,8 +357,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Print out a summary
              */
-            detailFile = initOutputFile( "batch.proc.detail." + ee.getId() + "."
-                    + ee.getShortName().replaceAll( "[\\W\\s]+", "_" ) + ".txt" );
+            String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
+            detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );
 
             detailFile
                     .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
@@ -374,7 +381,15 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 }
             }
             detailFile.close();
+
+            summaryFile.write( summaryBuf.toString() );
             summaryFile.flush();
+
+            String rawDataFileName = fileprefix + ".originaldata.txt";
+            saveData( mat, rawDataFileName );
+            String correctedDataFileName = fileprefix + ".correcteddata.txt";
+            saveData( comBat, correctedDataFileName );
+
             successObjects.add( ee );
         } catch ( Exception e ) {
             log.error( e, e );
@@ -388,12 +403,5 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 }
             }
         }
-    }
-
-    private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
-        MatrixWriter<Double> mw = new MatrixWriter<Double>();
-        FileWriter fw = new FileWriter( new File( filename ) );
-        mw.write( fw, mat, null, false, true );
-
     }
 }
