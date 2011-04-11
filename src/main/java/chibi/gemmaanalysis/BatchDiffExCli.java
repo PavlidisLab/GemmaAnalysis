@@ -149,8 +149,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     continue;
                 }
                 ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-                log.info( "Processing: " + ee );
-
                 processExperiment( ee );
             }
             summaryFile.close();
@@ -222,6 +220,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 return;
             }
 
+            log.info( "Processing: " + ee );
+
             /*
              * Extract data
              */
@@ -229,6 +229,10 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     .getProcessedDataVectors( ee );
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
+            
+            /*
+             * TODO for some data sets we should re-normalize.
+             */
 
             StringBuilder summaryBuf = new StringBuilder();
 
@@ -334,6 +338,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Now without batch as a factor, which is what we really want.
              */
+            boolean hasNonNulls = false;
             DifferentialExpressionAnalysis revisedResult = lma.run( ee, comBat, configWithoutBatch ).iterator().next();
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
             for ( ExpressionAnalysisResultSet brs : revisedResult.getResultSets() ) {
@@ -342,6 +347,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
                 int c = 0;
                 for ( DifferentialExpressionAnalysisResult r : results ) {
+                    
+                    if (r.getCorrectedPvalue() != null && ! Double.isNaN(r.getCorrectedPvalue())) {
+                        hasNonNulls = true;
+                    }
+                    
                     c = tally( revisedResultDetails, ef, r, c );
 
                     if ( ++j % LOGGING_FREQ == 0 ) {
@@ -352,6 +362,13 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 summaryBuf.append( "After\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
 
+            }
+            
+            if (!hasNonNulls) {
+                // this means something went wrong ... somewhere. Possibly the model cannot be fit.
+                errorObjects.add( "No valid pvalues after correction: "
+                        + ee.getShortName());
+                return;
             }
 
             /*
