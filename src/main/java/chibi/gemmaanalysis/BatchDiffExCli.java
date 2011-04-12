@@ -30,7 +30,7 @@ import java.util.Map;
 
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
 import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
-import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
+import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;  
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.datastructure.matrix.MatrixWriter;
@@ -133,7 +133,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     protected Exception doWork( String[] args ) {
         Exception error = super.processCommandLine( "batch diff ex test", args );
         if ( error != null ) return error;
-
         this.expressionExperimentBatchCorrectionService = ( ExpressionExperimentBatchCorrectionService ) this
                 .getBean( "expressionExperimentBatchCorrectionService" );
         this.lma = ( LinearModelAnalyzer ) this.getBean( "genericAncovaAnalyzer" );
@@ -197,8 +196,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
-                this.errorObjects.add( "Too many factors (" + experimentalFactors.size() + " factors): "
-                        + ee.getShortName() );
+                this.errorObjects.add( "Too many factors (" + experimentalFactors.size()
+                        + " factors, including 'batch'): " + ee.getShortName() );
                 return;
             }
 
@@ -210,7 +209,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
                 /*
                  * TODO: consider a partial correction, where we either 1) remove samples that are by themselves in
-                 * batches of 2) group such into the nearest batch (in terms of time)
+                 * batches of 2) group such into the nearest batch (in terms of time). Note that later on we can still
+                 * end up with a model that is not of full rank, so combat will fail. This can sometimes be ameliorated
+                 * by dropping covariates.
                  */
 
                 this.errorObjects
@@ -229,7 +230,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     .getProcessedDataVectors( ee );
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
-            
+
             /*
              * TODO for some data sets we should re-normalize.
              */
@@ -301,11 +302,13 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
 
             /*
-             * Correct for batch effects
+             * Correct for batch effects; covariates which are "unimportant" will be dropped.
              */
             log.info( "ComBat-ing" );
             boolean parametric = true;
-            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric );
+            double importanceThreshold = 0.01;
+            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric,
+                    importanceThreshold );
             assert comBat != null;
 
             /*
@@ -347,11 +350,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
                 int c = 0;
                 for ( DifferentialExpressionAnalysisResult r : results ) {
-                    
-                    if (r.getCorrectedPvalue() != null && ! Double.isNaN(r.getCorrectedPvalue())) {
+
+                    if ( r.getCorrectedPvalue() != null && !Double.isNaN( r.getCorrectedPvalue() ) ) {
                         hasNonNulls = true;
                     }
-                    
+
                     c = tally( revisedResultDetails, ef, r, c );
 
                     if ( ++j % LOGGING_FREQ == 0 ) {
@@ -363,11 +366,10 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                         + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
 
             }
-            
-            if (!hasNonNulls) {
+
+            if ( !hasNonNulls ) {
                 // this means something went wrong ... somewhere. Possibly the model cannot be fit.
-                errorObjects.add( "No valid pvalues after correction: "
-                        + ee.getShortName());
+                errorObjects.add( "No valid pvalues after correction: " + ee.getShortName() );
                 return;
             }
 
@@ -421,4 +423,5 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
         }
     }
+
 }
