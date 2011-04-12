@@ -114,13 +114,13 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
         String shortName = null;
         QuantitationType quantitationType = null;
         DoubleArrayList r = new DoubleArrayList();
-        boolean alreadyWrote = false;
+
         for ( DoubleVectorValueObject v : vectos ) {
 
             quantitationType = v.getQuantitationType();
 
             // take it at its word.
-            if ( quantitationType.getScale() != null && !alreadyWrote ) {
+            if ( quantitationType.getScale() != null ) {
                 id = v.getExpressionExperiment().getId();
                 shortName = v.getExpressionExperiment().getShortName();
                 if ( quantitationType.getScale().equals( ScaleType.LOG2 ) ) {
@@ -131,7 +131,7 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
                 } else if ( quantitationType.getScale().equals( ScaleType.LOGBASEUNKNOWN ) ) {
                     summaryFile.write( "SUPPOSEDLY LOGBASEUNKNOWN SCALED\t" + id + "\t" + shortName + "\n" );
                 }
-                alreadyWrote = true;
+                return true;
             }
 
             for ( int j = 0; j < v.getData().length; j++ ) {
