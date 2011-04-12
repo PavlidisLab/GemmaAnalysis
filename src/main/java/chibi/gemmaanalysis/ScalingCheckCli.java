@@ -107,6 +107,9 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
     }
 
     private boolean onLogScale( Collection<DoubleVectorValueObject> vectos ) throws IOException {
+
+        if ( vectos.isEmpty() ) throw new IllegalArgumentException( "No vectors!" );
+
         Long id = null;
         String shortName = null;
         QuantitationType quantitationType = null;
@@ -140,6 +143,8 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
         double max = DescriptiveWithMissing.max( r );
         double min = DescriptiveWithMissing.min( r );
         double median = DescriptiveWithMissing.median( r );
+
+        assert quantitationType != null;
 
         String m = "\t" + quantitationType.getName() + "\t" + quantitationType.getDescription() + "\t"
                 + String.format( "%.2f", min ) + "\t" + String.format( "%.2f", median ) + "\t"
