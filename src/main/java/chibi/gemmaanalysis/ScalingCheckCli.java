@@ -145,7 +145,13 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
                 + String.format( "%.2f", min ) + "\t" + String.format( "%.2f", median ) + "\t"
                 + String.format( "%.2f", max );
 
-        if ( max > 20 ) {
+        if ( max - min < 10 ) {
+            summaryFile.write( "POSSIBLY LOG SCALED\t" + id + "\t" + shortName + m + "\n" );
+            log.info( "Range is narrow, could be log scaled" );
+            return true;
+        }
+
+        if ( max > 50 ) {
             log.info( "Data has large values, doesn't look log transformed: " + max );
             summaryFile.write( "NOT LOG SCALED\t" + id + "\t" + shortName + m + "\n" );
             return false;
@@ -156,6 +162,8 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
             return false;
         }
 
+        log.info( "Can't rule out possibility of log scale" );
+        summaryFile.write( "POSSIBLY LOG SCALED\t" + id + "\t" + shortName + m + "\n" );
         return true;
 
     }
