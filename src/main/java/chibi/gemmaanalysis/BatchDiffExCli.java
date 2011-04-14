@@ -30,7 +30,7 @@ import java.util.Map;
 
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
 import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
-import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;  
+import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.datastructure.matrix.MatrixWriter;
@@ -208,10 +208,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             if ( !correctable ) {
 
                 /*
-                 * TODO: consider a partial correction, where we either 1) remove samples that are by themselves in
-                 * batches of 2) group such into the nearest batch (in terms of time). Note that later on we can still
-                 * end up with a model that is not of full rank, so combat will fail. This can sometimes be ameliorated
-                 * by dropping covariates.
+                 * Note that later on we can still end up with a model that is not of full rank, so combat will fail.
+                 * This can sometimes be ameliorated by dropping covariates.
                  */
 
                 this.errorObjects
