@@ -27,6 +27,7 @@ import java.util.Collection;
 
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
+import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -37,7 +38,9 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
  * @author paul
  * @version $Id$
  */
-public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
+public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
+
+    private static final String REGRESSION_OPT = "regression";
 
     /**
      * @param args
@@ -52,6 +55,8 @@ public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
 
     Writer summaryFile;
 
+    boolean useRegression = false;
+
     /**
      * @param fileName
      * @return
@@ -65,6 +70,14 @@ public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
         f.createNewFile();
         log.info( "New file: " + f.getAbsolutePath() );
         return new FileWriter( f );
+    }
+
+    @Override
+    protected void buildOptions() {
+        super.buildOptions();
+
+        this.addOption( REGRESSION_OPT, false, "Set to use regression to attempt to "
+                + "subtract the effects of experimental factors before looking for outliers." );
     }
 
     /*
@@ -102,18 +115,11 @@ public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seeubic.gemma.apps.DifferentialExpressionAnalysisCli#processExperiment(ubic.gemma.model.expression.experiment.
-     * ExpressionExperiment)
-     */
-    @Override
     protected void processExperiment( ExpressionExperiment ee ) {
         try {
             StringBuilder sb = new StringBuilder();
 
-            Collection<BioAssay> outliers = this.outlierDetectionService.identifyOutliers( ee );
+            Collection<BioAssay> outliers = this.outlierDetectionService.identifyOutliers( ee, this.useRegression );
 
             String baseS = ee.getId() + "\t" + ee.getShortName();
 
@@ -121,7 +127,7 @@ public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
             for ( BioAssay bioAssay : outliers ) {
                 String line = baseS + "\t" + bioAssay.getId() + "\t" + bioAssay.getName();
                 sb.append( line + "\n" );
-                log.info( line );
+                log.info( "Outlier: " + line );
             }
 
             summaryFile.write( sb.toString() );
@@ -132,6 +138,14 @@ public class OutlierDetectionCli extends DifferentialExpressionAnalysisCli {
             log.error( e, e );
             errorObjects.add( ee + e.getMessage() );
         } finally {
+        }
+    }
+
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        if ( this.hasOption( REGRESSION_OPT ) ) {
+            this.useRegression = true;
         }
     }
 
