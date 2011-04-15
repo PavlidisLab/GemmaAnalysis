@@ -143,7 +143,6 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
 
             String baseS = ee.getId() + "\t" + ee.getShortName();
 
-            // TODO we might get more details here (like the correlation)
             for ( OutlierDetails outlier : outliers ) {
                 BioAssay bioAssay = outlier.getBioAssay();
                 double score = outlier.getScore();
