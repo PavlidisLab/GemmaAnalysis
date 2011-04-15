@@ -28,6 +28,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.lang.StringUtils;
+
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
 import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
 import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
@@ -38,12 +42,17 @@ import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.analysis.expression.diff.ProbeAnalysisResult;
+import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
+import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.genome.Gene;
+import ubic.gemma.util.EntityUtils;
 
 /**
  * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
@@ -68,7 +77,21 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
     LinearModelAnalyzer lma;
 
+    ArrayDesignService arrayDesignService;
+
+    CompositeSequenceService compositeSequenceService;
+
     ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    Collection<ArrayDesign> seenArrays = new HashSet<ArrayDesign>();
+
+    Map<CompositeSequence, Collection<Gene>> genes = new HashMap<CompositeSequence, Collection<Gene>>();
+
+    Transformer geneSymbolTransformer = new Transformer() {
+        public Object transform( Object input ) {
+            return ( ( Gene ) input ).getOfficialSymbol();
+        }
+    };
 
     /**
      * This only affects the summaries that are output.
@@ -138,6 +161,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         this.lma = ( LinearModelAnalyzer ) this.getBean( "genericAncovaAnalyzer" );
         this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
                 .getBean( "processedExpressionDataVectorService" );
+        this.compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+
+        arrayDesignService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
 
         try {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );
@@ -176,6 +202,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
             ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
+
             if ( null == batchFactor ) {
                 this.errorObjects.add( "No batch factor: " + ee.getShortName() );
                 return;
@@ -229,8 +256,16 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
 
+            Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+            for ( ArrayDesign ad : arrayDesigns ) {
+                if ( seenArrays.contains( ad ) ) continue;
+                this.arrayDesignService.thaw( ad );
+                genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
+                seenArrays.add( ad );
+            }
+
             /*
-             * TODO for some data sets we should re-normalize.
+             * TODO for some data sets we should re-normalize?
              */
 
             StringBuilder summaryBuf = new StringBuilder();
@@ -378,12 +413,18 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );
 
             detailFile
-                    .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
+                    .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
 
             for ( CompositeSequence c : beforeResultDetails.keySet() ) {
                 for ( ExperimentalFactor ef : factors ) {
+
+                    Collection<Gene> g = new HashSet<Gene>();
+                    g.addAll( genes.get( c ) );
+                    CollectionUtils.transform( g, geneSymbolTransformer );
+
                     detailFile.write( ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t" + ef.getName()
-                            + "\t" + c.getId() + "\t" + c.getName() + "\t" );
+                            + "\t" + c.getId() + "\t" + c.getName() + "\t" + StringUtils.join( g, "|" ) + "\t"
+                            + StringUtils.join( EntityUtils.getIds( genes.get( c ) ), "|" ) + "\t" );
 
                     Double bpval = beforeResultDetails.get( c ).get( ef ); // will be null for 'batch'
 
@@ -421,5 +462,4 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
         }
     }
-
 }
