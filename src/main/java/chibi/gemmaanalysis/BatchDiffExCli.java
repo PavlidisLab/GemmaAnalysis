@@ -259,7 +259,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
             for ( ArrayDesign ad : arrayDesigns ) {
                 if ( seenArrays.contains( ad ) ) continue;
-                this.arrayDesignService.thaw( ad );
+                ad = this.arrayDesignService.thaw( ad );
                 genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
                 seenArrays.add( ad );
             }
@@ -416,15 +416,21 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
 
             for ( CompositeSequence c : beforeResultDetails.keySet() ) {
-                for ( ExperimentalFactor ef : factors ) {
 
+                String geneSymbs = "";
+                String geneIds = "";
+                if ( genes.containsKey( c ) ) {
                     Collection<Gene> g = new HashSet<Gene>();
                     g.addAll( genes.get( c ) );
                     CollectionUtils.transform( g, geneSymbolTransformer );
+                    geneSymbs = StringUtils.join( g, "|" );
+                    geneIds = StringUtils.join( EntityUtils.getIds( genes.get( c ) ), "|" );
+                }
+
+                for ( ExperimentalFactor ef : factors ) {
 
                     detailFile.write( ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t" + ef.getName()
-                            + "\t" + c.getId() + "\t" + c.getName() + "\t" + StringUtils.join( g, "|" ) + "\t"
-                            + StringUtils.join( EntityUtils.getIds( genes.get( c ) ), "|" ) + "\t" );
+                            + "\t" + c.getId() + "\t" + c.getName() + "\t" + geneSymbs + "\t" + geneIds + "\t" );
 
                     Double bpval = beforeResultDetails.get( c ).get( ef ); // will be null for 'batch'
 
