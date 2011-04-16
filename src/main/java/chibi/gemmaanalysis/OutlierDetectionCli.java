@@ -110,6 +110,7 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
             summaryFile.write( "# " + DateUtil.convertDateToString( new Date() ) + "\n" );
             summaryFile.write( "# Quantile = " + quantile + "\n" );
             summaryFile.write( "# Threshold fraction = " + String.format( "%.2f", this.thresholdFraction ) + "\n" );
+            summaryFile.write( "# Regression = " + this.useRegression + "\n" );
             summaryFile.write( "EEID\tEENAME\tBAID\tBANAME\tSCORE\tTHRESHOLDCORR\n" );
 
             for ( BioAssaySet bas : this.expressionExperiments ) {
