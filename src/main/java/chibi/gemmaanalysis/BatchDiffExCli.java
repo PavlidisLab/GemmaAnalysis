@@ -115,11 +115,15 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         return new FileWriter( f );
     }
 
+    /**
+     * @param mat
+     * @param filename
+     * @throws IOException
+     */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
         MatrixWriter<Double> mw = new MatrixWriter<Double>();
         FileWriter fw = new FileWriter( new File( filename ) );
-        mw.write( fw, mat, null, false, true );
-
+        mw.write( fw, mat, null, true, true );
     }
 
     /**
@@ -255,14 +259,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     .getProcessedDataVectors( ee );
 
             ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
-
-            Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
-            for ( ArrayDesign ad : arrayDesigns ) {
-                if ( seenArrays.contains( ad ) ) continue;
-                ad = this.arrayDesignService.thaw( ad );
-                genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
-                seenArrays.add( ad );
-            }
 
             /*
              * TODO for some data sets we should re-normalize?
@@ -407,7 +403,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
 
             /*
-             * Print out a summary
+             * Print out details
              */
             String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
             detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );
@@ -415,8 +411,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             detailFile
                     .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
 
+            getGeneAnnotations( ee );
+
             for ( CompositeSequence c : beforeResultDetails.keySet() ) {
 
+                // Get the gene information
                 String geneSymbs = "";
                 String geneIds = "";
                 if ( genes.containsKey( c ) ) {
@@ -466,6 +465,21 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                     log.error( e, e );
                 }
             }
+        }
+    }
+
+    /**
+     * Gets annotations for this experiment, if the array designs have not already been seen in this run.
+     * 
+     * @param ee
+     */
+    private void getGeneAnnotations( ExpressionExperiment ee ) {
+        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+        for ( ArrayDesign ad : arrayDesigns ) {
+            if ( seenArrays.contains( ad ) ) continue;
+            ad = this.arrayDesignService.thaw( ad );
+            genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
+            seenArrays.add( ad );
         }
     }
 }
