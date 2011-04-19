@@ -124,6 +124,8 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
             return null;
         }
 
+        arrayDesign = adService.thawLite( arrayDesign );
+
         Taxon taxon = arrayDesign.getPrimaryTaxon();
 
         log.info( "Loading microRNAs for " + taxon.getCommonName() );
