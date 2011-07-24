@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import ubic.basecode.bio.geneset.GeneAnnotations;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrixFactory;
 import ubic.basecode.datafilter.AffymetrixProbeNameFilter;
@@ -133,7 +132,4 @@ public class LinkAnalysisDataLoader extends ExpressionDataLoader {
         return this.dataMatrix;
     }
 
-    public GeneAnnotations getGeneAnnotations() {
-        return this.geneAnnotations;
-    }
 }

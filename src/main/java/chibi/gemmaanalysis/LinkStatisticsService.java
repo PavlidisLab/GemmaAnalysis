@@ -92,7 +92,6 @@ public class LinkStatisticsService {
      * @param filterNonSpecific
      * @return the number of links added
      */
-    @SuppressWarnings("unchecked")
     private int tallyLinks( LinkStatistics stats, ExpressionExperiment ee, Taxon taxon, boolean shuffleLinks,
             boolean filterNonSpecific ) {
         assert ee != null;

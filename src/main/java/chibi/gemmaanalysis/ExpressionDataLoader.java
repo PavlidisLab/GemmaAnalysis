@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.bio.geneset.GeneAnnotations;
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
@@ -51,8 +50,6 @@ public class ExpressionDataLoader {
 
     protected static final Log log = LogFactory.getLog( ExpressionDataLoader.class );
 
-    protected GeneAnnotations geneAnnotations = null;
-
     protected int uniqueItems = 0;
 
     protected Collection<ProcessedExpressionDataVector> designElementDataVectors = null;
@@ -64,11 +61,6 @@ public class ExpressionDataLoader {
             this.experimentName = this.experiment.getName();
         }
         Set<String> rowsToUse = new HashSet<String>( this.getActiveProbeIdSet() );
-        try {
-            this.geneAnnotations = new GeneAnnotations( this.actualExperimentsPath + paraGOFile, rowsToUse, null, null );
-        } catch ( IOException e ) {
-            log.error( "Error in reading GO File" );
-        }
 
     }
 

@@ -100,7 +100,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         addOption( detailOption );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Gene 2 Gene Coexpression Results ", args );
