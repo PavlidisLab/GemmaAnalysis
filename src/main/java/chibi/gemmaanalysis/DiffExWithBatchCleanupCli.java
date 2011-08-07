@@ -38,6 +38,11 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
  */
 public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingCLI {
 
+    public static void main( String[] args ) {
+        DiffExWithBatchCleanupCli c = new DiffExWithBatchCleanupCli();
+        c.doWork( args );
+    }
+
     /*
      * (non-Javadoc)
      * 
