@@ -50,6 +50,9 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
      */
     @Override
     protected Exception doWork( String[] args ) {
+
+        processCommandLine( "Delete undesirable analysis", args );
+
         DifferentialExpressionAnalyzerService ds = ( DifferentialExpressionAnalyzerService ) this
                 .getBean( "differentialExpressionAnalyzerService" );
         DifferentialExpressionAnalysisService differentialExpressionAnalysisService = ( DifferentialExpressionAnalysisService ) this
