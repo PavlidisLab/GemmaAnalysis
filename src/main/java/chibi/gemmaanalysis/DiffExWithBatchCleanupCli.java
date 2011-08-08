@@ -22,6 +22,7 @@ package chibi.gemmaanalysis;
 import java.util.Collection;
 
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalyzerService;
+import ubic.gemma.analysis.report.ExpressionExperimentReportService;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisService;
@@ -57,6 +58,8 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                 .getBean( "differentialExpressionAnalyzerService" );
         DifferentialExpressionAnalysisService differentialExpressionAnalysisService = ( DifferentialExpressionAnalysisService ) this
                 .getBean( "differentialExpressionAnalysisService" );
+        ExpressionExperimentReportService expressionExperimentReportService = ( ExpressionExperimentReportService ) this
+                .getBean( "expressionExperimentReportService" );
 
         for ( BioAssaySet ee : expressionExperiments ) {
             if ( !( ee instanceof ExpressionExperiment ) ) {
@@ -82,6 +85,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                     if ( factor.getName().equals( "batch" ) ) {
                         log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
                         ds.deleteOldAnalysis( expressionExperiment, existingAnalysis );
+                        expressionExperimentReportService.generateSummaryObject( expressionExperiment.getId() );
                     }
                 }
             }
