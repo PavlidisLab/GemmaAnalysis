@@ -402,7 +402,8 @@ public class CoexpressionAnalysisService {
      * @param n - the Nth largest correlation
      * @return matrix with Nth largest correlations
      */
-    public DoubleMatrix getMaxCorrelationMatrix( DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix, int n ) {
+    public DoubleMatrix<Gene, Gene> getMaxCorrelationMatrix(
+            DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix, int n ) {
         log.info( "Calculating " + n + "-max matrix" );
         StopWatch watch = new StopWatch();
         watch.start();

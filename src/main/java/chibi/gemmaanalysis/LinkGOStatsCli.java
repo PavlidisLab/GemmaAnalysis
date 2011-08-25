@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -50,9 +49,7 @@ import ubic.gemma.ontology.GoMetric.Metric;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 
 /**
- * <p>
  * Collect the statistics of GO similarities of the computed linkss from compared to random generated links.
- * </p>
  * 
  * <pre>
  * java -Xmx5G  -jar linkGOStats.jar -f mouse_brain_dataset.txt  -t mouse -u administrator -p xxxxx -v 3
@@ -92,7 +89,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
 
     private Probe2ProbeCoexpressionService p2pService = null;
     private GoMetric goMetricService;
-    private CompressedBitMatrix linkCount = null;
+    private CompressedBitMatrix<Long, Long> linkCount = null;
     private int[][] realStats = null;
     private int[][] simulatedStats = null;
     private Map<Long, Integer> eeIndexMap = new HashMap<Long, Integer>();
@@ -164,21 +161,22 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         log.info( "Counted GO similarity for " + count + " links." );
     }
 
-    private void counting( Gene[] genes, Gene[] shuffledGenes, int iterationIndex ) {
-        for ( int i = 0; i < genes.length; i++ ) {
-            if ( genes[i].getId() == shuffledGenes[i].getId() ) continue;
-            int goOverlap = goMetricService.computeSimilarity( genes[i], shuffledGenes[i], null, Metric.simple )
-                    .intValue();
-
-            if ( goOverlap >= GO_MAXIMUM_COUNT ) {
-                simulatedStats[iterationIndex][GO_MAXIMUM_COUNT - 1]++;
-                simulatedStats[ITERATION_NUM / CHUNK_NUM][GO_MAXIMUM_COUNT - 1]++;
-            } else {
-                simulatedStats[iterationIndex][goOverlap]++;
-                simulatedStats[ITERATION_NUM / CHUNK_NUM][goOverlap]++;
-            }
-        }
-    }
+    //
+    // private void counting( Gene[] genes, Gene[] shuffledGenes, int iterationIndex ) {
+    // for ( int i = 0; i < genes.length; i++ ) {
+    // if ( genes[i].getId() == shuffledGenes[i].getId() ) continue;
+    // int goOverlap = goMetricService.computeSimilarity( genes[i], shuffledGenes[i], null, Metric.simple )
+    // .intValue();
+    //
+    // if ( goOverlap >= GO_MAXIMUM_COUNT ) {
+    // simulatedStats[iterationIndex][GO_MAXIMUM_COUNT - 1]++;
+    // simulatedStats[ITERATION_NUM / CHUNK_NUM][GO_MAXIMUM_COUNT - 1]++;
+    // } else {
+    // simulatedStats[iterationIndex][goOverlap]++;
+    // simulatedStats[ITERATION_NUM / CHUNK_NUM][goOverlap]++;
+    // }
+    // }
+    // }
 
     CompositeSequenceService compositeSequenceService;
 
@@ -374,18 +372,18 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         }
     }
 
-    private Gene[] shuffling( Gene[] genes ) {
-        Gene[] shuffledGenes = new Gene[genes.length];
-        System.arraycopy( genes, 0, shuffledGenes, 0, genes.length );
-        Random random = new Random();
-        for ( int i = genes.length - 1; i >= 0; i-- ) {
-            int pos = random.nextInt( i + 1 );
-            Gene tmp = shuffledGenes[pos];
-            shuffledGenes[pos] = shuffledGenes[i];
-            shuffledGenes[i] = tmp;
-        }
-        return shuffledGenes;
-    }
+    // private Gene[] shuffling( Gene[] genes ) {
+    // Gene[] shuffledGenes = new Gene[genes.length];
+    // System.arraycopy( genes, 0, shuffledGenes, 0, genes.length );
+    // Random random = new Random();
+    // for ( int i = genes.length - 1; i >= 0; i-- ) {
+    // int pos = random.nextInt( i + 1 );
+    // Gene tmp = shuffledGenes[pos];
+    // shuffledGenes[pos] = shuffledGenes[i];
+    // shuffledGenes[i] = tmp;
+    // }
+    // return shuffledGenes;
+    // }
 
     @SuppressWarnings("static-access")
     @Override
@@ -401,7 +399,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
      * 
      * @return collection of known genes for the taxon selected on the command line. Known genes basically means NCBI
      *         genes (not PARs and not "predicted").
-     */ 
+     */
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
         Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
@@ -505,7 +503,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
      * @param filepath
      * @return
      * @throws IOException
-     */ 
+     */
     private Collection<GeneLink> loadLinks( String filepath ) throws IOException {
 
         File f = new File( filepath );

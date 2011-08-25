@@ -208,7 +208,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     /**
      * @param bioSequences
      */
-    @SuppressWarnings("unchecked")
     private void processSequences( Collection<BioSequence> bioSequences ) {
         // ///////////////////////////////
         // First stage: fix biosequences that lack database entries, when there is one for another essentially
@@ -266,7 +265,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         }
     }
 
-    @SuppressWarnings("unchecked")
     private void switchAndDeleteExtra( BioSequence keeper, BioSequence toRemove ) {
 
         // all composite sequences for bs2 will be switched to bs1.

@@ -45,8 +45,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     private ArrayDesignService adService;
 
-    private DesignElementDataVectorService dedvService;
-
     private double filterThreshold;
 
     public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
@@ -89,7 +87,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     protected void initBeans() {
         eeService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
         adService = ( ArrayDesignService ) getBean( "arrayDesignService" );
-        dedvService = ( DesignElementDataVectorService ) getBean( "designElementDataVectorService" );
         processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
                 .getBean( "processedExpressionDataVectorService" );
     }

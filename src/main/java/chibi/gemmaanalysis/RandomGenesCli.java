@@ -5,11 +5,10 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Random;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
@@ -66,7 +65,6 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
             getRandomGenes( fileName, listSize ); // also prints it to file
             // printToFile(genes);
         } catch ( IOException e ) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
         return null;
@@ -92,44 +90,30 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
 
     private void getRandomGenes( String inFile, int number ) throws IOException {
         Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
-        SecureRandom randomSeed;
-        Collection<Gene> genes = new HashSet<Gene>();
         int geneCount = 0;
         String line;
-        // boolean added = false;
-        try {
+        BufferedWriter out = new BufferedWriter( new FileWriter( "random" + number + ".genes.txt" ) );
 
-            BufferedWriter out = new BufferedWriter( new FileWriter( "random" + number + ".genes.txt" ) );
+        Random r = new Random();
 
-            randomSeed = SecureRandom.getInstance( "SHA1PRNG" );
+        while ( geneCount < number ) {
 
-            while ( geneCount < number ) {
+            int randomInt = r.nextInt( rawLinesInFile.length );
 
-                randomSeed.generateSeed( 10 );
-                int randomInt = randomSeed.nextInt( rawLinesInFile.length );
+            line = ( String ) rawLinesInFile[randomInt];
 
-                line = ( String ) rawLinesInFile[randomInt];
-
-                Gene gene = geneService.load( Long.parseLong( line ) );
-                if ( gene == null ) {
-                    log.error( "ERROR: Cannot find genes for ID: " + line );
-                    continue;
-                }
-                gene = geneService.thaw( gene );
-
-                // because we are using a HashSet, no duplicates are allowed - which is what we want
-                log.info( "Index used: " + randomInt );
-                // added = genes.add( gene );
-                // if (added)
-                out.write( gene.getOfficialSymbol() + "\n" );
-
-                geneCount++;
+            Gene gene = geneService.load( Long.parseLong( line ) );
+            if ( gene == null ) {
+                log.error( "ERROR: Cannot find genes for ID: " + line );
+                continue;
             }
-            out.close();
-        } catch ( NoSuchAlgorithmException e ) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            gene = geneService.thaw( gene );
+
+            out.write( gene.getOfficialSymbol() + "\n" );
+
+            geneCount++;
         }
+        out.close();
 
     }
 
