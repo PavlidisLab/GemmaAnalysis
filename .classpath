@@ -26,18 +26,18 @@
 	<classpathentry kind="var" path="M2_REPO/commons-digester/commons-digester/1.6/commons-digester-1.6.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-io/commons-io/1.1/commons-io-1.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-lang/commons-lang/2.3/commons-lang-2.3.jar"/>
-	<classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.1.1/commons-logging-1.1.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/commons-logging/commons-logging/1.1/commons-logging-1.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-net/commons-net/1.4.1/commons-net-1.4.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/commons-pool/commons-pool/1.5.4/commons-pool-1.5.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1.jar" sourcepath="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/easymock/easymock/2.2/easymock-2.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/sf/ehcache/ehcache-core/1.7.2/ehcache-core-1.7.2.jar" sourcepath="M2_REPO/net/sf/ehcache/ehcache/1.2.3/ehcache-1.2.3-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/easymock/easymock/2.5.2/easymock-2.5.2.jar"/>
+	<classpathentry kind="var" path="M2_REPO/net/sf/ehcache/ehcache-core/2.4.4/ehcache-core-2.4.4.jar" sourcepath="M2_REPO/net/sf/ehcache/ehcache/1.2.3/ehcache-1.2.3-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.jar" sourcepath="M2_REPO/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/ibm/icu/icu4j/3.4.4/icu4j-3.4.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jaxen/jaxen/1.1/jaxen-1.1.jar"/>
-	<classpathentry kind="var" path="M2_REPO/jfree/jcommon/1.0.5/jcommon-1.0.5.jar"/>
+	<classpathentry kind="var" path="M2_REPO/jfree/jcommon/1.0.16/jcommon-1.0.16.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jdom/jdom/1.0/jdom-1.0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/jfree/jfreechart/1.0.2/jfreechart-1.0.2.jar"/>
+	<classpathentry kind="var" path="M2_REPO/jfree/jfreechart/1.0.13/jfreechart-1.0.13.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jini/jini-core/2.1/jini-core-2.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jini/jini-ext/2.1/jini-ext-2.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/JRI/0.5-0/JRI-0.5-0.jar"/>
@@ -60,9 +60,9 @@
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/REngine/0.6-0/REngine-0.6-0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/Rserve/0.6-0/Rserve-0.6-0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/spark/spark/1.2/spark-1.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-beans/3.0.1.RELEASE/spring-beans-3.0.1.RELEASE.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context/3.0.1.RELEASE/spring-context-3.0.1.RELEASE.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-jdbc/3.0.1.RELEASE/spring-jdbc-3.0.1.RELEASE.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-beans/3.0.5.RELEASE/spring-beans-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context/3.0.5.RELEASE/spring-context-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-jdbc/3.0.5.RELEASE/spring-jdbc-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="var" path="M2_REPO/velocity/velocity/1.4/velocity-1.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/velocity/velocity-dep/1.4/velocity-dep-1.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/xalan/xalan/2.7.0/xalan-2.7.0.jar"/>
@@ -72,18 +72,18 @@
 	<classpathentry kind="var" path="M2_REPO/xom/xom/1.0/xom-1.0.jar"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/baseCode"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/Gemma"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-orm/3.0.1.RELEASE/spring-orm-3.0.1.RELEASE.jar" sourcepath="/JAR_SOURCE/spring-framework-2.5.5"/>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-core/3.0.1.RELEASE/spring-core-3.0.1.RELEASE.jar" sourcepath="/M2_REPO/org/springframework/spring/2.5.5/spring-2.5.5-sources.jar">
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-orm/3.0.5.RELEASE/spring-orm-3.0.5.RELEASE.jar" sourcepath="/JAR_SOURCE/spring-framework-2.5.5"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-core/3.0.5.RELEASE/spring-core-3.0.5.RELEASE.jar" sourcepath="/M2_REPO/org/springframework/spring/2.5.5/spring-2.5.5-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="http://static.springframework.org/spring/docs/2.5.x/api/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context-support/3.0.1.RELEASE/spring-context-support-3.0.1.RELEASE.jar" sourcepath="/M2_REPO/org/springframework/spring-context-support/3.0.1.RELEASE/spring-context-support-3.0.1.RELEASE-sources.jar">
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context-support/3.0.5.RELEASE/spring-context-support-3.0.5.RELEASE.jar" sourcepath="/M2_REPO/org/springframework/spring-context-support/3.0.5.RELEASE/spring-context-support-3.0.5.RELEASE-sources.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="http://static.springsource.org/spring/docs/3.0.0.RC1/javadoc-api/"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-tx/3.0.1.RELEASE/spring-tx-3.0.1.RELEASE.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-math/2.1/commons-math-2.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-tx/3.0.5.RELEASE/spring-tx-3.0.5.RELEASE.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-math/2.2/commons-math-2.2.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
