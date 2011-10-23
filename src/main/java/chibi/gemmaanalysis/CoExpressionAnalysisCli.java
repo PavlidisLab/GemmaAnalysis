@@ -89,25 +89,26 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option geneFileOption = OptionBuilder.hasArg().isRequired().withArgName( "geneFile" ).withDescription(
-                "Short names of the genes to analyze" ).withLongOpt( "geneFile" ).create( 'g' );
+        Option geneFileOption = OptionBuilder.hasArg().isRequired().withArgName( "geneFile" )
+                .withDescription( "Short names of the genes to analyze" ).withLongOpt( "geneFile" ).create( 'g' );
         addOption( geneFileOption );
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
-                "the taxon of the genes to analyze" ).withLongOpt( "Taxon" ).create( 't' );
+        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" )
+                .withDescription( "the taxon of the genes to analyze" ).withLongOpt( "Taxon" ).create( 't' );
         addOption( taxonOption );
 
-        Option stringencyFileOption = OptionBuilder.hasArg().withArgName( "stringency" ).withDescription(
-                "The minimum support for links to be selected (Default 3)" ).withLongOpt( "stringency" ).create( 's' );
+        Option stringencyFileOption = OptionBuilder.hasArg().withArgName( "stringency" )
+                .withDescription( "The minimum support for links to be selected (Default 3)" )
+                .withLongOpt( "stringency" ).create( 's' );
         addOption( stringencyFileOption );
 
-        Option eeListOption = OptionBuilder.hasArg().withArgName( "Expression experiment list file" ).withDescription(
-                "File with list of short names of expression experiments to use" ).withLongOpt( "eeListfile" ).create(
-                'f' );
+        Option eeListOption = OptionBuilder.hasArg().withArgName( "Expression experiment list file" )
+                .withDescription( "File with list of short names of expression experiments to use" )
+                .withLongOpt( "eeListfile" ).create( 'f' );
         addOption( eeListOption );
 
         Option eeExcludeListFile = OptionBuilder.hasArg().withArgName( "Expression experiment exclude list file" )
-                .withDescription( "File with list of short names of expression experiments to exclude" ).withLongOpt(
-                        "eeExcludefile" ).create( 'x' );
+                .withDescription( "File with list of short names of expression experiments to exclude" )
+                .withLongOpt( "eeExcludefile" ).create( 'x' );
         addOption( eeExcludeListFile );
     }
 
@@ -200,7 +201,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         for ( Gene gene : queryGenes ) {
             log.info( "Get co-expressed genes for " + gene.getName() );
             CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
-                    this.stringency, false, 0 );
+                    this.stringency, 0 );
             Map<Long, Collection<Long>> geneEEMap = coexpressed.getKnownGeneCoexpression()
                     .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
             for ( Long geneId : geneEEMap.keySet() ) {

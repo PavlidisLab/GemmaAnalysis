@@ -59,9 +59,12 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
 import cern.colt.list.DoubleArrayList;
 
 /**
+ * Defunct/outmoded : we no longer use PARs at all.
+ * 
  * @author hmokada
  * @version $Id$
  */
+@Deprecated
 public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     private Taxon taxon;
@@ -674,7 +677,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // System.out.println("Linkanalysis " + par.getId() + "\t" + gene.getId());
 
             // search Gemma for links
-            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, eexps, 1, false, true, 0 );
+            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, eexps, 1, true, 0 );
 
             for ( Gene g : coexp.keySet() ) {
                 CoexpressionCollectionValueObject ccvo = coexp.get( g );
@@ -726,8 +729,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             pargene.add( par );
 
             // this is where bug 1604 showed its face
-            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false,
-                    false, 0 ); // low stringency.
+            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false, 0 ); // low
+                                                                                                                          // stringency.
 
             if ( coexp == null || coexp.isEmpty() ) {
                 continue;

@@ -197,8 +197,8 @@ public class LinkMatrix {
                     log.info( mesg );
                     throw new IOException( mesg );
                 }
-                linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ), Integer
-                        .valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
+                linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ),
+                        Integer.valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
                 hasConfig = true;
             } else if ( !hasRowNames ) {
                 if ( subItems.length != linkCountMatrix.rows() ) {
@@ -363,7 +363,7 @@ public class LinkMatrix {
             System.out.println( i + "/" + targetGenes.size() + "\t" + gene.getName() );
             // Get the gene->eeIds map
             CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
-                    stringency, false, 0 );
+                    stringency, 0 );
             Map<Long, Collection<Long>> geneEEMap = coexpressed.getKnownGeneCoexpression()
                     .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
             this.count( gene.getId(), geneEEMap );

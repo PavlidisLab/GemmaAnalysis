@@ -57,17 +57,13 @@ import cern.jet.stat.Descriptive;
 public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
     private class SortedElement implements Comparable<SortedElement> {
-        private Double mean, min, max, median, std, presentAbsentCall;
+        private Double max, median, presentAbsentCall;
         private CompositeSequence de;
 
-        public SortedElement( CompositeSequence de, double min, double max, double mean, double median, double std,
-                double presentAbsentCall ) {
+        public SortedElement( CompositeSequence de, double max, double median, double presentAbsentCall ) {
             this.de = de;
-            this.mean = mean;
-            this.min = min;
             this.max = max;
             this.median = median;
-            this.std = std;
             this.presentAbsentCall = presentAbsentCall;
         }
 
@@ -77,22 +73,6 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
         public Double getMax() {
             return max;
-        }
-
-        public Double getMean() {
-            return mean;
-        }
-
-        public Double getMedian() {
-            return median;
-        }
-
-        public Double getMin() {
-            return min;
-        }
-
-        public Double getStd() {
-            return std;
         }
 
         public CompositeSequence getDE() {
@@ -132,11 +112,11 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option ADOption = OptionBuilder.hasArg().isRequired().withArgName( "arrayDesign" ).withDescription(
-                "Array Design Short Name (GPLXXX) " ).withLongOpt( "arrayDesign" ).create( 'a' );
+        Option ADOption = OptionBuilder.hasArg().isRequired().withArgName( "arrayDesign" )
+                .withDescription( "Array Design Short Name (GPLXXX) " ).withLongOpt( "arrayDesign" ).create( 'a' );
         addOption( ADOption );
-        Option OutOption = OptionBuilder.hasArg().isRequired().withArgName( "outputFile" ).withDescription(
-                "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
+        Option OutOption = OptionBuilder.hasArg().isRequired().withArgName( "outputFile" )
+                .withDescription( "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
         addOption( OutOption );
     }
 
@@ -249,6 +229,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
                 value = DescriptiveWithMissing.mean( valList );
                 break;
             case MEDIAN:
+                valList.sort();
                 value = DescriptiveWithMissing.median( valList );
                 break;
             case STD:
@@ -315,9 +296,8 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             DoubleArrayList rankList = this.rankData.get( de );
             DoubleArrayList presentAbsentList = this.presentAbsentData.get( de );
             if ( rankList.size() > 0 ) {
-                SortedElement oneElement = new SortedElement( de, getStatValue( rankList, MIN ), getStatValue(
-                        rankList, MAX ), getStatValue( rankList, MEAN ), getStatValue( rankList, MEDIAN ),
-                        getStatValue( rankList, STD ), getStatValue( presentAbsentList, MEAN ) );
+                SortedElement oneElement = new SortedElement( de, getStatValue( rankList, MAX ), getStatValue(
+                        rankList, MEDIAN ), getStatValue( presentAbsentList, MEAN ) );
                 sortedList.add( oneElement );
             } else {
                 System.err.print( de.getName() );
