@@ -434,7 +434,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
         output.write( probeName + "\t" + arrayName + "\t" + blatRes.getMatches() + "\t"
                 + blatRes.getQuerySequence().getLength() + "\t" + ( blatRes.getTargetEnd() - blatRes.getTargetStart() )
-                + "\t" + blatRes.score() + "\t" + g.getOfficialSymbol() + "\t" + product.getNcbiId() + "\t"
+                + "\t" + blatRes.score() + "\t" + g.getOfficialSymbol() + "\t" + product.getNcbiGi() + "\t"
                 + association.getThreePrimeDistance() + "\t" + association.getOverlap() + "\t"
                 + blatRes.getTargetChromosome().getName() + "\t" + blatRes.getTargetStart() + "\t"
                 + blatRes.getTargetEnd() + "\n" );

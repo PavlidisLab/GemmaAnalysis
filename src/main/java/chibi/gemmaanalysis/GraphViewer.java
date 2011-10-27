@@ -325,7 +325,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
                     node.setString( NODENAME, gene.getName() );
                     if ( gene.getName().matches( "(RPL|RPS)(.*)" ) )
                         node.setString( NODETYPE, "R" );
-                    else if ( gene.getNcbiId() == null || gene.getNcbiId().length() == 0 )
+                    else if ( gene.getNcbiGeneId() == null )
                         node.setString( NODETYPE, "G" );
                     else
                         node.setString( NODETYPE, "N" );

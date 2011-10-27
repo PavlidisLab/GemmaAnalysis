@@ -5,7 +5,6 @@ import java.io.BufferedWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Random;
@@ -45,13 +44,13 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
     @Override
     protected void buildOptions() {
 
-        Option geneFileOption = OptionBuilder.hasArg().withArgName( "Gene List File Name" ).withDescription(
-                "A text file that contains a list of gene IDs, with one gene ID on each line" )
+        Option geneFileOption = OptionBuilder.hasArg().withArgName( "Gene List File Name" )
+                .withDescription( "A text file that contains a list of gene IDs, with one gene ID on each line" )
                 .withLongOpt( "geneFile" ).create( 'g' );
         addOption( geneFileOption );
 
-        Option numberOption = OptionBuilder.hasArg().withArgName( "NumberOfGenes" ).withDescription(
-                "The number of genes to use." ).withLongOpt( "number" ).create( 'n' );
+        Option numberOption = OptionBuilder.hasArg().withArgName( "NumberOfGenes" )
+                .withDescription( "The number of genes to use." ).withLongOpt( "number" ).create( 'n' );
         addOption( numberOption );
 
     }
@@ -138,24 +137,5 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         in.close();
         return lines;
     }
-
-    // private void printToFile(Collection<Gene> genes){
-    // try {
-    //              
-    // BufferedWriter out = new BufferedWriter( new FileWriter( "random1000.genes.txt" ));
-    //
-    // for ( Gene gene : genes ) {
-    //
-    // out.write(gene.getOfficialSymbol()+"\n");
-    //
-    // }
-    // out.close();
-    // } catch ( IOException e ) {
-    //
-    // e.printStackTrace();
-    // }
-    //             
-    //          
-    // }
 
 }
