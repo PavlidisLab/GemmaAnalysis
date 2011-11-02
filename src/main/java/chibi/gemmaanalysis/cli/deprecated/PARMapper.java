@@ -18,16 +18,10 @@
  */
 package chibi.gemmaanalysis.cli.deprecated;
 
-import java.util.Collection;
-
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PhysicalLocation;
 import ubic.gemma.model.genome.PhysicalLocationService;
-import ubic.gemma.model.genome.ProbeAlignedRegion;
-import ubic.gemma.model.genome.RelativeLocationData;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
@@ -38,7 +32,9 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  * 
  * @author paul
  * @version $Id$
+ * @deprecated
  */
+@Deprecated
 public class PARMapper extends AbstractSpringAwareCLI {
 
     GeneService parService;
@@ -55,8 +51,8 @@ public class PARMapper extends AbstractSpringAwareCLI {
     @Override
     protected void buildOptions() {
 
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withDescription( "taxon name" ).withDescription(
-                "taxon to use" ).withLongOpt( "taxon" ).create( 't' );
+        Option taxonOption = OptionBuilder.hasArg().isRequired().withDescription( "taxon name" )
+                .withDescription( "taxon to use" ).withLongOpt( "taxon" ).create( 't' );
         addOption( taxonOption );
 
         Option useStrandOption = OptionBuilder.create( "useStrand" );
@@ -87,33 +83,34 @@ public class PARMapper extends AbstractSpringAwareCLI {
 
         this.useStrand = this.hasOption( "useStrand" );
 
-        Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
-        log.info( pars.size() + " " + taxon.getCommonName() + " PARS" );
-
-        System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar\tSameStrand" );
+        // Collection<ProbeAlignedRegion> pars = parService.loadProbeAlignedRegions( taxon );
+        // log.info( pars.size() + " " + taxon.getCommonName() + " PARS" );
+        //
+        // System.out.println( "ParID\tParName\tChrom\tNuc\tGeneId\tGeneSymbol\tDistance\tGeneContainsPar\tSameStrand"
+        // );
 
         // test case
         // ProbeAlignedRegion par = ( ProbeAlignedRegion ) parService.load(
         // 1450985 );
 
-        for ( ProbeAlignedRegion par : pars ) {
-            par = ( ProbeAlignedRegion ) parService.thaw( par );
-
-            PhysicalLocation loc = par.getPhysicalLocation();
-
-            physicalLocationservice.thaw( loc );
-
-            RelativeLocationData nearest = parService.findNearest( loc, this.useStrand );
-            if ( nearest != null ) {
-                Gene gene = nearest.getNearestGene();
-
-                System.out
-                        .println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
-                                + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
-                                + nearest.getRange() + "\t" + nearest.isContainedWithinGene() + "\t"
-                                + nearest.isOnSameStrand() );
-            }
-        }
+        // for ( ProbeAlignedRegion par : pars ) {
+        // par = ( ProbeAlignedRegion ) parService.thaw( par );
+        //
+        // PhysicalLocation loc = par.getPhysicalLocation();
+        //
+        // physicalLocationservice.thaw( loc );
+        //
+        // RelativeLocationData nearest = parService.findNearest( loc, this.useStrand );
+        // if ( nearest != null ) {
+        // Gene gene = nearest.getNearestGene();
+        //
+        // System.out
+        // .println( par.getId() + "\t" + par.getName() + "\t" + loc.getChromosome().getName() + "\t"
+        // + loc.getNucleotide() + "\t" + gene.getId() + "\t" + gene.getOfficialSymbol() + "\t"
+        // + nearest.getRange() + "\t" + nearest.isContainedWithinGene() + "\t"
+        // + nearest.isOnSameStrand() );
+        // }
+        // }
         return null;
     }
 
