@@ -193,7 +193,6 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         return result;
     }
 
-    @SuppressWarnings("unchecked")
     private void fillingMatrix( Collection<ProbeLink> links, ExpressionExperiment ee ) {
         Collection<Long> csIds = new HashSet<Long>();
         for ( ProbeLink link : links ) {
@@ -389,8 +388,8 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option linkFileOption = OptionBuilder.hasArg().withArgName( "Link file path" ).withDescription(
-                "File with list of links (output of LinkStatisticsCLI)" ).create( "linkfile" );
+        Option linkFileOption = OptionBuilder.hasArg().withArgName( "Link file path" )
+                .withDescription( "File with list of links (output of LinkStatisticsCLI)" ).create( "linkfile" );
         addOption( linkFileOption );
     }
 

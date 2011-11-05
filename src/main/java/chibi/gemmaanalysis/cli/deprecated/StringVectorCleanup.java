@@ -49,11 +49,9 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        this
-                .addOption( OptionBuilder.withDescription(
-                        "Examine ALL vectors for correct sizes, "
-                                + "not just string types. Slow but useful check of the integrity of the system" )
-                        .create( 'f' ) );
+        this.addOption( OptionBuilder.withDescription(
+                "Examine ALL vectors for correct sizes, "
+                        + "not just string types. Slow but useful check of the integrity of the system" ).create( 'f' ) );
     }
 
     @Override
@@ -69,7 +67,6 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
     QuantitationTypeService qts;
     private boolean fullCheck = false;
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception e = processCommandLine( "remove tabs from strings and check vectors", args );

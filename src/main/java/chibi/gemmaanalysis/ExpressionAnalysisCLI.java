@@ -25,7 +25,6 @@ import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -96,7 +95,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * @param ees
      * @return
      */
-    @SuppressWarnings("unchecked")
     private DenseDoubleMatrix getRankMatrix( Collection<Gene> genes, Collection<BioAssaySet> ees ) {
         DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>( genes
                 .size(), ees.size() );

@@ -29,9 +29,6 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -58,8 +55,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
     private static final int MAX_GENES = 100000;
 
-    private static Log log = LogFactory.getLog( SummaryStatistics.class.getName() );
-
     private ExpressionExperimentService expressionExperimentService;
 
     private String taxonName;
@@ -73,7 +68,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * 
      * @param taxon
      */
-    @SuppressWarnings("unchecked")
     public void geneOccurrenceDistributions( Taxon taxon ) {
 
         Map<Long, Integer> counts = new HashMap<Long, Integer>();

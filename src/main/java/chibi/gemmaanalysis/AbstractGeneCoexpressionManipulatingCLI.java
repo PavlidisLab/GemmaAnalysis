@@ -29,7 +29,6 @@ import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.gene.GeneService;
 
 /**
  * Class for CLIs that manipulate a list of genes
@@ -38,7 +37,6 @@ import ubic.gemma.model.genome.gene.GeneService;
  * @version $Id$
  */
 public abstract class AbstractGeneCoexpressionManipulatingCLI extends ExpressionExperimentManipulatingCLI {
-    protected GeneService geneService;
 
     private String[] queryGeneSymbols;
     private String queryGeneFile;
@@ -50,19 +48,20 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option queryGeneFileOption = OptionBuilder.hasArg().withDescription(
-                "Query file containing list of gene official symbols" ).withArgName( "File name" ).withLongOpt(
-                "queryGeneFile" ).create();
+        Option queryGeneFileOption = OptionBuilder.hasArg()
+                .withDescription( "Query file containing list of gene official symbols" ).withArgName( "File name" )
+                .withLongOpt( "queryGeneFile" ).create();
         addOption( queryGeneFileOption );
-        Option queryGeneOption = OptionBuilder.hasArgs().withArgName( "Gene symbol(s)" ).withDescription(
-                "The query gene(s)" ).withLongOpt( "queryGene" ).create();
+        Option queryGeneOption = OptionBuilder.hasArgs().withArgName( "Gene symbol(s)" )
+                .withDescription( "The query gene(s)" ).withLongOpt( "queryGene" ).create();
         addOption( queryGeneOption );
 
-        Option targetFileOption = OptionBuilder.hasArg().withArgName( "File name" ).withDescription(
-                "File containing list of target gene official symbols" ).withLongOpt( "targetGeneFile" ).create();
+        Option targetFileOption = OptionBuilder.hasArg().withArgName( "File name" )
+                .withDescription( "File containing list of target gene official symbols" )
+                .withLongOpt( "targetGeneFile" ).create();
         addOption( targetFileOption );
-        Option targetGeneOption = OptionBuilder.hasArgs().withArgName( "Gene symbol(s)" ).withDescription(
-                "The target gene(s)" ).withLongOpt( "targetGene" ).create();
+        Option targetGeneOption = OptionBuilder.hasArgs().withArgName( "Gene symbol(s)" )
+                .withDescription( "The target gene(s)" ).withLongOpt( "targetGene" ).create();
         addOption( targetGeneOption );
 
     }
@@ -75,8 +74,6 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
 
         if ( hasOption( "targetGeneFile" ) ) targetGeneFile = getOptionValue( "targetGeneFile" );
         if ( hasOption( "targetGene" ) ) targetGeneSymbols = getOptionValues( "targetGene" );
-
-        geneService = ( GeneService ) getBean( "geneService" );
     }
 
     public Collection<Gene> getTargetGenes() throws IOException {

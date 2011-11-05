@@ -43,20 +43,18 @@ public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
         p.doWork( args );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         processCommandLine( "physicalLocationBinFiller", args );
 
         PhysicalLocationDao pld = ( PhysicalLocationDao ) this.getBean( "physicalLocationDao" );
 
-        Collection<PhysicalLocation> lcs = pld.loadAll();
+        Collection<? extends PhysicalLocation> lcs = pld.loadAll();
         int count = 0;
         for ( PhysicalLocation location : lcs ) {
             if ( location.getNucleotide() == null || location.getNucleotideLength() == null ) continue;
             int bin = SequenceBinUtils.binFromRange( location.getNucleotide().intValue(), location.getNucleotide()
-                    .intValue()
-                    + location.getNucleotideLength().intValue() );
+                    .intValue() + location.getNucleotideLength().intValue() );
             location.setBin( bin );
             pld.update( location );
             if ( ++count % 10000 == 0 ) {
