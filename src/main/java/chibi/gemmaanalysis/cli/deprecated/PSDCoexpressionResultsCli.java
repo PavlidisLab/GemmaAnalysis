@@ -75,28 +75,30 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
                 .withLongOpt( "geneFile" ).create( 'g' );
         addOption( geneFileOption );
 
-        Option stringencyOption = OptionBuilder.hasArg().withArgName( "Stringency" ).withDescription(
-                "The stringency value: Defaults to " + DEFAULT_STRINGINCY ).withLongOpt( "stringency" ).create( 's' );
+        Option stringencyOption = OptionBuilder.hasArg().withArgName( "Stringency" )
+                .withDescription( "The stringency value: Defaults to " + DEFAULT_STRINGINCY )
+                .withLongOpt( "stringency" ).create( 's' );
         addOption( stringencyOption );
 
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
-                "The name of the taxon." ).withLongOpt( "taxon" ).create( 't' );
+        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" )
+                .withDescription( "The name of the taxon." ).withLongOpt( "taxon" ).create( 't' );
         addOption( taxonOption );
 
-        Option analysisOption = OptionBuilder.hasArg().withArgName( "CoexpressionAnalysis" ).withDescription(
-                "Gene coexpression analysis ID to use." ).withLongOpt( "analysis" ).create( 'a' );
+        Option analysisOption = OptionBuilder.hasArg().withArgName( "CoexpressionAnalysis" )
+                .withDescription( "Gene coexpression analysis ID to use." ).withLongOpt( "analysis" ).create( 'a' );
         addOption( analysisOption );
 
-        Option queryOption = OptionBuilder.hasArg().withArgName( "QueryGenesOnly" ).withDescription(
-                "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
+        Option queryOption = OptionBuilder.hasArg().withArgName( "QueryGenesOnly" )
+                .withDescription( "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
         addOption( queryOption );
 
-        Option randomOption = OptionBuilder.hasArg().withArgName( "RandomFileOrCmd" ).withDescription(
-                "all = all known genes in taxon will be used" ).withLongOpt( "random" ).create( 'r' );
+        Option randomOption = OptionBuilder.hasArg().withArgName( "RandomFileOrCmd" )
+                .withDescription( "all = all known genes in taxon will be used" ).withLongOpt( "random" ).create( 'r' );
         addOption( randomOption );
 
-        Option detailOption = OptionBuilder.hasArg().withArgName( "ExtraDetails" ).withDescription(
-                "true = extra details, false = just coexpressed genes" ).withLongOpt( "detail" ).create( 'd' );
+        Option detailOption = OptionBuilder.hasArg().withArgName( "ExtraDetails" )
+                .withDescription( "true = extra details, false = just coexpressed genes" ).withLongOpt( "detail" )
+                .create( 'd' );
         addOption( detailOption );
     }
 
@@ -110,7 +112,7 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
             if ( allGenes == true )
                 genes = geneService.loadKnownGenes( taxon );
             else
-                genes = getGenes( rawGeneList, taxon );
+                genes = getGenes();
 
             // Batch up the genes to reduce memory footprint
 
@@ -123,13 +125,13 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
                 batch.add( g );
                 count++;
                 if ( count % CHUNK_SIZE == 0 ) {
-                    outputCoexpressionResults( batch, taxon, stringency, queryGenesOnly );
+                    outputCoexpressionResults( batch );
                     batch.clear();
                 }
             }
 
             if ( batch.size() > 0 ) {
-                outputCoexpressionResults( batch, taxon, stringency, queryGenesOnly );
+                outputCoexpressionResults( batch );
             }
 
         } catch ( IOException e ) {
@@ -255,13 +257,13 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
      * @return - ArrayList storing the lines in a text file
      * @throws IOException
      */
-    private Collection<Gene> getGenes( Collection<String> rawGeneList, Taxon taxon ) throws IOException {
+    private Collection<Gene> getGenes() throws IOException {
         // Collection<String> rawLinesInFile = readGeneListFile( inFile );
         Collection<Gene> genes = new ArrayList<Gene>();
 
-        Iterator linesIt = rawGeneList.iterator();
+        Iterator<String> linesIt = rawGeneList.iterator();
         while ( linesIt.hasNext() ) {
-            String s = ( String ) linesIt.next();
+            String s = linesIt.next();
             Gene gene = geneService.findByOfficialSymbol( s, taxon );
             if ( gene == null ) {
                 log.error( "ERROR: Cannot find genes for " + s );
@@ -275,12 +277,11 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return genes;
     }
 
-    private void outputCoexpressionResults( Collection<Gene> geneList, Taxon taxon, int stringency,
-            boolean queryGenesOnly ) throws IOException {
+    private void outputCoexpressionResults( Collection<Gene> geneList ) {
         log.debug( "Running Gene Coexpression..." );
 
         Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( analysisID,
-                geneList, stringency, 0, queryGenesOnly, true );
+                geneList, stringency, 0, queryGenesOnly );
         log.debug( "Printing results..." );
         printCoexpressionResults( cmvo );
     }

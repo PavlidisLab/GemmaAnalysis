@@ -33,8 +33,6 @@ import java.util.TreeSet;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import ubic.gemma.analysis.expression.coexpression.CoexpressionValueObjectExt;
 import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
@@ -63,8 +61,6 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     private boolean queryGenesOnly;
 
-    private static Log log = LogFactory.getLog( Gene2GeneCoexpressionResultsCli.class );
-
     protected GeneService geneService;
 
     protected Gene2GeneCoexpressionService gene2GeneCoexpressionService;
@@ -88,29 +84,33 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option geneFileOption = OptionBuilder.hasArg().withArgName( "Gene List File Name" ).withDescription(
-                "A text file that contains a list of gene symbols, with one gene symbol on each line" ).withLongOpt(
-                "geneFile" ).create( 'g' );
+        Option geneFileOption = OptionBuilder
+                .hasArg()
+                .withArgName( "Gene List File Name" )
+                .withDescription( "A text file that contains a list of gene symbols, with one gene symbol on each line" )
+                .withLongOpt( "geneFile" ).create( 'g' );
         addOption( geneFileOption );
 
-        Option stringencyOption = OptionBuilder.hasArg().withArgName( "Stringency" ).withDescription(
-                "The stringency value: Defaults to " + DEFAULT_STRINGINCY ).withLongOpt( "stringency" ).create( 's' );
+        Option stringencyOption = OptionBuilder.hasArg().withArgName( "Stringency" )
+                .withDescription( "The stringency value: Defaults to " + DEFAULT_STRINGINCY )
+                .withLongOpt( "stringency" ).create( 's' );
         addOption( stringencyOption );
 
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
-                "The name of the taxon." ).withLongOpt( "taxon" ).create( 't' );
+        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" )
+                .withDescription( "The name of the taxon." ).withLongOpt( "taxon" ).create( 't' );
         addOption( taxonOption );
 
-        Option queryOption = OptionBuilder.hasArg().withArgName( "QueryGenesOnly" ).withDescription(
-                "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
+        Option queryOption = OptionBuilder.hasArg().withArgName( "QueryGenesOnly" )
+                .withDescription( "Link analysis on query genes only?" ).withLongOpt( "query" ).create( 'q' );
         addOption( queryOption );
 
-        Option subsetOption = OptionBuilder.hasArg().withArgName( "GeneSubsetSize" ).withDescription(
-                "The size of the gene subset to use.  true/(1) or false/(0)" ).withLongOpt( "subsetSize" ).create( 'z' );
+        Option subsetOption = OptionBuilder.hasArg().withArgName( "GeneSubsetSize" )
+                .withDescription( "The size of the gene subset to use.  true/(1) or false/(0)" )
+                .withLongOpt( "subsetSize" ).create( 'z' );
         addOption( subsetOption );
 
-        Option randomOption = OptionBuilder.hasArg().withArgName( "RandomFileOrCmd" ).withDescription(
-                "all = all known genes in taxon will be used" ).withLongOpt( "random" ).create( 'r' );
+        Option randomOption = OptionBuilder.hasArg().withArgName( "RandomFileOrCmd" )
+                .withDescription( "all = all known genes in taxon will be used" ).withLongOpt( "random" ).create( 'r' );
         addOption( randomOption );
     }
 
@@ -120,7 +120,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         if ( err != null ) return err;
 
         try {
-            outputCoexpressionResults( geneList, taxon, stringency, queryGenesOnly );
+            outputCoexpressionResults();
         } catch ( IOException e ) {
             // TODO Auto-generated catch block
             e.printStackTrace();
@@ -166,7 +166,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         else {
             assert taxon != null;
             try {
-                geneList = getGeneList( this.getOptionValue( 'g' ), taxon );
+                geneList = getGeneList( this.getOptionValue( 'g' ) );
             } catch ( IOException e ) {
                 throw new RuntimeException( e );
             }
@@ -221,7 +221,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
      * @return - ArrayList storing the lines in a text file
      * @throws IOException
      */
-    private Collection<Gene> getGeneList( String inFile, Taxon taxon ) throws IOException {
+    private Collection<Gene> getGeneList( String inFile ) throws IOException {
         Collection<String> rawLinesInFile = readGeneListFile( inFile );
         Collection<Gene> genes = new ArrayList<Gene>();
 
@@ -240,52 +240,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return genes;
     }
 
-    // /**
-    // * Uses precomputed file of IDs; calls helper method, <code>readGeneListFile()</code>
-    // *
-    // * @param inFile - Precomputed file of IDs
-    // * @param i - number of random genes to use
-    // * @return - list of 'i' random number of genes from precomputed list of IDs
-    // * @throws IOException
-    // */
-    // private Collection<Gene> getRandomKnownGenes( String inFile, int i ) throws IOException {
-    // Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
-    // Collection<Gene> genes = new HashSet<Gene>();
-    // String line;
-    // int geneCount = 0;
-    // SecureRandom randomSeed;
-    // try {
-    // randomSeed = SecureRandom.getInstance( "SHA1PRNG" );
-    //
-    // while ( geneCount < 1000 ) {
-    //
-    // randomSeed.generateSeed( 10 );
-    // int randomInt = randomSeed.nextInt( rawLinesInFile.length );
-    //
-    // line = ( String ) rawLinesInFile[randomInt];
-    //
-    // Gene gene = geneService.load( Long.parseLong( line ) );
-    // if ( gene == null ) {
-    // log.error( "ERROR: Cannot find genes for ID: " + line );
-    // continue;
-    // }
-    // geneService.thaw( gene );
-    //
-    // // because we are using a HashSet, no duplicates are allowed - which is what we want
-    // genes.add( gene );
-    // geneCount++;
-    // }
-    //
-    // } catch ( NoSuchAlgorithmException e ) {
-    // // TODO Auto-generated catch block
-    // e.printStackTrace();
-    // }
-    //
-    // return genes;
-    // }
-
-    private void outputCoexpressionResults( Collection<Gene> geneList, Taxon taxon, int stringency,
-            boolean queryGenesOnly ) throws IOException {
+    private void outputCoexpressionResults() throws IOException {
         int geneCount = 0;
 
         createColumnHeadings();
@@ -302,7 +257,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
             }
             // use subset list of genes, size SUBSETSIZE
             Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( 717L,
-                    geneSubset, stringency, 0, queryGenesOnly, true );
+                    geneSubset, stringency, 0, queryGenesOnly );
 
             Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cmvo );
 
