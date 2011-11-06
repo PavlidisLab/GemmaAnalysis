@@ -481,8 +481,7 @@ public class LinkMatrix {
      * @param targetGenes
      * @param coExpressedGenes
      */
-    public void init( Collection<ExpressionExperiment> ees, Collection<Gene> targetGenes,
-            Collection<Gene> coExpressedGenes ) {
+    public void init( Collection<ExpressionExperiment> ees, Collection<Gene> t, Collection<Gene> coExpressedGenes ) {
         CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<Long, Long>( targetGenes.size(),
                 coExpressedGenes.size(), ees.size() );
         for ( Gene geneIter : targetGenes ) {
@@ -508,7 +507,7 @@ public class LinkMatrix {
                 geneMap.put( gene.getId(), gene );
             }
         }
-        this.targetGenes = targetGenes;
+        this.targetGenes = t;
     }
 
     /**
@@ -583,9 +582,8 @@ public class LinkMatrix {
      * stringency)
      * 
      * @param outFile path to file to save to
-     * @param stringency minimum support for links before they are saved
      */
-    public void saveLinkMatrix( String outFile, int stringency ) {
+    public void saveLinkMatrix( String outFile ) {
         try {
             ObjectArrayList nodes = new ObjectArrayList();
 

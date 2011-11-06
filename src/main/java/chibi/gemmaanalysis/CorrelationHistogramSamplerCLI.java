@@ -18,7 +18,7 @@ import cern.colt.list.DoubleArrayList;
 
 public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipulatingCLI {
     private CoexpressionAnalysisService coexprAnalysisService;
-    private Taxon taxon;
+  
     private int numSamples;
     private String outFileName;
     private int kMax;

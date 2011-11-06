@@ -87,7 +87,7 @@ public class FrequentLinkSetFinder {
             this.expand( iter, root.getChildren(), i );
         }
 
-        this.travel( root, minSupport, minLinks );
+        this.travel( root, minSupport );
         this.candidatesNodes.sort();
         for ( int i = 0; i < candidatesNodes.size(); i++ ) {
             TreeNode node = ( TreeNode ) candidatesNodes.getQuick( i );
@@ -211,9 +211,8 @@ public class FrequentLinkSetFinder {
      * 
      * @param rootNode
      * @param minExps
-     * @param minLinks
      */
-    private void travel( TreeNode rootNode, int minExps, int minLinks ) {
+    private void travel( TreeNode rootNode, int minExps ) {
 
         /*
          * Leaf node.
@@ -231,7 +230,7 @@ public class FrequentLinkSetFinder {
         for ( int i = 0; i < rootNode.getChildren().size(); i++ ) {
             TreeNode childNode = ( TreeNode ) rootNode.getChildren().getQuick( i );
             if ( LinkMatrix.countBits( childNode.getMask() ) >= minExps ) {
-                travel( childNode, minExps, minLinks );
+                travel( childNode, minExps );
             } else {
                 if ( rootNode.getLevel() >= minLinks ) this.insertCandidatesNode( rootNode );
             }

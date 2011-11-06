@@ -69,8 +69,8 @@ public class LinkStatistics {
             index++;
         }
         this.genes = genes;
-        this.posLinkCounts = this.initMatrix( ees, genes );
-        this.negLinkCounts = this.initMatrix( ees, genes );
+        this.posLinkCounts = this.initMatrix( ees );
+        this.negLinkCounts = this.initMatrix( ees  );
     }
 
     /**
@@ -78,7 +78,7 @@ public class LinkStatistics {
      * @param genes
      * @return
      */
-    public CompressedBitMatrix<Long, Long> initMatrix( Collection<BioAssaySet> ees, Collection<Gene> genes ) {
+    public CompressedBitMatrix<Long, Long> initMatrix( Collection<BioAssaySet> ees  ) {
         CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<Long, Long>( genes.size(), genes.size(),
                 ees.size() );
         for ( Gene geneIter : genes ) {

@@ -92,7 +92,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     private boolean checkTroubledExperiments = false; //
     private boolean checkUniqueProbeMappings = false; //
 
-    private Map headerLookup;
+    private Map<String, Integer> headerLookup;
     // private static String[] headers;
 
     private Collection<String[]> records;
@@ -239,9 +239,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        // TODO Auto-generated method stub
 
-        Exception exc = processCommandLine( "test", args );
+        processCommandLine( "test", args );
 
         // get services used
         this.parService = ( GeneService ) this.getBean( "geneService" );
@@ -410,7 +409,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         assert records.size() > 0;
 
         Iterator<String[]> recordItr = records.iterator();
-        int batch = 0;
 
         String[] record;
         while ( recordItr.hasNext() ) {
@@ -473,8 +471,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
              * pco.println("Batch Number: " + batch); pcA.println("Batch Number: " + batch);
              * pap.println("Batch Number: " + batch);
              */
-
-            batch++;
 
             /*
              * Do experiments, depends on which switch is selected
@@ -604,7 +600,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         a = arrayDesignService.thawLite( a );
 
         Collection<CompositeSequence> csc = a.getCompositeSequences();
-        Iterator cscItr = csc.iterator();
+        Iterator<CompositeSequence> cscItr = csc.iterator();
         if ( cscItr == null ) {
             System.out.println( "***No iterator: " + csc );
             return null;
@@ -616,7 +612,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
 
         while ( cscItr.hasNext() ) {
-            CompositeSequence cs = ( CompositeSequence ) cscItr.next();
+            CompositeSequence cs = cscItr.next();
 
             if ( cs == null ) {
                 // System.out.println("***No compseq: "+cscItr);
@@ -646,7 +642,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
      */
     private void outputPARGeneCoexpressionLinks( Collection<Gene> pars, Collection<Gene> genes, PrintStream pco ) {
 
-        ProbeLinkCoexpressionAnalyzer pca = new ProbeLinkCoexpressionAnalyzer();
+        pca = new ProbeLinkCoexpressionAnalyzer();
         pca.setGeneService( parService );
         pca.setProbe2ProbeCoexpressionService( probe2ProbeCoexpressionService );
 
@@ -1163,7 +1159,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     }
 
     private int getIndex( String header ) {
-        return ( ( Integer ) headerLookup.get( header ) ).intValue();
+        return headerLookup.get( header );
     }
 
     /**
@@ -1185,7 +1181,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
         BufferedReader in;
         Collection<String[]> fRecords = new ArrayList<String[]>();
-        Map fHash = null;
+        Map<String, Integer> fHash = null;
 
         String header;
 
@@ -1256,176 +1252,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         }
 
         in.close();
-
-    }
-
-    /**
-     * UNSTABLE This method outputs the pairwise correlations between pars and genes The correlations are calculated
-     * here using Pearson. This loads all experiments at once, therefore it calls the database less but this method
-     * crashes very frequently!!!!! Note: this method requires that a PAR/gene/experiment map file be used Note: this
-     * method takes a LONG time to finish (order of 10+ days) and it might run out of memory. May need to split into
-     * other jobs or resume from previous runs.
-     */
-    private void outputAllPARGeneCoexpressionCalculated_unstable( Collection<Gene> pars, Collection<Gene> genes,
-            PrintStream pap ) {
-        Iterator<Gene> pItr = pars.iterator();
-        Iterator<Gene> gItr = genes.iterator();
-
-        while ( pItr.hasNext() ) {
-            Gene par = pItr.next();
-            Gene gene = gItr.next();
-
-            long[] expIds = parToCoExps.get( par.getId() );
-
-            if ( expIds == null ) {
-                // System.out.println("No information: " + par.getId());
-                continue;
-            }
-
-            Collection<ExpressionExperiment> exps = new ArrayList<ExpressionExperiment>();
-
-            for ( int i = 0; i < expIds.length; i++ ) {
-                exps.add( expressionExperimentService.load( expIds[i] ) );
-            }
-
-            Collection<Gene> pargene = new ArrayList<Gene>();
-            pargene.add( par );
-            pargene.add( gene );
-
-            Map<Long, Collection<DoubleVectorValueObject>> expParMap = new HashMap<Long, Collection<DoubleVectorValueObject>>();
-            Map<Long, Collection<DoubleVectorValueObject>> expGeneMap = new HashMap<Long, Collection<DoubleVectorValueObject>>();
-
-            Collection<DoubleVectorValueObject> dvvos = processedExpressionDataVectorService.getProcessedDataArrays(
-                    exps, pargene );
-
-            // for every probe, assign it to either par or gene for the experiment
-            for ( DoubleVectorValueObject dvvo : dvvos ) {
-                ExpressionExperiment ee = dvvo.getExpressionExperiment();
-                expressionExperimentService.thawLite( ee );
-                Long eeId = new Long( ee.getId() );
-                ee = null;
-
-                Collection<Gene> genelist = dvvo.getGenes();
-
-                // go through the gene list to determine if PAR or gene and put into lists
-                // the data returned by getProcessedDataArrays does not tell us this directly
-                boolean isParGene = false;
-                for ( Gene g : genelist ) {
-                    long id = g.getId();
-                    if ( id == gene.getId() ) {
-                        if ( !expGeneMap.containsKey( eeId ) ) {
-                            expGeneMap.put( eeId, new ArrayList<DoubleVectorValueObject>() );
-                        }
-                        expGeneMap.get( eeId ).add( dvvo );
-                        isParGene = true;
-                        break;
-                    } else if ( id == par.getId() ) {
-                        // parData.put(dvvo.getDesignElement(), dvvo.getData());
-                        if ( !expParMap.containsKey( eeId ) ) {
-                            expParMap.put( eeId, new ArrayList<DoubleVectorValueObject>() );
-                        }
-                        expParMap.get( eeId ).add( dvvo );
-                        isParGene = true;
-                        break;
-                    }
-                }
-                if ( isParGene == false ) {
-                    System.out.println( "Probe not assigned, skipping: " + dvvo.getDesignElement() + " (Experiment: "
-                            + dvvo.getExpressionExperiment().getId() + ")" );
-                    continue;
-                }
-
-            }
-
-            // go through list of PAR/gene
-            for ( Long eeId : expParMap.keySet() ) {
-
-                if ( !expGeneMap.containsKey( eeId ) ) {
-                    System.out.println( "No experiment data for gene " + gene.getId() + " in this experiment: " + eeId );
-                    continue;
-                }
-
-                // iterate through the par probes
-                for ( DoubleVectorValueObject parDvvo : expParMap.get( eeId ) ) {
-                    CompositeSequence pd = parDvvo.getDesignElement();
-
-                    double[] pdata = parDvvo.getData();
-                    int parProbeMappings = parDvvo.getGenes().size();
-
-                    // iterate through the gene probes
-                    for ( DoubleVectorValueObject geneDvvo : expGeneMap.get( eeId ) ) {
-                        CompositeSequence gd = geneDvvo.getDesignElement();
-
-                        double[] gdata = geneDvvo.getData();
-
-                        int geneProbeMappings = geneDvvo.getGenes().size();
-
-                        // check if vectors the same length
-                        if ( pdata.length != gdata.length ) {
-                            System.out.println( "Error: vector sizes do not match: ParProbeID:" + pd.getId()
-                                    + "\tGeneProbeID:" + gd.getId() + "\tSizes:" + pdata.length + "\t" + gdata.length );
-                            continue;
-                        }
-
-                        int numbadIndices = 0;
-                        boolean[] badIndices = new boolean[pdata.length];
-                        for ( int i = 0; i < pdata.length; i++ ) {
-                            badIndices[i] = false;
-                        }
-
-                        // check data integrity - tag if missing value in column
-                        for ( int i = 0; i < pdata.length; i++ ) {
-                            if ( ( new Double( pdata[i] ) ).isNaN() || ( new Double( gdata[i] ) ).isNaN() ) {
-                                badIndices[i] = true;
-                                numbadIndices++;
-                            }
-                        }
-
-                        // make sure there are at least 3 samples in vector
-                        if ( pdata.length - numbadIndices < 3 ) {
-                            System.out.println( "Not enough samples (" + ( pdata.length - numbadIndices )
-                                    + ") to calc coexpression: ParProbeID:" + pd.getId() + "\tGeneProbeID:"
-                                    + gd.getId() );
-                        }
-
-                        // remove bad vector entries from both if either is labeled as bad
-                        if ( 0 < numbadIndices ) {
-                            double[] newpdata = new double[pdata.length - numbadIndices];
-                            double[] newgdata = new double[pdata.length - numbadIndices];
-
-                            int j = 0;
-                            for ( int i = 0; i < pdata.length; i++ ) {
-                                if ( badIndices[i] ) {
-                                    // System.out.println("skipping...");
-                                    // continue;
-                                } else {
-                                    newpdata[j] = pdata[i];
-                                    newgdata[j] = gdata[i];
-                                    j++;
-                                }
-                            }
-
-                            pdata = newpdata;
-                            gdata = newgdata;
-                        }
-
-                        // do co-expression with these two pairs!
-                        DoubleArrayList pdal = new DoubleArrayList( pdata );
-                        DoubleArrayList gdal = new DoubleArrayList( gdata );
-                        double corr = ubic.basecode.math.DescriptiveWithMissing.correlation( pdal, gdal );
-
-                        pap.println( parFileEntries.get( par.getId() ) + "," + eeId + "," + parProbeMappings + ","
-                                + geneProbeMappings + "," + pdata.length + "," + pd.getId() + "," + gd.getId() + ","
-                                + corr );
-
-                    }
-
-                    // just to save some memory when finished with this
-                    expParMap.put( eeId, null );
-
-                }
-            }
-        }
 
     }
 

@@ -128,30 +128,35 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option blatResultOption = OptionBuilder.hasArg().withArgName( "PSL file" ).withDescription(
-                "Blat result file in PSL format" ).withLongOpt( "blatfile" ).create( 'b' );
+        Option blatResultOption = OptionBuilder.hasArg().withArgName( "PSL file" )
+                .withDescription( "Blat result file in PSL format" ).withLongOpt( "blatfile" ).create( 'b' );
 
         addOption( blatResultOption );
 
-        Option databaseNameOption = OptionBuilder.hasArg().withArgName( "database" ).withDescription(
-                "GoldenPath database id (default=" + DEFAULT_DATABASE + ")" ).withLongOpt( "database" ).create( 'd' );
+        Option databaseNameOption = OptionBuilder.hasArg().withArgName( "database" )
+                .withDescription( "GoldenPath database id (default=" + DEFAULT_DATABASE + ")" )
+                .withLongOpt( "database" ).create( 'd' );
 
-        addOption( OptionBuilder.hasArg().withArgName( "value" ).withDescription(
-                "Sequence identity threshold, default = " + ProbeMapperConfig.DEFAULT_IDENTITY_THRESHOLD ).withLongOpt(
-                "identityThreshold" ).create( 'i' ) );
+        addOption( OptionBuilder
+                .hasArg()
+                .withArgName( "value" )
+                .withDescription(
+                        "Sequence identity threshold, default = " + ProbeMapperConfig.DEFAULT_IDENTITY_THRESHOLD )
+                .withLongOpt( "identityThreshold" ).create( 'i' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "value" ).withDescription(
-                "Blat score threshold, default = " + ProbeMapperConfig.DEFAULT_SCORE_THRESHOLD ).withLongOpt(
-                "scoreThreshold" ).create( 's' ) );
+        addOption( OptionBuilder.hasArg().withArgName( "value" )
+                .withDescription( "Blat score threshold, default = " + ProbeMapperConfig.DEFAULT_SCORE_THRESHOLD )
+                .withLongOpt( "scoreThreshold" ).create( 's' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription(
-                "File containing Genbank identifiers" ).withLongOpt( "gbfile" ).create( 'g' ) );
+        addOption( OptionBuilder.hasArg().withArgName( "file name" )
+                .withDescription( "File containing Genbank identifiers" ).withLongOpt( "gbfile" ).create( 'g' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription(
-                "File containing sequences in FASTA format" ).withLongOpt( "fastaFile" ).create( 'f' ) );
+        addOption( OptionBuilder.hasArg().withArgName( "file name" )
+                .withDescription( "File containing sequences in FASTA format" ).withLongOpt( "fastaFile" ).create( 'f' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription(
-                "File containing BioSequence primary keys (results are saved to database)" ).create( "seqIds" ) );
+        addOption( OptionBuilder.hasArg().withArgName( "file name" )
+                .withDescription( "File containing BioSequence primary keys (results are saved to database)" )
+                .create( "seqIds" ) );
 
         addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription( "Output file basename" )
                 .withLongOpt( "outputFile" ).create( 'o' ) );
@@ -287,9 +292,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 }
 
                 if ( ++count % 100 == 0 ) {
-                    log
-                            .info( "Processed " + count + "  sequences" + " with blat results; " + hits
-                                    + " mappings found." );
+                    log.info( "Processed " + count + "  sequences" + " with blat results; " + hits + " mappings found." );
                 }
 
             } catch ( NumberFormatException e ) {

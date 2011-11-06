@@ -513,12 +513,12 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
             restart( currentGraphIndex );
         }
         if ( source == circleLayout ) {
-            ActionList circleLayout = new ActionList();
-            circleLayout.add( new CircleLayout( "graph.nodes" ) );
+            ActionList c = new ActionList();
+            c.add( new CircleLayout( "graph.nodes" ) );
             boolean pause = vis.getAction( "layoutForce" ).isRunning();
             if ( pause ) vis.cancel( "layoutForce" );
             forceLayout.setText( "Force Layout" );
-            vis.putAction( "circleLayout", circleLayout );
+            vis.putAction( "circleLayout", c );
             vis.run( "circleLayout" );
             vis.invalidateAll();
             vis.repaint();
@@ -569,7 +569,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
                         selectedFile = new File( selectedFile.toString() + "." + fType );
                     }
                     if ( selectedFile.exists() ) {
-                        int response = JOptionPane.showConfirmDialog( display, "The file \"" + selectedFile.getName()
+                        JOptionPane.showConfirmDialog( display, "The file \"" + selectedFile.getName()
                                 + "\" already exists.\nDo you want to replace it?", "Confirm Save",
                                 JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
                         // if (response == JOptionPane.NO_OPTION){
@@ -641,9 +641,9 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
 
         @Override
         public void run( double frac ) {
-            Iterator iter = m_vis.items( m_group );
+            Iterator<DecoratorItem> iter = m_vis.items( m_group );
             while ( iter.hasNext() ) {
-                DecoratorItem item = ( DecoratorItem ) iter.next();
+                DecoratorItem item = iter.next();
                 VisualItem node = item.getDecoratedItem();
                 Rectangle2D bounds = node.getBounds();
                 setX( item, null, bounds.getCenterX() );

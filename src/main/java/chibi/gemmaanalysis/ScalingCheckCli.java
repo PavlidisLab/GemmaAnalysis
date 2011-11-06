@@ -145,7 +145,9 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
         double min = DescriptiveWithMissing.min( r );
         double median = DescriptiveWithMissing.median( r );
 
-        assert quantitationType != null;
+        if ( quantitationType == null ) {
+            throw new IllegalStateException( "QT was null" );
+        }
 
         String m = "\t" + quantitationType.getName() + "\t" + quantitationType.getDescription() + "\t"
                 + String.format( "%.2f", min ) + "\t" + String.format( "%.2f", median ) + "\t"

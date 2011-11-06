@@ -63,30 +63,32 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option writeLinkMatrix = OptionBuilder.withDescription(
-                "Giving this option will generate the new link matrix, Otherwise reading the link matrix from file" )
+        Option writeLinkMatrixo = OptionBuilder
+                .withDescription(
+                        "Giving this option will generate the new link matrix, Otherwise reading the link matrix from file" )
                 .withLongOpt( "linkMatrix" ).create( 'l' );
-        addOption( writeLinkMatrix );
-        Option writeTree = OptionBuilder.withDescription(
-                "Giving this option will generate the new clustering tree, Otherwise reading the tree from file" )
+        addOption( writeLinkMatrixo );
+        Option writeTree = OptionBuilder
+                .withDescription(
+                        "Giving this option will generate the new clustering tree, Otherwise reading the tree from file" )
                 .withLongOpt( "clusteringTree" ).create( 'c' );
         addOption( writeTree );
-        Option matrixFile = OptionBuilder.hasArg().withArgName( "Bit Matrixfile" ).isRequired().withDescription(
-                "The file for saving bit matrix" ).withLongOpt( "matrixfile" ).create( 'm' );
-        addOption( matrixFile );
+        Option matrixFileo = OptionBuilder.hasArg().withArgName( "Bit Matrixfile" ).isRequired()
+                .withDescription( "The file for saving bit matrix" ).withLongOpt( "matrixfile" ).create( 'm' );
+        addOption( matrixFileo );
 
         Option mapFile = OptionBuilder.hasArg().withArgName( "Expression Experiment Map File" ).isRequired()
                 .withDescription( "The File for Saving the Expression Experiment Mapping" ).withLongOpt( "mapfile" )
                 .create( 'e' );
         addOption( mapFile );
 
-        Option treeFile = OptionBuilder.hasArg().withArgName( "Clustering Tree File" ).isRequired().withDescription(
-                "The file for saving clustering tree" ).withLongOpt( "treefile" ).create( 't' );
-        addOption( treeFile );
+        Option treeFileo = OptionBuilder.hasArg().withArgName( "Clustering Tree File" ).isRequired()
+                .withDescription( "The file for saving clustering tree" ).withLongOpt( "treefile" ).create( 't' );
+        addOption( treeFileo );
 
-        Option species = OptionBuilder.hasArg().withArgName( "The name of the species" ).isRequired().withDescription(
-                "The name of the species" ).withLongOpt( "species" ).create( 's' );
-        addOption( species );
+        Option specieso = OptionBuilder.hasArg().withArgName( "The name of the species" ).isRequired()
+                .withDescription( "The name of the species" ).withLongOpt( "species" ).create( 's' );
+        addOption( specieso );
 
     }
 

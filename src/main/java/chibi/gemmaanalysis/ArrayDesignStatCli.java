@@ -124,7 +124,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         Collection<Long> adIds = new HashSet<Long>();
         for ( ArrayDesign ad : allArrayDesigns ) {
             adIds.add( ad.getId() );
-            Taxon taxon = adService.getTaxon( ad.getId() );
+            Taxon taxon = ad.getPrimaryTaxon();
             if ( taxon == null ) {
                 System.err.println( "ArrayDesign " + ad.getName() + " doesn't have a taxon" );
                 continue;

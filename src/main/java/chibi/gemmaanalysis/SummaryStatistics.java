@@ -147,12 +147,9 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     public void genesPerProbe( Taxon taxon ) {
         ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
         Collection<ArrayDesign> allAds = adService.loadAll();
-        // Collection<ArrayDesign> allAds = new HashSet<ArrayDesign>();
-        // allAds.add(adService.findByShortName("GPL86"));
-        // allAds.add(adService.load(164L));
         Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
         for ( ArrayDesign ad : allAds ) {
-            Taxon t = adService.getTaxon( ad.getId() );
+            Taxon t = ad.getPrimaryTaxon();
             if ( t != null && t.equals( taxon ) ) {
                 ads.add( ad );
             }
@@ -365,10 +362,10 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option taxonOption = OptionBuilder.hasArg().withArgName( "taxon" ).withDescription(
-                "Taxon common name (e.g., human)" ).create( 't' );
-        Option outFileOption = OptionBuilder.hasArg().withArgName( "outFile" ).withDescription( "Output file" ).create(
-                'o' );
+        Option taxonOption = OptionBuilder.hasArg().withArgName( "taxon" )
+                .withDescription( "Taxon common name (e.g., human)" ).create( 't' );
+        Option outFileOption = OptionBuilder.hasArg().withArgName( "outFile" ).withDescription( "Output file" )
+                .create( 'o' );
 
         addOption( outFileOption );
         addOption( taxonOption );

@@ -20,7 +20,6 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.gene.GeneService;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 import chibi.gemmaanalysis.CoexpressionAnalysisService.CoexpressionMatrices;
@@ -35,12 +34,9 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
     private String goTerm;
 
     private String outFilePrefix;
-
-    private Taxon taxon;
-
     private CoexpressionAnalysisService coexpressionAnalysisService;
 
-    private GeneOntologyService goService; 
+    private GeneOntologyService goService;
 
     public static final int DEFAULT_STRINGENCY = 3;
 
@@ -55,11 +51,12 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
         Option goOption = OptionBuilder.hasArg().withArgName( "GOTerm" ).withDescription( "Target GO term" )
                 .withLongOpt( "GOTerm" ).create( 'g' );
         addOption( goOption );
-        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "outFilePrefix" ).withDescription(
-                "File prefix for saving the correlation data" ).withLongOpt( "outFilePrefix" ).create( 'o' );
+        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "outFilePrefix" )
+                .withDescription( "File prefix for saving the correlation data" ).withLongOpt( "outFilePrefix" )
+                .create( 'o' );
         addOption( outputFileOption );
-        Option stringencyOption = OptionBuilder.hasArg().withArgName( "stringency" ).withDescription(
-                "Vote count stringency for link selection" ).withLongOpt( "stringency" ).create( 'r' );
+        Option stringencyOption = OptionBuilder.hasArg().withArgName( "stringency" )
+                .withDescription( "Vote count stringency for link selection" ).withLongOpt( "stringency" ).create( 'r' );
         addOption( stringencyOption );
     }
 
@@ -75,7 +72,6 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
         String taxonName = getOptionValue( 't' );
         taxon = Taxon.Factory.newInstance();
         taxon.setCommonName( taxonName );
-        TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
         taxon = taxonService.find( taxon );
         if ( taxon == null ) {
             log.info( "No Taxon found!" );
@@ -93,6 +89,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
         geneService = ( GeneService ) this.getBean( "geneService" );
     }
 
+    @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected Exception doWork( String[] args ) {
         Exception exc = processCommandLine( "EffectSizeCalculation ", args );
