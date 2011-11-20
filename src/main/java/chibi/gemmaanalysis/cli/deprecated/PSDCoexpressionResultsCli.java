@@ -281,7 +281,7 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         log.debug( "Running Gene Coexpression..." );
 
         Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( analysisID,
-                geneList, stringency, 0, queryGenesOnly );
+                geneList, stringency, 0, queryGenesOnly, true );
         log.debug( "Printing results..." );
         printCoexpressionResults( cmvo );
     }

@@ -257,7 +257,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
             }
             // use subset list of genes, size SUBSETSIZE
             Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( 717L,
-                    geneSubset, stringency, 0, queryGenesOnly );
+                    geneSubset, stringency, 0, queryGenesOnly, true );
 
             Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cmvo );
 

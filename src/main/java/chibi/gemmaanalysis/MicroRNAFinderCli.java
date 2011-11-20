@@ -72,11 +72,11 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option ADOption = OptionBuilder.hasArg().isRequired().withArgName( "arrayDesign" ).withDescription(
-                "Array Design Short Name (GPLXXX) " ).withLongOpt( "arrayDesign" ).create( 'a' );
+        Option ADOption = OptionBuilder.hasArg().isRequired().withArgName( "arrayDesign" )
+                .withDescription( "Array Design Short Name (GPLXXX) " ).withLongOpt( "arrayDesign" ).create( 'a' );
         addOption( ADOption );
-        Option OutOption = OptionBuilder.hasArg().isRequired().withArgName( "outputFile" ).withDescription(
-                "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
+        Option OutOption = OptionBuilder.hasArg().isRequired().withArgName( "outputFile" )
+                .withDescription( "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
         addOption( OutOption );
 
     }
@@ -181,8 +181,8 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
 
                     log.debug( chromosome );
 
-                    mappedRNAs.addAll( analysis.findMicroRNAGenesByLocation( chromosome, start, end, blatResult
-                            .getStrand() ) );
+                    mappedRNAs.addAll( analysis.findMicroRNAGenesByLocation( chromosome, start, end,
+                            blatResult.getStrand() ) );
 
                     Collection<Gene> alignedGenes = analysis.findRNAs( chromosome, start, end, blatResult.getStrand() );
                     for ( Gene gene : alignedGenes ) {

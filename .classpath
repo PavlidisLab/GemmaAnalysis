@@ -30,7 +30,7 @@
 	<classpathentry kind="var" path="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1.jar" sourcepath="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/easymock/easymock/2.5.2/easymock-2.5.2.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/sf/ehcache/ehcache-core/2.4.4/ehcache-core-2.4.4.jar" sourcepath="M2_REPO/net/sf/ehcache/ehcache/1.2.3/ehcache-1.2.3-sources.jar"/>
-	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga.jar" sourcepath="M2_REPO/org/hibernate/hibernate/3.2.6.ga/hibernate-3.2.6.ga-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate-core/3.6.7.Final/hibernate-core-3.6.7.Final.jar" sourcepath="/M2_REPO/org/hibernate/hibernate-core/3.6.7.Final/hibernate-core-3.6.7.Final-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/ibm/icu/icu4j/3.4.4/icu4j-3.4.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jaxen/jaxen/1.1/jaxen-1.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jfree/jcommon/1.0.16/jcommon-1.0.16.jar"/>
@@ -83,5 +83,8 @@
 	<classpathentry kind="var" path="M2_REPO/org/apache/commons/commons-math/2.2/commons-math-2.2.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/jini/jini-core/2.1/jini-core-2.1.jar"/>
 	<classpathentry kind="var" path="M2_REPO/net/jini/jini-ext/2.1/jini-ext-2.1.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate-ehcache/3.6.7.Final/hibernate-ehcache-3.6.7.Final.jar" sourcepath="/M2_REPO/org/hibernate/hibernate-ehcache/3.6.7.Final/hibernate-ehcache-3.6.7.Final-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate-commons-annotations/3.2.0.Final/hibernate-commons-annotations-3.2.0.Final.jar"/>
+	<classpathentry kind="var" path="M2_REPO/org/hibernate/javax/persistence/hibernate-jpa-2.0-api/1.0.1.Final/hibernate-jpa-2.0-api-1.0.1.Final.jar"/>
 	<classpathentry kind="output" path="classes"/>
 </classpath>
