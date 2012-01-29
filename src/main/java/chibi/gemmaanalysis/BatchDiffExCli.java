@@ -223,7 +223,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 return;
             }
 
-            if ( experimentalFactors.size() > 4 ) {
+            if ( experimentalFactors.size() > 10 ) {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
