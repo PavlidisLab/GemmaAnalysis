@@ -40,7 +40,7 @@ import ubic.gemma.model.genome.PhysicalLocation;
 import ubic.gemma.model.genome.PhysicalLocationService;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.gene.GeneProduct;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResult;

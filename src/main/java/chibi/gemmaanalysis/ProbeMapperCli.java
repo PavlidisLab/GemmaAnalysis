@@ -50,7 +50,7 @@ import ubic.gemma.model.genome.gene.GeneProduct;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResult;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
-import ubic.gemma.persistence.PersisterHelper;
+import ubic.gemma.persistence.Persister;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**
@@ -260,7 +260,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         log.info( seqIds.size() + " ids found in file" );
 
         BioSequenceService bss = ( BioSequenceService ) this.getBean( "bioSequenceService" );
-        PersisterHelper persisterHelper = ( PersisterHelper ) this.getBean( "persisterHelper" );
+        Persister persisterHelper = ( Persister ) this.getBean( "persister" );
         BlatResultService blatResultService = ( BlatResultService ) this.getBean( "blatResultService" );
 
         int count = 0;

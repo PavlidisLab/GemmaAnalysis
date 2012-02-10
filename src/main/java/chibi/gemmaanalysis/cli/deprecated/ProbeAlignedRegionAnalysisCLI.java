@@ -50,7 +50,7 @@ import ubic.gemma.model.genome.PredictedGene;
 import ubic.gemma.model.genome.ProbeAlignedRegion;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**

@@ -53,7 +53,7 @@ import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
 import ubic.gemma.model.genome.biosequence.SequenceType;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 import cern.colt.list.DoubleArrayList;

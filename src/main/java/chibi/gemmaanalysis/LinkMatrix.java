@@ -44,7 +44,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGeneImpl;
 import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 import cern.colt.list.ObjectArrayList;
 

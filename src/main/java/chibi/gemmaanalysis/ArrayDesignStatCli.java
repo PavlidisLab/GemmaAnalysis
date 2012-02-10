@@ -34,7 +34,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.PredictedGeneImpl;
 import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 
 /**
  * CLI for ArrayDesignMapSummaryService
@@ -141,8 +141,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         Map<Long, Boolean> isSubsumed = adService.isSubsumed( adIds );
         try {
             FileWriter out = new FileWriter( new File( "arraydesignsummary.txt" ) );
-            out
-                    .write( "taxon\tarray design name\tgenes\tprobes\tcsKnownGenes\tcsPredictedGenes\tcsProbeAlignedRegions\tcsBioSequences\tcsBlatResults" );
+            out.write( "taxon\tarray design name\tgenes\tprobes\tcsKnownGenes\tcsPredictedGenes\tcsProbeAlignedRegions\tcsBioSequences\tcsBlatResults" );
             for ( int i = 0; i <= MAXIMUM_COUNT; i++ )
                 out.write( "\tP2G_" + i );
             for ( int i = 1; i <= MAXIMUM_COUNT; i++ )

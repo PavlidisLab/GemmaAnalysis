@@ -51,7 +51,7 @@ import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.TaxonService;
-import ubic.gemma.model.genome.gene.GeneService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
@@ -84,8 +84,8 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" ).withDescription(
-                "the taxon name" ).withLongOpt( "Taxon" ).create( 't' );
+        Option taxonOption = OptionBuilder.hasArg().isRequired().withArgName( "Taxon" )
+                .withDescription( "the taxon name" ).withLongOpt( "Taxon" ).create( 't' );
         addOption( taxonOption );
         Option eeNameFileo = OptionBuilder.hasArg().withArgName( "File having Expression Experiment Names" )
                 .withDescription( "File having Expression Experiment Names" ).withLongOpt( "eeFileName" ).create( 'f' );
