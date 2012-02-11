@@ -31,7 +31,7 @@ import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 
 /**
@@ -50,6 +50,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     /*
      * (non-Javadoc)
+     * 
      * @see ubic.gemma.util.AbstractCLI#buildOptions()
      */
     @Override
@@ -96,8 +97,8 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * @return
      */
     private DenseDoubleMatrix getRankMatrix( Collection<Gene> genes, Collection<BioAssaySet> ees ) {
-        DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>( genes
-                .size(), ees.size() );
+        DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>(
+                genes.size(), ees.size() );
         for ( int i = 0; i < matrix.rows(); i++ ) {
             for ( int j = 0; j < matrix.columns(); j++ ) {
                 matrix.set( i, j, Double.NaN );
@@ -250,6 +251,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     /*
      * (non-Javadoc)
+     * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @SuppressWarnings("unchecked")

@@ -23,7 +23,7 @@ import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.model.genome.PhysicalLocationService;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 

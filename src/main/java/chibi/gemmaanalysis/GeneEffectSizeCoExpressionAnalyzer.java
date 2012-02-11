@@ -39,7 +39,7 @@ import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import cern.colt.list.DoubleArrayList;
 
@@ -560,8 +560,9 @@ public class GeneEffectSizeCoExpressionAnalyzer {
                         if ( Double.isNaN( correlationDataMatrix.get( rowIndex, colIndex ) ) )
                             rankMatrix.set( row, col, Double.NaN );
                         else
-                            rankMatrix.set( row, col, getExpressionRank( ( ExpressedData ) coExpressedDataMatrix.get(
-                                    rowIndex, colIndex ) ) );
+                            rankMatrix
+                                    .set( row, col, getExpressionRank( ( ExpressedData ) coExpressedDataMatrix.get(
+                                            rowIndex, colIndex ) ) );
                     } catch ( IllegalArgumentException e ) {
                         continue;
                     }

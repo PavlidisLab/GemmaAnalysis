@@ -39,7 +39,7 @@ import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
 import ubic.gemma.model.association.coexpression.Gene2GeneCoexpressionService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 

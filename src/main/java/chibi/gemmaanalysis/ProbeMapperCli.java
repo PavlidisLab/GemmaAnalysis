@@ -43,7 +43,7 @@ import ubic.gemma.loader.genome.FastaParser;
 import ubic.gemma.loader.util.parser.TabDelimParser;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.model.genome.TaxonService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
 import ubic.gemma.model.genome.biosequence.BioSequenceService;
 import ubic.gemma.model.genome.gene.GeneProduct;
