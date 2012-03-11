@@ -33,7 +33,7 @@ import java.util.Map;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
+import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzerImpl;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionValueObject;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
@@ -112,7 +112,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     // Gene2GeneCoexpressionService gene2GeneCoexpressionService;
     Probe2ProbeCoexpressionService probe2ProbeCoexpressionService;
 
-    ProbeLinkCoexpressionAnalyzer pca;
+    ProbeLinkCoexpressionAnalyzerImpl pca;
 
     @SuppressWarnings("static-access")
     @Override
@@ -254,7 +254,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         this.probe2ProbeCoexpressionService = ( Probe2ProbeCoexpressionService ) this
                 .getBean( "probe2ProbeCoexpressionService" );
 
-        this.pca = ( ProbeLinkCoexpressionAnalyzer ) this.getBean( "probeLinkCoexpressionAnalyzer" );
+        this.pca = ( ProbeLinkCoexpressionAnalyzerImpl ) this.getBean( "probeLinkCoexpressionAnalyzer" );
 
         // Load up experiments - all experiments or from a list
         Collection<ExpressionExperiment> eeCol;
@@ -641,10 +641,6 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
      * Retrieves all coexpression data for pars and genes that are in the same experiment
      */
     private void outputPARGeneCoexpressionLinks( Collection<Gene> pars, Collection<Gene> genes, PrintStream pco ) {
-
-        pca = new ProbeLinkCoexpressionAnalyzer();
-        pca.setGeneService( parService );
-        pca.setProbe2ProbeCoexpressionService( probe2ProbeCoexpressionService );
 
         Iterator<Gene> pItr = pars.iterator();
         Iterator<Gene> gItr = genes.iterator();

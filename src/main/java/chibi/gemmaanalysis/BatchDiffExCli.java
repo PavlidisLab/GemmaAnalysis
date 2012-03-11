@@ -32,8 +32,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang.StringUtils;
 
+import ubic.gemma.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
 import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
@@ -75,7 +75,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
     ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
 
-    LinearModelAnalyzer lma;
+    DiffExAnalyzer lma;
 
     ArrayDesignService arrayDesignService;
 
@@ -162,7 +162,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         if ( error != null ) return error;
         this.expressionExperimentBatchCorrectionService = ( ExpressionExperimentBatchCorrectionService ) this
                 .getBean( "expressionExperimentBatchCorrectionService" );
-        this.lma = ( LinearModelAnalyzer ) this.getBean( "genericAncovaAnalyzer" );
+        this.lma = ( DiffExAnalyzer ) this.getBean( "genericAncovaAnalyzer" );
         this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
                 .getBean( "processedExpressionDataVectorService" );
         this.compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
