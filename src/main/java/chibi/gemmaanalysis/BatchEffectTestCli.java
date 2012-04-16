@@ -101,7 +101,7 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
      * @param ee
      */
     private void pcaFactorTest( SVDService svdService, ExpressionExperiment ee ) {
-        SVDValueObject svdo = svdService.svdFactorAnalysis( ee );
+        SVDValueObject svdo = svdService.getSvdFactorAnalysis( ee.getId() );
         Map<Long, ExperimentalFactor> efMap = EntityUtils
                 .getIdMap( ee.getExperimentalDesign().getExperimentalFactors() );
         /*
