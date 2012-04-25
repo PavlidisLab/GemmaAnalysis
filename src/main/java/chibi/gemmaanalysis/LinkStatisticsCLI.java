@@ -35,8 +35,6 @@ import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PredictedGene;
-import ubic.gemma.model.genome.ProbeAlignedRegion;
 
 /**
  * Used to count up links and to generate real lists of links or random background distribution, which could be used to
@@ -116,8 +114,8 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option startPreparing = OptionBuilder.withArgName( "Prepare only" ).withDescription(
-                "Prepare temporary table for analysis" ).withLongOpt( "prepare" ).create( 's' );
+        Option startPreparing = OptionBuilder.withArgName( "Prepare only" )
+                .withDescription( "Prepare temporary table for analysis" ).withLongOpt( "prepare" ).create( 's' );
         addOption( startPreparing );
 
         Option iterationNum = OptionBuilder.hasArg().withArgName( " The number of iteration for shuffling " )
@@ -125,13 +123,13 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
                 .withLongOpt( "iterationNum" ).create( 'i' );
         addOption( iterationNum );
 
-        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" ).withDescription(
-                "Print out link details for shuffled data sets" ).create( "outputShuffledData" );
+        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" )
+                .withDescription( "Print out link details for shuffled data sets" ).create( "outputShuffledData" );
         addOption( outputShuffledLinks );
 
-        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" ).withDescription(
-                "Perform a real link analysis and output it to link-data.txt" ).withLongOpt( "realAnalysis" ).create(
-                'r' );
+        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" )
+                .withDescription( "Perform a real link analysis and output it to link-data.txt" )
+                .withLongOpt( "realAnalysis" ).create( 'r' );
         addOption( realAnalysis );
 
         /*
@@ -212,14 +210,8 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
      */
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
-        Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
-        Collection<Gene> knownGenes = new HashSet<Gene>();
-        for ( Gene g : genes ) {
-            // FIXME this should be optional, though the number of all genes together is really big.
-            if ( !( g instanceof ProbeAlignedRegion ) && !( g instanceof PredictedGene ) ) {
-                knownGenes.add( g );
-            }
-        }
+        Collection<Gene> knownGenes = geneService.getGenesByTaxon( taxon ); 
+        
         log.info( "Using " + knownGenes.size() + " 'known genes' for analysis" );
         return knownGenes;
     }

@@ -42,8 +42,6 @@ import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PredictedGene;
-import ubic.gemma.model.genome.ProbeAlignedRegion;
 import ubic.gemma.ontology.GoMetric;
 import ubic.gemma.ontology.GoMetric.Metric;
 import ubic.gemma.ontology.providers.GeneOntologyService;
@@ -401,14 +399,8 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
      */
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
-        Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
-        Collection<Gene> knownGenes = new HashSet<Gene>();
-        for ( Gene g : genes ) {
-            // FIXME this should be optional, though the number of all genes together is really big.
-            if ( !( g instanceof ProbeAlignedRegion ) && !( g instanceof PredictedGene ) ) {
-                knownGenes.add( g );
-            }
-        }
+        Collection<Gene> knownGenes = geneService.getGenesByTaxon( taxon );
+
         log.info( "Using " + knownGenes.size() + " 'known genes' for analysis" );
         return knownGenes;
     }

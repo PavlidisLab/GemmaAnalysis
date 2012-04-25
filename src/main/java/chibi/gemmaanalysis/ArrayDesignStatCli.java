@@ -30,9 +30,7 @@ import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PredictedGeneImpl;
-import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
+import ubic.gemma.model.genome.Gene; 
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.genome.gene.service.GeneService;
 
@@ -153,9 +151,8 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 Collection<ArrayDesign> ads = taxon2arraydesign.get( taxon );
                 Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
                 for ( Gene gene : allGenes ) {
-                    if ( !( gene instanceof PredictedGeneImpl ) && !( gene instanceof ProbeAlignedRegionImpl ) ) {
-                        geneIds.add( gene.getId() );
-                    }
+                           geneIds.add( gene.getId() );
+                   
                 }
                 for ( ArrayDesign ad : ads ) {
                     boolean merged = isMerged.get( ad.getId() );

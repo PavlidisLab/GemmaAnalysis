@@ -40,9 +40,7 @@ import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.PredictedGeneImpl;
-import ubic.gemma.model.genome.ProbeAlignedRegionImpl;
+import ubic.gemma.model.genome.Gene; 
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.ontology.providers.GeneOntologyService;
@@ -275,15 +273,10 @@ public class LinkMatrix {
      */
     public LinkMatrix( Taxon taxon ) {
         Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
-        Collection<Gene> genes = new HashSet<Gene>();
-        for ( Gene gene : allGenes ) {
-            if ( !( gene instanceof PredictedGeneImpl ) && !( gene instanceof ProbeAlignedRegionImpl ) ) {
-                genes.add( gene );
-            }
-        }
-        log.info( "Got " + genes.size() + " genes" );
-        if ( genes.size() == 0 ) return;
-        init( genes );
+
+        log.info( "Got " + allGenes.size() + " genes" );
+        if ( allGenes.size() == 0 ) return;
+        init( allGenes );
     }
 
     /**
@@ -735,14 +728,8 @@ public class LinkMatrix {
         if ( genes == null || ees == null || genes.size() == 0 || ees.size() == 0 ) return;
         Collection<Gene> genesInTaxon = geneService.getGenesByTaxon( genes.iterator().next().getTaxon() );
         if ( genesInTaxon == null || genesInTaxon.size() == 0 ) return;
-        Collection<Gene> coExpressedGenes = new HashSet<Gene>();
 
-        for ( Gene gene : genesInTaxon ) {
-            if ( !( gene instanceof PredictedGeneImpl ) && !( gene instanceof ProbeAlignedRegionImpl ) ) {
-                coExpressedGenes.add( gene );
-            }
-        }
-        init( ees, genes, coExpressedGenes );
+        init( ees, genes, genesInTaxon );
     }
 
     public void setGoService( GeneOntologyService goService ) {
