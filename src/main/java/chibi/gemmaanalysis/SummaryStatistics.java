@@ -59,7 +59,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
     private String taxonName;
     private TaxonService taxonService;
-    private ArrayDesignService arrayDesignService;
     private CompositeSequenceService compositeSequenceService;
     private String outFileName;
 
@@ -351,10 +350,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         }
     }
 
-    public void setArrayDesignService( ArrayDesignService adserv ) {
-        this.arrayDesignService = adserv;
-    }
-
     public void setExpressionExperimentService( ExpressionExperimentService ees ) {
         this.expressionExperimentService = ees;
     }
@@ -396,7 +391,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         }
 
         this.taxonService = ( TaxonService ) getBean( "taxonService" );
-        this.arrayDesignService = ( ArrayDesignService ) getBean( "arrayDesignService" );
         this.expressionExperimentService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
         this.compositeSequenceService = ( CompositeSequenceService ) getBean( "compositeSequenceService" );
     }
