@@ -30,7 +30,7 @@ import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.genome.Gene; 
+import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.genome.gene.service.GeneService;
 
@@ -151,8 +151,8 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 Collection<ArrayDesign> ads = taxon2arraydesign.get( taxon );
                 Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
                 for ( Gene gene : allGenes ) {
-                           geneIds.add( gene.getId() );
-                   
+                    geneIds.add( gene.getId() );
+
                 }
                 for ( ArrayDesign ad : ads ) {
                     boolean merged = isMerged.get( ad.getId() );
@@ -163,10 +163,6 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                     long numCsBioSequences = getArrayDesignService().numCompositeSequenceWithBioSequences( ad );
                     long numCsBlatResults = getArrayDesignService().numCompositeSequenceWithBlatResults( ad );
                     long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
-                    long numCsPredictedGenes = getArrayDesignService().numCompositeSequenceWithPredictedGenes( ad );
-                    long numCsProbeAlignedRegions = getArrayDesignService().numCompositeSequenceWithProbeAlignedRegion(
-                            ad );
-                    long numCsPureGenes = numCsGenes - numCsPredictedGenes - numCsProbeAlignedRegions;
                     long numGenes = getArrayDesignService().numGenes( ad );
                     Collection<CompositeSequence> allCSs = getArrayDesignService().loadCompositeSequences( ad );
                     Collection<Long> csIds = new HashSet<Long>();
@@ -179,16 +175,14 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                     int[] geneStats = getStats( geneId2csIds, true );
                     int cs2NoneGene = allCSs.size() - csId2geneIds.keySet().size();
                     out.write( taxon.getCommonName() + "\t" + ad.getName() + "\t" + numGenes + "\t" + numProbes + "\t"
-                            + numCsGenes + "\t" + numCsPredictedGenes + "\t" + numCsProbeAlignedRegions + "\t"
-                            + numCsBioSequences + "\t" + numCsBlatResults + "\t" + cs2NoneGene );
+                            + numCsGenes + "\t" + numCsBioSequences + "\t" + numCsBlatResults + "\t" + cs2NoneGene );
                     for ( int i = 0; i < MAXIMUM_COUNT; i++ )
                         out.write( "\t" + csStats[i] );
                     for ( int i = 0; i < MAXIMUM_COUNT; i++ )
                         out.write( "\t" + geneStats[i] );
                     out.write( "\n" );
                     System.err.print( taxon.getCommonName() + "\t" + ad.getName() + "\t" + numGenes + "\t" + numProbes
-                            + "\t" + numCsPureGenes + "\t" + numCsPredictedGenes + "\t" + numCsProbeAlignedRegions
-                            + "\t" + numCsBioSequences + "\t" + numCsBlatResults + "\n" );
+                            + "\t" + numGenes + "\t" + numCsBioSequences + "\t" + numCsBlatResults + "\n" );
                 }
             }
             out.close();
