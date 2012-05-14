@@ -262,7 +262,7 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
             int dataIndex = 0;
             for ( ExpressionExperiment ee : eeIndexMap.keySet() ) {
                 if ( noLinkEEs.contains( ee ) ) continue;
-                out.write( eeService.getTaxon( ee.getId() ).getCommonName() + ee.getShortName() );
+                out.write( eeService.getTaxon( ee ).getCommonName() + ee.getShortName() );
                 int eeIndex = eeIndexMap.get( ee );
                 for ( int j = 0; j < binNum; j++ ) {
                     data[dataIndex][j] = ( double ) histogram[eeIndex][j] / ( double ) culmulatives[eeIndex];

@@ -78,8 +78,8 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         int i = 0;
         for ( ExpressionExperiment experiment : eeColl ) {
             if ( i > MAX_EXPS ) break;
-            Taxon eeTax = expressionExperimentService.getTaxon( experiment.getId() );
-            if ( !eeTax.equals( taxon ) ) continue;
+            Taxon eeTax = expressionExperimentService.getTaxon( experiment );
+            if ( eeTax == null || !eeTax.equals( taxon ) ) continue;
             Collection<ArrayDesign> ads = expressionExperimentService.getArrayDesignsUsed( experiment );
 
             // only count each gene once per data set.
@@ -258,8 +258,8 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         int numEEs = 0;
         for ( ExpressionExperiment experiment : eeColl ) {
             if ( numEEs > MAX_EXPS ) break;
-            Taxon eeTax = expressionExperimentService.getTaxon( experiment.getId() );
-            if ( !eeTax.equals( taxon ) ) continue;
+            Taxon eeTax = expressionExperimentService.getTaxon( experiment );
+            if ( eeTax == null || !eeTax.equals( taxon ) ) continue;
             Collection<ArrayDesign> ads = expressionExperimentService.getArrayDesignsUsed( experiment );
 
             // only count each gene once per data set.
