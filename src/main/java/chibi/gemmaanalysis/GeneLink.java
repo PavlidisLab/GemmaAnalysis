@@ -28,6 +28,7 @@ public class GeneLink implements Link {
         return firstGene;
     }
 
+    @Override
     public Double getScore() {
         return score;
     }
@@ -45,6 +46,7 @@ public class GeneLink implements Link {
         this.firstGene = firstGene;
     }
 
+    @Override
     public void setScore( Double score ) {
         this.score = score;
     }

@@ -34,6 +34,7 @@ import org.apache.commons.lang.StringUtils;
 
 import ubic.gemma.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
+import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
 import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
@@ -88,6 +89,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     Map<CompositeSequence, Collection<Gene>> genes = new HashMap<CompositeSequence, Collection<Gene>>();
 
     Transformer geneSymbolTransformer = new Transformer() {
+        @Override
         public Object transform( Object input ) {
             return ( ( Gene ) input ).getOfficialSymbol();
         }
@@ -160,14 +162,13 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     protected Exception doWork( String[] args ) {
         Exception error = super.processCommandLine( "batch diff ex test", args );
         if ( error != null ) return error;
-        this.expressionExperimentBatchCorrectionService = ( ExpressionExperimentBatchCorrectionService ) this
-                .getBean( "expressionExperimentBatchCorrectionService" );
-        this.lma = ( DiffExAnalyzer ) this.getBean( "genericAncovaAnalyzer" );
-        this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
-        this.compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        this.expressionExperimentBatchCorrectionService = this
+                .getBean( ExpressionExperimentBatchCorrectionService.class );
+        this.lma = this.getBean( LinearModelAnalyzer.class );
+        this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
+        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
 
-        arrayDesignService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
+        arrayDesignService = this.getBean( ArrayDesignService.class );
 
         try {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );

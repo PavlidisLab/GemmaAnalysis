@@ -63,6 +63,7 @@ public class TreeNode implements Comparable<TreeNode>, Serializable {
      * 
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
+    @Override
     public int compareTo( TreeNode o ) {
         int res = 0;
         switch ( TreeNode.SORTING ) {

@@ -134,6 +134,7 @@ public class ProbeMapperGui extends JFrame {
             okButton.setText( "OK" );
             okButton.setBounds( 200, 13, 51, 26 );
             okButton.addActionListener( new ActionListener() {
+                @Override
                 @SuppressWarnings({ "synthetic-access" })
                 public void actionPerformed( ActionEvent e ) {
                     inputFile = new File( inputFileNameTextField.getText() );
@@ -183,6 +184,7 @@ public class ProbeMapperGui extends JFrame {
             cancelButton.setText( "Cancel" );
             cancelButton.setBounds( 256, 13, 73, 26 );
             cancelButton.addActionListener( new ActionListener() {
+                @Override
                 public void actionPerformed( ActionEvent e ) {
                     exit();
                 }
@@ -259,6 +261,7 @@ public class ProbeMapperGui extends JFrame {
             inputFileBrowseButton.setBounds( 451, 8, 87, 26 );
             inputFileBrowseButton.addActionListener( new ActionListener() {
 
+                @Override
                 @SuppressWarnings({ "synthetic-access" })
                 public void actionPerformed( ActionEvent e ) {
 
@@ -305,6 +308,7 @@ public class ProbeMapperGui extends JFrame {
             outputFileBrowseButton.setBounds( 454, 4, 87, 26 );
 
             outputFileBrowseButton.addActionListener( new ActionListener() {
+                @Override
                 @SuppressWarnings({ "synthetic-access" })
                 public void actionPerformed( ActionEvent e ) {
                     JFileChooser fc = new JFileChooser();
@@ -357,6 +361,7 @@ public class ProbeMapperGui extends JFrame {
             locationMethodComboBox.addItem( "3' end" );
             locationMethodComboBox.addActionListener( new java.awt.event.ActionListener() {
 
+                @Override
                 public void actionPerformed( java.awt.event.ActionEvent e ) {
                     if ( ( ( String ) locationMethodComboBox.getSelectedItem() )
                             .equals( ThreePrimeDistanceMethod.MIDDLE ) ) {

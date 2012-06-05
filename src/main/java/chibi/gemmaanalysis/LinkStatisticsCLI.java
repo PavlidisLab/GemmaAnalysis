@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.cli.Option;
@@ -147,7 +146,7 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             return err;
         }
 
-        LinkStatisticsService lss = ( LinkStatisticsService ) getBean( "linkStatisticsService" );
+        LinkStatisticsService lss = getBean( LinkStatisticsService.class );
 
         if ( !prepared ) {
             lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
@@ -210,8 +209,8 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
      */
     private Collection<Gene> getKnownGenes() {
         log.info( "Loading genes ..." );
-        Collection<Gene> knownGenes = geneService.getGenesByTaxon( taxon ); 
-        
+        Collection<Gene> knownGenes = geneService.getGenesByTaxon( taxon );
+
         log.info( "Using " + knownGenes.size() + " 'known genes' for analysis" );
         return knownGenes;
     }

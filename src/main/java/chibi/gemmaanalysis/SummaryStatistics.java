@@ -120,7 +120,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * @param taxon
      */
     public void probesPerGene( Taxon taxon ) {
-        GeneService geneService = ( GeneService ) this.getBean( "geneService" );
+        GeneService geneService = this.getBean( GeneService.class );
 
         Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
         Map<Long, Integer> counts = new HashMap<Long, Integer>();
@@ -144,7 +144,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      * @param taxon
      */
     public void genesPerProbe( Taxon taxon ) {
-        ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
+        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
         Collection<ArrayDesign> allAds = adService.loadAll();
         Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
         for ( ArrayDesign ad : allAds ) {
@@ -390,9 +390,9 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
             this.outFileName = this.getOptionValue( 'o' );
         }
 
-        this.taxonService = ( TaxonService ) getBean( "taxonService" );
-        this.expressionExperimentService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
-        this.compositeSequenceService = ( CompositeSequenceService ) getBean( "compositeSequenceService" );
+        this.taxonService = getBean( TaxonService.class );
+        this.expressionExperimentService = getBean( ExpressionExperimentService.class );
+        this.compositeSequenceService = getBean( CompositeSequenceService.class );
     }
 
     /**

@@ -67,6 +67,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             this.presentAbsentCall = presentAbsentCall;
         }
 
+        @Override
         public int compareTo( SortedElement o ) {
             return median.compareTo( o.median );
         }

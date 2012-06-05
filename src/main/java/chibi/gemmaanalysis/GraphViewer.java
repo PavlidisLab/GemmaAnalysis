@@ -52,6 +52,7 @@ import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
+import javax.swing.WindowConstants;
 
 import prefuse.Display;
 import prefuse.Visualization;
@@ -216,7 +217,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
     private void init_view() {
         frame = new JFrame( "Graph Viewer" );
         JFrame.setDefaultLookAndFeelDecorated( true );
-        frame.setDefaultCloseOperation( JFrame.DISPOSE_ON_CLOSE );
+        frame.setDefaultCloseOperation( WindowConstants.DISPOSE_ON_CLOSE );
         frame.setSize( 1200, 800 );
 
         JSplitPane mainSplitPanel = new JSplitPane();
@@ -415,6 +416,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
 
         ButtonGroup group = new ButtonGroup();
         ActionListener action = new ActionListener() {
+            @Override
             public void actionPerformed( ActionEvent x ) {
                 SelectedGoTerm = x.getActionCommand();
                 System.err.println( SelectedGoTerm + " is selected" );
@@ -478,6 +480,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
         vis.run( "layoutForce" );
     }
 
+    @Override
     public void propertyChange( PropertyChangeEvent e ) {
         Object source = e.getSource();
         if ( source == clusterIndex ) {
@@ -492,6 +495,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
         }
     }
 
+    @Override
     public void actionPerformed( ActionEvent e ) {
         Object source = e.getSource();
         if ( source == forceLayout ) {
@@ -555,6 +559,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
         JButton eb = new JButton( "Export to file" );
         eb.setEnabled( true );
         eb.addActionListener( new ActionListener() {
+            @Override
             public void actionPerformed( ActionEvent x ) {
                 boolean pause = vis.getAction( "layoutForce" ).isRunning();
                 if ( pause ) vis.cancel( "layoutForce" );
@@ -675,26 +680,33 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
 
     } // end of inner class TreeMapColorAction
 
+    @Override
     public void windowActivated( WindowEvent e ) {
     }
 
+    @Override
     public void windowClosed( WindowEvent e ) {
     }
 
+    @Override
     public void windowClosing( WindowEvent e ) {
         WINDOW_CLOSED = true;
         System.err.println( "CLOSING" );
     }
 
+    @Override
     public void windowDeactivated( WindowEvent e ) {
     }
 
+    @Override
     public void windowDeiconified( WindowEvent e ) {
     }
 
+    @Override
     public void windowIconified( WindowEvent e ) {
     }
 
+    @Override
     public void windowOpened( WindowEvent e ) {
     }
 }
