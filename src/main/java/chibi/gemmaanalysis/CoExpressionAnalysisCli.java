@@ -134,14 +134,12 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         if ( hasOption( 'x' ) ) {
             this.eeExcludeFile = getOptionValue( 'x' );
         }
-        dedvService = ( ProcessedExpressionDataVectorService ) this.getBean( "processedExpressionDataVectorService" );
-        eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-        geneService = ( GeneService ) this.getBean( "geneService" );
-        probeLinkCoexpressionAnalyzer = ( ProbeLinkCoexpressionAnalyzer ) this
-                .getBean( "probeLinkCoexpressionAnalyzer" );
-        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
-        adService = ( ArrayDesignService ) getBean( "arrayDesignService" );
+        dedvService = this.getBean( ProcessedExpressionDataVectorService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
+        geneService = this.getBean( GeneService.class );
+        probeLinkCoexpressionAnalyzer = this.getBean( ProbeLinkCoexpressionAnalyzer.class );
+        processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
+        adService = getBean( ArrayDesignService.class );
     }
 
     ProbeLinkCoexpressionAnalyzer probeLinkCoexpressionAnalyzer;
@@ -185,7 +183,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
     private Taxon getTaxon( String name ) {
         Taxon taxon = Taxon.Factory.newInstance();
         taxon.setCommonName( name );
-        TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
+        TaxonService taxonService = this.getBean( TaxonService.class );
         taxon = taxonService.find( taxon );
         if ( taxon == null ) {
             log.info( "NO Taxon found!" );
