@@ -187,7 +187,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         for ( ProcessedExpressionDataVector designElementDataVector : datavectors ) {
             cs.add( designElementDataVector.getDesignElement() );
         }
-        CompositeSequenceService css = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        CompositeSequenceService css = this.getBean( CompositeSequenceService.class );
         return css.getGenes( cs );
     }
 
@@ -264,9 +264,9 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         if ( err != null ) {
             return err;
         }
-        ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
-        this.eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-        this.devService = ( DesignElementDataVectorService ) this.getBean( "designElementDataVectorService" );
+        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
+        this.eeService = this.getBean( ExpressionExperimentService.class );
+        this.devService = this.getBean( DesignElementDataVectorService.class );
 
         ArrayDesign arrayDesign = adService.findByShortName( this.arrayDesignName );
         if ( arrayDesign == null ) {
