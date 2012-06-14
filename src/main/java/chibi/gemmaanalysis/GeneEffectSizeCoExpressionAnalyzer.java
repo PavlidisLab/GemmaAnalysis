@@ -39,6 +39,7 @@ import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import cern.colt.list.DoubleArrayList;
@@ -156,7 +157,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
     private void distributeDesignElementDataVector( Set<DoubleVectorValueObject> dedvs ) {
         // First, get the sample sizes for Expression Experiments
         for ( DoubleVectorValueObject dedv : dedvs ) {
-            ExpressionExperiment ee = dedv.getExpressionExperiment();
+            ExpressionExperimentValueObject ee = dedv.getExpressionExperiment();
             if ( !eeSampleSizes.containsKey( ee.getId() ) ) {
                 int sampleSize = getSampleSize( dedv );
                 eeSampleSizes.put( ee.getId(), new Integer( sampleSize ) );
@@ -166,7 +167,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
         // the correlation
         // between genes in every expression experiments
         for ( DoubleVectorValueObject dedv : dedvs ) {
-            ExpressionExperiment ee = dedv.getExpressionExperiment();
+            ExpressionExperimentValueObject ee = dedv.getExpressionExperiment();
             if ( ee.getId() == null ) {
                 System.err.println( ee + " wrong! " );
             }

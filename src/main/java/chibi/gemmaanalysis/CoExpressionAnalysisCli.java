@@ -60,6 +60,7 @@ import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorSer
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
@@ -219,13 +220,15 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
      * @param ee
      * @return
      */
-    private Map<DoubleVectorValueObject, Collection<Long>> getDesignElementDataVector( ExpressionExperiment ee ) {
+    private Map<DoubleVectorValueObject, Collection<Long>> getDesignElementDataVector(
+            ExpressionExperimentValueObject ee ) {
 
+        ExpressionExperiment load = eeService.load( ee.getId() );
         Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
-                .getProcessedDataVectors( ee );
+                .getProcessedDataVectors( load );
 
         // get cs2gene map
-        Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( load );
         Collection<Long> csIds = new HashSet<Long>();
         for ( ArrayDesign AD : ADs ) {
             Collection<CompositeSequence> CSs = adService.loadCompositeSequences( AD );
@@ -266,7 +269,7 @@ public class CoExpressionAnalysisCli extends AbstractSpringAwareCLI {
         log.info( "loading designElementDataVector from expression experiments" );
         int count = 0;
         for ( DoubleVectorValueObject dedv : dedv2queryGenes.keySet() ) {
-            ExpressionExperiment ee = dedv.getExpressionExperiment();
+            ExpressionExperimentValueObject ee = dedv.getExpressionExperiment();
 
             if ( !eeIds.contains( ee.getId() ) ) {
                 Map<DoubleVectorValueObject, Collection<Long>> dedvs = getDesignElementDataVector( ee );
