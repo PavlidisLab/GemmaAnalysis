@@ -72,9 +72,9 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
         Exception e = processCommandLine( "remove tabs from strings and check vectors", args );
         if ( e != null ) return e;
 
-        qts = ( QuantitationTypeService ) this.getBean( "quantitationTypeService" );
+        qts = this.getBean( QuantitationTypeService.class );
 
-        dedvs = ( DesignElementDataVectorService ) this.getBean( "designElementDataVectorService" );
+        dedvs = this.getBean( DesignElementDataVectorService.class );
 
         for ( BioAssaySet ee : expressionExperiments ) {
             processExperiment( ee );

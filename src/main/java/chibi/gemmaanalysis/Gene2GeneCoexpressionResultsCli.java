@@ -133,10 +133,10 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     protected void processOptions() {
         super.processOptions();
 
-        geneService = ( GeneService ) getBean( "geneService" );
-        taxonService = ( TaxonService ) getBean( "taxonService" );
-        gene2GeneCoexpressionService = ( Gene2GeneCoexpressionService ) getBean( "gene2GeneCoexpressionService" );
-        geneCoexpressionService = ( GeneCoexpressionService ) getBean( "geneCoexpressionService" );
+        geneService = getBean( GeneService.class );
+        taxonService = getBean( TaxonService.class );
+        gene2GeneCoexpressionService = getBean( Gene2GeneCoexpressionService.class );
+        geneCoexpressionService = getBean( GeneCoexpressionService.class );
 
         // taxon option - t
         if ( hasOption( 't' ) ) {

@@ -82,11 +82,11 @@ public class CorrelationDistCli extends ExpressionExperimentManipulatingCLI {
         if ( hasOption( 'b' ) ) {
             this.binNum = Integer.valueOf( getOptionValue( 'b' ) );
         }
-        adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
+        adService = this.getBean(ArrayDesignService.class);
         noLinkEEs = new HashSet<ExpressionExperiment>();
-        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
-        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        processedExpressionDataVectorService = this
+                .getBean( ProcessedExpressionDataVectorService.class );
+        compositeSequenceService = this.getBean(CompositeSequenceService.class );
     }
 
     /**

@@ -61,8 +61,8 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         super.processOptions();
         outFilePrefix = getOptionValue( 'o' );
 
-        adService = ( ArrayDesignService ) getBean( "arrayDesignService" );
-        coexpAnalysisService = ( CoexpressionAnalysisService ) getBean( "coexpressionAnalysisService" );
+        adService = getBean( ArrayDesignService.class );
+        coexpAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
     @Override

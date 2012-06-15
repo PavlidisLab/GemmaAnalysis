@@ -146,11 +146,11 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
     protected void processOptions() {
         super.processOptions();
 
-        geneService = ( GeneService ) getBean( "geneService" );
-        taxonService = ( TaxonService ) getBean( "taxonService" );
-        gene2GeneCoexpressionService = ( Gene2GeneCoexpressionService ) getBean( "gene2GeneCoexpressionService" );
-        geneCoexpressionService = ( GeneCoexpressionService ) getBean( "geneCoexpressionService" );
-        geneCoexpressionAnalysisService = ( GeneCoexpressionAnalysisService ) getBean( "geneCoexpressionAnalysisService" );
+        geneService = getBean( GeneService.class );
+        taxonService = getBean( TaxonService.class );
+        gene2GeneCoexpressionService = getBean( Gene2GeneCoexpressionService.class );
+        geneCoexpressionService = getBean( GeneCoexpressionService.class );
+        geneCoexpressionAnalysisService = getBean( GeneCoexpressionAnalysisService.class );
 
         // taxon option - t
         String taxonName = "";

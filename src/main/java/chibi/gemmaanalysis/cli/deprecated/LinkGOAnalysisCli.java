@@ -103,12 +103,12 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
             this.eeNameFile = getOptionValue( 'f' );
         }
 
-        p2pService = ( Probe2ProbeCoexpressionService ) this.getBean( "probe2ProbeCoexpressionService" );
-        eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-        geneService = ( GeneService ) this.getBean( "geneService" );
+        p2pService = this.getBean( Probe2ProbeCoexpressionService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
+        geneService = this.getBean( GeneService.class );
         noLinkEEs = new HashSet<ExpressionExperiment>();
-        goService = ( GeneOntologyService ) this.getBean( "geneOntologyService" );
-        taxonService = ( TaxonService ) this.getBean( "taxonService" );
+        goService = this.getBean( GeneOntologyService.class );
+        taxonService = this.getBean( TaxonService.class );
     }
 
     private Collection<ExpressionExperiment> getCandidateEE( String fileName, Collection<ExpressionExperiment> ees ) {
@@ -272,7 +272,7 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         }
 
         Taxon taxon = taxonService.findByCommonName( taxonName );
-        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        compositeSequenceService = this.getBean( CompositeSequenceService.class );
         Collection<ExpressionExperiment> ees = eeService.findByTaxon( taxon );
         Collection<ExpressionExperiment> eeCandidates = getCandidateEE( this.eeNameFile, ees );
         Collection<Gene> allGenes = geneService.loadKnownGenes( taxon );

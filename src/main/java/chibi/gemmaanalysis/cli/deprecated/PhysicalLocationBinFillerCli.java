@@ -47,7 +47,7 @@ public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
     protected Exception doWork( String[] args ) {
         processCommandLine( "physicalLocationBinFiller", args );
 
-        PhysicalLocationDao pld = ( PhysicalLocationDao ) this.getBean( "physicalLocationDao" );
+        PhysicalLocationDao pld = this.getBean( PhysicalLocationDao.class );
 
         Collection<? extends PhysicalLocation> lcs = pld.loadAll();
         int count = 0;

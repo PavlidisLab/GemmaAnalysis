@@ -74,7 +74,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         super.processOptions();
 
         // initialize bean
-        geneService = ( GeneService ) getBean( "geneService" );
+        geneService = getBean( GeneService.class );
 
         // get list size
         if ( this.hasOption( 'n' ) ) {

@@ -85,10 +85,10 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * 
      */
     protected void initBeans() {
-        eeService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
-        adService = ( ArrayDesignService ) getBean( "arrayDesignService" );
-        processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
+        eeService = getBean( ExpressionExperimentService.class );
+        adService = getBean( ArrayDesignService.class );
+        processedExpressionDataVectorService = this
+                .getBean( ProcessedExpressionDataVectorService.class );
     }
 
     /**

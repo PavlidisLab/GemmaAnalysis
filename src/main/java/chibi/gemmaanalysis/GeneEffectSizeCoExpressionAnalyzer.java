@@ -234,6 +234,7 @@ public class GeneEffectSizeCoExpressionAnalyzer {
      * @param dedvJ
      * @return
      */
+    @SuppressWarnings("unused")
     private double correlationPvalue( DesignElementDataVector dedvI, DesignElementDataVector dedvJ ) {
         double corr = coRelation( dedvI, dedvJ );
         if ( !Double.isNaN( corr ) ) {

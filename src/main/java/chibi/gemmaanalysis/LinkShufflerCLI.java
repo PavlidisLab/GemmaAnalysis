@@ -51,7 +51,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
             return err;
         }
 
-        LinkStatisticsService lss = ( LinkStatisticsService ) getBean( "linkStatisticsService" );
+        LinkStatisticsService lss = getBean( LinkStatisticsService.class );
 
         Collection<Gene> genes = geneService.loadKnownGenes( taxon );
 
@@ -124,21 +124,23 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
     protected void buildOptions() {
         super.buildOptions();
 
-        Option iterationNum = OptionBuilder.hasArg().withArgName( " Shuffling iterations " ).withDescription(
-                " The number of shuffling iterations (default = 2) " ).withLongOpt( "iterationNum" ).create( 'i' );
+        Option iterationNum = OptionBuilder.hasArg().withArgName( " Shuffling iterations " )
+                .withDescription( " The number of shuffling iterations (default = 2) " ).withLongOpt( "iterationNum" )
+                .create( 'i' );
         addOption( iterationNum );
 
-        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" ).withDescription(
-                "Print out link details for shuffled data sets" ).withLongOpt( "outputShuffledData" ).create( 'l' );
+        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" )
+                .withDescription( "Print out link details for shuffled data sets" ).withLongOpt( "outputShuffledData" )
+                .create( 'l' );
         addOption( outputShuffledLinks );
 
-        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" ).withDescription(
-                "Perform a real link analysis and output it to link-data.txt" ).withLongOpt( "realAnalysis" ).create(
-                'r' );
+        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" )
+                .withDescription( "Perform a real link analysis and output it to link-data.txt" )
+                .withLongOpt( "realAnalysis" ).create( 'r' );
         addOption( realAnalysis );
 
-        Option outputFile = OptionBuilder.hasArg().isRequired().withArgName( "Output File" ).withDescription(
-                "Output shuffle statistics to this file" ).withLongOpt( "outFile" ).create( 'o' );
+        Option outputFile = OptionBuilder.hasArg().isRequired().withArgName( "Output File" )
+                .withDescription( "Output shuffle statistics to this file" ).withLongOpt( "outFile" ).create( 'o' );
         addOption( outputFile );
 
         /*

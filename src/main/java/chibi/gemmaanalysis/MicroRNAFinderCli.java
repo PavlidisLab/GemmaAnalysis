@@ -109,14 +109,12 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
         if ( err != null ) {
             return err;
         }
-        ArrayDesignService adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
-        GeneService geneService = ( GeneService ) this.getBean( "geneService" );
-        BlatAssociationService blatAssociationService = ( BlatAssociationService ) this
-                .getBean( "blatAssociationService" );
-        plService = ( PhysicalLocationService ) this.getBean( "physicalLocationService" );
+        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
+        GeneService geneService = this.getBean( GeneService.class );
+        BlatAssociationService blatAssociationService = this.getBean( BlatAssociationService.class );
+        plService = this.getBean( PhysicalLocationService.class );
 
-        CompositeSequenceService compositeSequenceService = ( CompositeSequenceService ) this
-                .getBean( "compositeSequenceService" );
+        CompositeSequenceService compositeSequenceService = this.getBean( CompositeSequenceService.class );
 
         ArrayDesign arrayDesign = adService.findByShortName( this.arrayDesignName );
         if ( arrayDesign == null ) {

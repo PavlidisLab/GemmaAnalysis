@@ -42,7 +42,6 @@ import ubic.gemma.datastructure.matrix.MatrixWriter;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
-import ubic.gemma.model.analysis.expression.diff.ProbeAnalysisResult;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
@@ -145,7 +144,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         /*
          * Map of probe -> factor -> pval
          */
-        CompositeSequence probe = ( ( ProbeAnalysisResult ) r ).getProbe();
+        CompositeSequence probe = r.getProbe();
         if ( !revisedResultDetails.containsKey( probe ) ) {
             revisedResultDetails.put( probe, new HashMap<ExperimentalFactor, Double>() );
         }

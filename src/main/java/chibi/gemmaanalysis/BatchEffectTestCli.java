@@ -55,7 +55,7 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
         Exception ex = super.processCommandLine( "BatchEffectPopulation", args );
         if ( ex != null ) return ex;
-        SVDService svdService = ( SVDService ) this.getBean( "sVDService" );
+        SVDService svdService = this.getBean( SVDService.class );
 
         for ( BioAssaySet bas : this.expressionExperiments ) {
             if ( bas instanceof ExpressionExperiment ) {

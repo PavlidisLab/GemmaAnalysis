@@ -412,7 +412,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         if ( err != null ) {
             return err;
         }
-        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
+        compositeSequenceService = this.getBean( CompositeSequenceService.class );
         geneOntologyService.init( true );
 
         while ( !this.geneOntologyService.isReady() ) {
@@ -583,9 +583,9 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
             this.linkFile = this.getOptionValue( "linkfile" );
         }
 
-        p2pService = ( Probe2ProbeCoexpressionService ) this.getBean( "probe2ProbeCoexpressionService" );
-        this.goMetricService = ( GoMetric ) this.getBean( "goMetric" );
-        this.geneOntologyService = ( GeneOntologyService ) this.getBean( "geneOntologyService" );
+        p2pService = this.getBean( Probe2ProbeCoexpressionService.class );
+        this.goMetricService = this.getBean( GoMetric.class );
+        this.geneOntologyService = this.getBean( GeneOntologyService.class );
         realStats = new int[MAXIMUM_LINK_NUM][GO_MAXIMUM_COUNT];
         simulatedStats = new int[ITERATION_NUM / CHUNK_NUM + 1][GO_MAXIMUM_COUNT];
         goTermsDistribution = new int[GO_MAXIMUM_COUNT];

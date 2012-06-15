@@ -114,9 +114,9 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Array design stat summary", args );
         if ( err != null ) return err;
-        adService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
-        compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
-        geneService = ( GeneService ) this.getBean( "geneService" );
+        adService = this.getBean( ArrayDesignService.class );
+        compositeSequenceService = this.getBean( CompositeSequenceService.class );
+        geneService = this.getBean( GeneService.class );
         Collection<ArrayDesign> allArrayDesigns = adService.loadAll();
         Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<Taxon, Collection<ArrayDesign>>();
         Collection<Long> adIds = new HashSet<Long>();

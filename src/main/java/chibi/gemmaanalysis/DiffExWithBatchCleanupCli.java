@@ -54,12 +54,11 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
 
         processCommandLine( "Delete undesirable analysis", args );
 
-        DifferentialExpressionAnalyzerService ds = ( DifferentialExpressionAnalyzerService ) this
-                .getBean( "differentialExpressionAnalyzerService" );
-        DifferentialExpressionAnalysisService differentialExpressionAnalysisService = ( DifferentialExpressionAnalysisService ) this
-                .getBean( "differentialExpressionAnalysisService" );
-        ExpressionExperimentReportService expressionExperimentReportService = ( ExpressionExperimentReportService ) this
-                .getBean( "expressionExperimentReportService" );
+        DifferentialExpressionAnalyzerService ds = this.getBean( DifferentialExpressionAnalyzerService.class );
+        DifferentialExpressionAnalysisService differentialExpressionAnalysisService = this
+                .getBean( DifferentialExpressionAnalysisService.class );
+        ExpressionExperimentReportService expressionExperimentReportService = this
+                .getBean( ExpressionExperimentReportService.class );
 
         for ( BioAssaySet ee : expressionExperiments ) {
             if ( !( ee instanceof ExpressionExperiment ) ) {

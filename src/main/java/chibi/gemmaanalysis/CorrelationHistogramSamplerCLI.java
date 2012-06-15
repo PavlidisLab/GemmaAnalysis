@@ -18,7 +18,7 @@ import cern.colt.list.DoubleArrayList;
 
 public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipulatingCLI {
     private CoexpressionAnalysisService coexprAnalysisService;
-  
+
     private int numSamples;
     private String outFileName;
     private int kMax;
@@ -62,7 +62,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         }
         outFileName = getOptionValue( 'o' );
 
-        coexprAnalysisService = ( CoexpressionAnalysisService ) getBean( "coexpressionAnalysisService" );
+        coexprAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
     @Override

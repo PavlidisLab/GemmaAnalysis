@@ -84,9 +84,9 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
     }
 
     protected void initBeans() {
-        coexpressionAnalysisService = ( CoexpressionAnalysisService ) this.getBean( "coexpressionAnalysisService" );
-        eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-        geneService = ( GeneService ) this.getBean( "geneService" );
+        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
+        geneService = this.getBean( GeneService.class );
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

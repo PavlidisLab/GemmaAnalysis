@@ -41,7 +41,7 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
         inFile = getOptionValue( 'i' );
         outFile = getOptionValue( 'o' );
 
-        coexpService = ( CoexpressionAnalysisService ) getBean( "coexpressionAnalysisService" );
+        coexpService = getBean(CoexpressionAnalysisService.class );
     }
 
     @Override

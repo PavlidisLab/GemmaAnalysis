@@ -102,7 +102,7 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
         Exception error = super.processCommandLine( "outlier detection", args );
         if ( error != null ) return error;
 
-        this.outlierDetectionService = ( OutlierDetectionService ) this.getBean( "outlierDetectionService" );
+        this.outlierDetectionService = this.getBean( OutlierDetectionService.class );
 
         try {
             summaryFile = initOutputFile( "outlier.summary.txt" );

@@ -51,6 +51,7 @@ import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResult;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
 import ubic.gemma.persistence.Persister;
+import ubic.gemma.persistence.PersisterHelper;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**
@@ -259,9 +260,9 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
         log.info( seqIds.size() + " ids found in file" );
 
-        BioSequenceService bss = ( BioSequenceService ) this.getBean( "bioSequenceService" );
-        Persister persisterHelper = ( Persister ) this.getBean( "persister" );
-        BlatResultService blatResultService = ( BlatResultService ) this.getBean( "blatResultService" );
+        BioSequenceService bss = this.getBean( BioSequenceService.class );
+        Persister persisterHelper = this.getBean( PersisterHelper.class );
+        BlatResultService blatResultService = this.getBean( BlatResultService.class );
 
         int count = 0;
         int hits = 0;
@@ -358,8 +359,8 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     protected void processOptions() {
         super.processOptions();
 
-        probeMapper = ( ProbeMapper ) this.getBean( "probeMapper" );
-        taxonService = ( TaxonService ) this.getBean( "taxonService" );
+        probeMapper = this.getBean( ProbeMapper.class );
+        taxonService = this.getBean( TaxonService.class );
 
         this.config = new ProbeMapperConfig();
         if ( hasOption( 's' ) ) {

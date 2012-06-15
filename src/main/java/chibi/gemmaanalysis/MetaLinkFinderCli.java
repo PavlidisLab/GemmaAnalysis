@@ -169,12 +169,12 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
             return err;
         }
         try {
-            eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-            geneService = ( GeneService ) this.getBean( "geneService" );
-            goService = ( GeneOntologyService ) this.getBean( "geneOntologyService" );
-            TaxonService taxonService = ( TaxonService ) this.getBean( "taxonService" );
-            probeLinkCoexpressionAnalyzer = ( ProbeLinkCoexpressionAnalyzer ) this
-                    .getBean( "probeLinkCoexpressionAnalyzer" );
+            eeService = this.getBean( ExpressionExperimentService.class );
+            geneService = this.getBean( GeneService.class );
+            goService = this.getBean( GeneOntologyService.class );
+            TaxonService taxonService = this.getBean( TaxonService.class );
+            probeLinkCoexpressionAnalyzer = this
+                    .getBean( ProbeLinkCoexpressionAnalyzer.class );
             taxon = taxonService.findByCommonName( taxonName );
             if ( taxon == null ) {
                 return new IllegalArgumentException( "The input species couldn't be found: " + taxonName );

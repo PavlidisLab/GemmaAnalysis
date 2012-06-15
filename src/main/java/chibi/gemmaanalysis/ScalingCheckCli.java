@@ -82,8 +82,7 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
     protected Exception doWork( String[] args ) {
         Exception error = super.processCommandLine( "batch diff ex test", args );
         if ( error != null ) return error;
-        this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
+        this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
 
         try {
             summaryFile = initOutputFile( "scale.info.txt" );

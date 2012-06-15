@@ -63,8 +63,8 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "File prefix" ).withDescription(
-                "File prefix for saving the output" ).withLongOpt( "outFilePrefix" ).create( 'o' );
+        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "File prefix" )
+                .withDescription( "File prefix for saving the output" ).withLongOpt( "outFilePrefix" ).create( 'o' );
         addOption( outputFileOption );
 
         Option kMaxOption = OptionBuilder.hasArg().withArgName( "k" ).withDescription( "Select the kth largest value" )
@@ -83,8 +83,8 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
     }
 
     protected void initBeans() {
-        coexpressionAnalysisService = ( CoexpressionAnalysisService ) this.getBean( "coexpressionAnalysisService" );
-        eeService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
+        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
     }
 
     @SuppressWarnings("unchecked")

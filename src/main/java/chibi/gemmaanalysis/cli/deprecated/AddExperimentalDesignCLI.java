@@ -66,7 +66,7 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
     protected void processOptions() {
         super.processOptions();
 
-        this.eeService = ( ExpressionExperimentService ) getBean( "expressionExperimentService" );
+        this.eeService = getBean( ExpressionExperimentService.class );
 
     }
 

@@ -187,8 +187,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     protected void processOptions() {
         super.processOptions();
 
-        this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
-        this.parService = ( GeneService ) this.getBean( "geneService" );
+        this.taxonService = this.getBean( TaxonService.class );
+        this.parService = this.getBean( GeneService.class );
 
         /*
          * Process arguments
@@ -243,18 +243,16 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
         processCommandLine( "test", args );
 
         // get services used
-        this.parService = ( GeneService ) this.getBean( "geneService" );
-        this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
-        this.expressionExperimentService = ( ExpressionExperimentService ) this.getBean( "expressionExperimentService" );
-        this.processedExpressionDataVectorService = ( ProcessedExpressionDataVectorService ) this
-                .getBean( "processedExpressionDataVectorService" );
-        this.compositeSequenceService = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
-        this.arrayDesignService = ( ArrayDesignService ) this.getBean( "arrayDesignService" );
-        this.blatAssociationService = ( BlatAssociationService ) this.getBean( "blatAssociationService" );
-        this.probe2ProbeCoexpressionService = ( Probe2ProbeCoexpressionService ) this
-                .getBean( "probe2ProbeCoexpressionService" );
+        this.parService = this.getBean( GeneService.class );
+        this.taxonService = this.getBean( TaxonService.class );
+        this.expressionExperimentService = this.getBean( ExpressionExperimentService.class );
+        this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
+        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
+        this.arrayDesignService = this.getBean( ArrayDesignService.class );
+        this.blatAssociationService = this.getBean( BlatAssociationService.class );
+        this.probe2ProbeCoexpressionService = this.getBean( Probe2ProbeCoexpressionService.class );
 
-        this.pca = ( ProbeLinkCoexpressionAnalyzerImpl ) this.getBean( "probeLinkCoexpressionAnalyzer" );
+        this.pca = this.getBean( ProbeLinkCoexpressionAnalyzerImpl.class );
 
         // Load up experiments - all experiments or from a list
         Collection<ExpressionExperiment> eeCol;

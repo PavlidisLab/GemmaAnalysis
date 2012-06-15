@@ -62,8 +62,9 @@ public class LinkShuffleTempTableBuilderCLI extends ExpressionExperimentManipula
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option filterOption = OptionBuilder.withArgName( "noFilterNonSpecific" ).withDescription(
-                "Turn off filtering of non-specific probes from table" ).withLongOpt( "noFilter" ).create( "nf" );
+        Option filterOption = OptionBuilder.withArgName( "noFilterNonSpecific" )
+                .withDescription( "Turn off filtering of non-specific probes from table" ).withLongOpt( "noFilter" )
+                .create( "nf" );
         addOption( filterOption );
 
     }
@@ -75,7 +76,7 @@ public class LinkShuffleTempTableBuilderCLI extends ExpressionExperimentManipula
             return err;
         }
 
-        LinkStatisticsService lss = ( LinkStatisticsService ) getBean( "linkStatisticsService" );
+        LinkStatisticsService lss = getBean( LinkStatisticsService.class );
 
         lss.prepareDatabase( expressionExperiments, taxon.getCommonName(), filterNonSpecific );
         return null;

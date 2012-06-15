@@ -65,9 +65,9 @@ public class PARMapper extends AbstractSpringAwareCLI {
         Exception exc = processCommandLine( "PARMapper", args );
         if ( exc != null ) return exc;
 
-        this.taxonService = ( TaxonService ) this.getBean( "taxonService" );
-        this.parService = ( GeneService ) this.getBean( "geneService" );
-        this.physicalLocationservice = ( PhysicalLocationService ) this.getBean( "physicalLocationService" );
+        this.taxonService = this.getBean( TaxonService.class );
+        this.parService = this.getBean( GeneService.class );
+        this.physicalLocationservice = this.getBean( PhysicalLocationService.class );
 
         /*
          * Add processing o

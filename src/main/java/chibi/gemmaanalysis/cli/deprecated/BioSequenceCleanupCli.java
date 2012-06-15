@@ -93,10 +93,10 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
             this.file = getOptionValue( 'b' );
         }
 
-        bss = ( BioSequenceService ) this.getBean( "bioSequenceService" );
-        css = ( CompositeSequenceService ) this.getBean( "compositeSequenceService" );
-        blatResultService = ( BlatResultService ) this.getBean( "blatResultService" );
-        blatAssociationService = ( BlatAssociationService ) this.getBean( "blatAssociationService" );
+        bss = this.getBean(BioSequenceService.class );
+        css = this.getBean(CompositeSequenceService.class );
+        blatResultService = this.getBean( BlatResultService.class);
+        blatAssociationService = this.getBean(BlatAssociationService.class );
     }
 
     @SuppressWarnings("unchecked")
