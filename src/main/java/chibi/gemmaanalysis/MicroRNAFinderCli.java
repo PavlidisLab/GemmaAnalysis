@@ -149,6 +149,7 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
             for ( CompositeSequence cs : allCSs ) {
                 // if(!cs.getName().equals("1440357_at")) continue;
 
+                @SuppressWarnings("rawtypes")
                 Collection bs2gps = cs.getBiologicalCharacteristic().getBioSequence2GeneProduct();
                 blatAssociationService.thaw( bs2gps );
 
