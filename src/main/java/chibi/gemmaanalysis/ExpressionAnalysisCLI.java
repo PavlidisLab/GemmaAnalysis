@@ -22,6 +22,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
+import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -43,8 +44,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     private String outFilePrefix;
 
     private ArrayDesignService adService;
-
-    private double filterThreshold;
 
     public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
 
@@ -70,11 +69,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         if ( hasOption( 'o' ) ) {
             outFilePrefix = getOptionValue( 'o' );
         }
-        if ( hasOption( "threshold" ) ) {
-            filterThreshold = Double.parseDouble( getOptionValue( "threshold" ) );
-        } else {
-            filterThreshold = DEFAULT_FILTER_THRESHOLD;
-        }
 
         initBeans();
     }
@@ -87,8 +81,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     protected void initBeans() {
         eeService = getBean( ExpressionExperimentService.class );
         adService = getBean( ArrayDesignService.class );
-        processedExpressionDataVectorService = this
-                .getBean( ProcessedExpressionDataVectorService.class );
+        processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
     }
 
     /**
@@ -96,7 +89,8 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      * @param ees
      * @return
      */
-    private DenseDoubleMatrix getRankMatrix( Collection<Gene> genes, Collection<BioAssaySet> ees ) {
+    private DenseDoubleMatrix<Gene, ExpressionExperiment> getRankMatrix( Collection<Gene> genes,
+            Collection<BioAssaySet> ees ) {
         DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>(
                 genes.size(), ees.size() );
         for ( int i = 0; i < matrix.rows(); i++ ) {
@@ -157,10 +151,8 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
             // construct the rank matrix
             int rankCount = 0;
-            String line = ee.getShortName();
             for ( Gene gene : genes ) {
                 int row = matrix.getRowIndexByName( gene );
-                line += "\t";
                 Double rank;
                 List<Double> ranks = new ArrayList<Double>();
                 Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene.getId() );
@@ -198,63 +190,11 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         return result;
     }
 
-    /**
-     * @param matrix
-     * @return
-     */
-    private DenseDoubleMatrix filterRankmatrix( DenseDoubleMatrix matrix ) {
-        // filter out genes with less than filterThreshold fraction of ranks
-        List<Object> fRowNames = new ArrayList<Object>();
-        for ( Object rowName : matrix.getRowNames() ) {
-            int row = matrix.getRowIndexByName( rowName );
-            int count = 0;
-            int total = matrix.columns();
-            for ( Object colName : matrix.getColNames() ) {
-                int col = matrix.getColIndexByName( colName );
-                if ( !Double.isNaN( matrix.get( row, col ) ) ) count++;
-            }
-            if ( count / total > filterThreshold ) fRowNames.add( rowName );
-        }
-
-        // filter out data sets with no ranks
-        List<Object> fColNames = new ArrayList<Object>();
-        for ( Object colName : matrix.getColNames() ) {
-            int col = matrix.getColIndexByName( colName );
-            boolean found = false;
-            for ( Object rowName : fRowNames ) {
-                int row = matrix.getRowIndexByName( rowName );
-                if ( !Double.isNaN( matrix.get( row, col ) ) ) {
-                    found = true;
-                    break;
-                }
-            }
-            if ( found ) fColNames.add( colName );
-        }
-
-        // fill matrix
-        DenseDoubleMatrix fMatrix = new DenseDoubleMatrix( fRowNames.size(), fColNames.size() );
-        fMatrix.setRowNames( fRowNames );
-        fMatrix.setColumnNames( fColNames );
-        for ( Object rowName : fRowNames ) {
-            int fRow = fMatrix.getRowIndexByName( rowName );
-            int row = matrix.getRowIndexByName( rowName );
-            for ( Object colName : fColNames ) {
-                int fCol = fMatrix.getColIndexByName( colName );
-                int col = matrix.getColIndexByName( colName );
-                double val = matrix.get( row, col );
-                fMatrix.setByKeys( fRow, fCol, val );
-            }
-        }
-
-        return fMatrix;
-    }
-
     /*
      * (non-Javadoc)
      * 
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception e = processCommandLine( "ExpressionAnalysis", args );
@@ -266,7 +206,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         genes = geneService.loadKnownGenes( taxon );
         log.info( "Loaded " + genes.size() + " genes" );
 
-        DenseDoubleMatrix rankMatrix = getRankMatrix( genes, expressionExperiments );
+        DoubleMatrix<Gene, ExpressionExperiment> rankMatrix = getRankMatrix( genes, expressionExperiments );
         // rankMatrix = filterRankmatrix(rankMatrix);
 
         // gene names
@@ -299,7 +239,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         formatter.applyPattern( "0.0000" );
         formatter.getDecimalFormatSymbols().setNaN( "NaN" );
         try {
-            MatrixWriter out = new MatrixWriter( outFilePrefix + ".txt", formatter );
+            MatrixWriter<Gene, ExpressionExperiment> out = new MatrixWriter<Gene, ExpressionExperiment>( outFilePrefix + ".txt", formatter );
             out.writeMatrix( rankMatrix, false );
         } catch ( IOException exc ) {
             return exc;

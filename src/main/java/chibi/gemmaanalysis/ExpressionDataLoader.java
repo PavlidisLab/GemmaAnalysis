@@ -23,9 +23,6 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -54,25 +51,13 @@ public class ExpressionDataLoader {
 
     protected Collection<ProcessedExpressionDataVector> designElementDataVectors = null;
 
-    public ExpressionDataLoader( ExpressionExperiment paraExperiment, String paraGOFile ) {
+    public ExpressionDataLoader( ExpressionExperiment paraExperiment ) {
         this.experiment = paraExperiment;
         if ( this.experiment != null ) {
             this.getValidDesignmentDataVector();
             this.experimentName = this.experiment.getName();
         }
-        Set<String> rowsToUse = new HashSet<String>( this.getActiveProbeIdSet() );
 
-    }
-
-    private Collection<String> getActiveProbeIdSet() {
-        Collection<String> probeIdSet = new HashSet<String>();
-        for ( DesignElementDataVector dataVector : this.designElementDataVectors ) {
-            CompositeSequence designElement = dataVector.getDesignElement();
-            String probeId = designElement.getName();
-            probeIdSet.add( probeId );
-        }
-
-        return probeIdSet;
     }
 
     private void getValidDesignmentDataVector() {

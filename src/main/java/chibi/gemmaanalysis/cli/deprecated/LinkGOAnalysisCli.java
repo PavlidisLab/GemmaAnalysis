@@ -229,10 +229,10 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         dataMatrix.setRowNames( rowLabels );
         dataMatrix.setColumnNames( colLabels );
 
-        ColorMatrix dataColorMatrix = new ColorMatrix( dataMatrix );
+        ColorMatrix<String, String> dataColorMatrix = new ColorMatrix<String, String>( dataMatrix );
         // dataColorMatrix.setColorMap( ColorMap.GREENRED_COLORMAP );
         dataColorMatrix.setColorMap( ColorMap.BLACKBODY_COLORMAP );
-        MatrixDisplay dataMatrixDisplay = new MatrixDisplay( dataColorMatrix );
+        MatrixDisplay<String, String> dataMatrixDisplay = new MatrixDisplay<String, String>( dataColorMatrix );
         dataMatrixDisplay.saveImage( imageName, true, false );
 
     }

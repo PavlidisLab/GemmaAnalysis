@@ -89,11 +89,13 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
     private GoMetric goMetricService;
     private CompressedBitMatrix<Long, Long> linkCount = null;
     private int[][] realStats = null;
+    @SuppressWarnings("unused")
     private int[][] simulatedStats = null;
     private Map<Long, Integer> eeIndexMap = new HashMap<Long, Integer>();
     private Map<Long, Gene> geneMap = new HashMap<Long, Gene>();
     private Collection<Gene> coveredGenes = new HashSet<Gene>();
 
+    @SuppressWarnings("unused")
     private int[] goTermsDistribution = null;
     private GeneOntologyService geneOntologyService;
     private String linkFile = null;
@@ -301,73 +303,73 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
     //
     // }
 
-    /**
-     * 
-     *
-     */
-    private void output() {
-        int totalSimulatedLinks[] = new int[ITERATION_NUM / CHUNK_NUM + 1], totalRealLinks[] = new int[MAXIMUM_LINK_NUM];
-        for ( int i = 0; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
-            for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
-                totalSimulatedLinks[i] = totalSimulatedLinks[i] + simulatedStats[i][j];
-            }
-        }
-        for ( int i = 1; i < MAXIMUM_LINK_NUM; i++ ) {
-            for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
-                totalRealLinks[i] = totalRealLinks[i] + realStats[i][j];
-            }
-        }
-        try {
-            FileWriter out = new FileWriter( new File( "goSimilarity.txt" ) );
-            out.write( "GoTerms" );
-            for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ )
-                out.write( "\t" + j );
-            out.write( "\n" );
-            // double culmulative = 0.0;
-            int cumulative = 0;
-            for ( int i = ITERATION_NUM / CHUNK_NUM; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
-                for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
-                    // culmulative = culmulative + (double)simulatedStats[i][j]/(double)totalSimulatedLinks[i];
-                    cumulative = cumulative + simulatedStats[i][j];
-                    out.write( "\t" + cumulative );
-                }
-            }
-            out.write( "\n" );
-            for ( int i = 1; i < MAXIMUM_LINK_NUM; i++ ) {
-                cumulative = 0;
-                out.write( "Link_" + i );
-                for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
-                    // culmulative = culmulative + (double)realStats[i][j]/(double)totalRealLinks[i];
-                    cumulative = cumulative + realStats[i][j];
-                    out.write( cumulative + "\t" );
-                }
-                out.write( "\n" );
-            }
-            out.write( "\nRandom Pair Generation Distribution:\n" );
-            double densityCulmulative = 0.0;
-            for ( int i = 0; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
-                densityCulmulative = 0.0;
-                for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
-                    densityCulmulative = densityCulmulative + ( double ) simulatedStats[i][j]
-                            / ( double ) totalSimulatedLinks[i];
-                    out.write( densityCulmulative + "\t" );
-                }
-                out.write( "\n" );
-            }
-
-            int total = 0;
-            for ( int i = 0; i < GO_MAXIMUM_COUNT; i++ )
-                total = total + goTermsDistribution[i];
-            out.write( "Go Terms Distribution for " + coveredGenes.size() + " genes:\n" );
-            for ( int i = 0; i < GO_MAXIMUM_COUNT; i++ ) {
-                out.write( ( double ) goTermsDistribution[i] / ( double ) total + "\t" );
-            }
-            out.write( "\n" );
-            out.close();
-        } catch ( Exception e ) {
-            e.printStackTrace();
-        }
-    }
+    // /**
+    // *
+    // *
+    // */
+    // private void output() {
+    // int totalSimulatedLinks[] = new int[ITERATION_NUM / CHUNK_NUM + 1], totalRealLinks[] = new int[MAXIMUM_LINK_NUM];
+    // for ( int i = 0; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
+    // totalSimulatedLinks[i] = totalSimulatedLinks[i] + simulatedStats[i][j];
+    // }
+    // }
+    // for ( int i = 1; i < MAXIMUM_LINK_NUM; i++ ) {
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
+    // totalRealLinks[i] = totalRealLinks[i] + realStats[i][j];
+    // }
+    // }
+    // try {
+    // FileWriter out = new FileWriter( new File( "goSimilarity.txt" ) );
+    // out.write( "GoTerms" );
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ )
+    // out.write( "\t" + j );
+    // out.write( "\n" );
+    // // double culmulative = 0.0;
+    // int cumulative = 0;
+    // for ( int i = ITERATION_NUM / CHUNK_NUM; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
+    // // culmulative = culmulative + (double)simulatedStats[i][j]/(double)totalSimulatedLinks[i];
+    // cumulative = cumulative + simulatedStats[i][j];
+    // out.write( "\t" + cumulative );
+    // }
+    // }
+    // out.write( "\n" );
+    // for ( int i = 1; i < MAXIMUM_LINK_NUM; i++ ) {
+    // cumulative = 0;
+    // out.write( "Link_" + i );
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
+    // // culmulative = culmulative + (double)realStats[i][j]/(double)totalRealLinks[i];
+    // cumulative = cumulative + realStats[i][j];
+    // out.write( cumulative + "\t" );
+    // }
+    // out.write( "\n" );
+    // }
+    // out.write( "\nRandom Pair Generation Distribution:\n" );
+    // double densityCulmulative = 0.0;
+    // for ( int i = 0; i < ITERATION_NUM / CHUNK_NUM + 1; i++ ) {
+    // densityCulmulative = 0.0;
+    // for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ ) {
+    // densityCulmulative = densityCulmulative + ( double ) simulatedStats[i][j]
+    // / ( double ) totalSimulatedLinks[i];
+    // out.write( densityCulmulative + "\t" );
+    // }
+    // out.write( "\n" );
+    // }
+    //
+    // int total = 0;
+    // for ( int i = 0; i < GO_MAXIMUM_COUNT; i++ )
+    // total = total + goTermsDistribution[i];
+    // out.write( "Go Terms Distribution for " + coveredGenes.size() + " genes:\n" );
+    // for ( int i = 0; i < GO_MAXIMUM_COUNT; i++ ) {
+    // out.write( ( double ) goTermsDistribution[i] / ( double ) total + "\t" );
+    // }
+    // out.write( "\n" );
+    // out.close();
+    // } catch ( Exception e ) {
+    // e.printStackTrace();
+    // }
+    // }
 
     // private Gene[] shuffling( Gene[] genes ) {
     // Gene[] shuffledGenes = new Gene[genes.length];
@@ -405,7 +407,6 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
         return knownGenes;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Link GO stats ", args );
@@ -450,7 +451,8 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
                 eeIndexMap.put( ee.getId(), index );
                 index++;
             }
-            linkCount = new CompressedBitMatrix( allGenes.size(), allGenes.size(), expressionExperiments.size() );
+            linkCount = new CompressedBitMatrix<Long, Long>( allGenes.size(), allGenes.size(),
+                    expressionExperiments.size() );
             for ( Gene geneIter : allGenes ) {
                 linkCount.addRowName( geneIter.getId() );
                 linkCount.addColumnName( geneIter.getId() );

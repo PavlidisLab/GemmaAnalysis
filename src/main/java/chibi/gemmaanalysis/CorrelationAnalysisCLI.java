@@ -87,7 +87,6 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         eeService = this.getBean( ExpressionExperimentService.class );
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     protected Exception doWork( String[] args ) {
         Exception exc = processCommandLine( "CorrelationAnalysis", args );
@@ -129,16 +128,16 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         formatter.setDecimalFormatSymbols( symbols );
 
         try {
-            MatrixWriter matrixOut;
-            matrixOut = new MatrixWriter<ExpressionExperiment, Gene>( outFilePrefix + ".corr.txt", formatter );
+            MatrixWriter<Gene, Gene> matrixOut;
+            matrixOut = new MatrixWriter<Gene, Gene>( outFilePrefix + ".corr.txt", formatter );
             matrixOut.setSliceNameMap( eeNameMap );
             matrixOut.setRowNameMap( geneNameMap );
             matrixOut.setColNameMap( geneNameMap );
             matrixOut.writeMatrix( correlationMatrix, false );
 
             PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.row_names.txt" ) );
-            List rows = correlationMatrix.getRowNames();
-            for ( Object row : rows ) {
+            List<Gene> rows = correlationMatrix.getRowNames();
+            for ( Gene row : rows ) {
                 out.println( row );
             }
             out.close();

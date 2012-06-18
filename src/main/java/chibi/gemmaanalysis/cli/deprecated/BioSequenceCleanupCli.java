@@ -98,8 +98,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         blatResultService = this.getBean( BlatResultService.class);
         blatAssociationService = this.getBean(BlatAssociationService.class );
     }
-
-    @SuppressWarnings("unchecked")
+ 
     @Override
     protected Exception doWork( String[] args ) {
 
@@ -123,7 +122,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                     ids.add( Long.parseLong( id ) );
                 }
 
-                Collection bioSequences = bss.loadMultiple( ids );
+                Collection<BioSequence> bioSequences = bss.loadMultiple( ids );
                 bss.thaw( bioSequences );
                 processSequences( bioSequences );
                 return null;

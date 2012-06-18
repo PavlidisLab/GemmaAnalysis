@@ -178,7 +178,8 @@ public class CoexpressionAnalysisService {
      * @return
      */
     public DoubleMatrix<Gene, Gene> calculateEffectSizeMatrix(
-            DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix, DenseDouble3dMatrix sampleSizeMatrix ) {
+            DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix,
+            DenseDouble3dMatrix<Gene, Gene, BioAssaySet> sampleSizeMatrix ) {
         DoubleMatrix<Gene, Gene> matrix = new DenseDoubleMatrix<Gene, Gene>( correlationMatrix.rows(),
                 correlationMatrix.columns() );
         matrix.setRowNames( correlationMatrix.getRowNames() );
@@ -270,7 +271,8 @@ public class CoexpressionAnalysisService {
      * @param matrix
      * @return
      */
-    public DenseDouble3dMatrix filterCoexpressionMatrix( DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix ) {
+    public DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> filterCoexpressionMatrix(
+            DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix ) {
         log.info( "Filtering expression experiments..." );
         // find empty columns
         List<ExpressionExperiment> filteredEeIds = new ArrayList<ExpressionExperiment>();
