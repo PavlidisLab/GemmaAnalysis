@@ -69,24 +69,34 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
 
             log.info( "Processing: " + ee );
 
-            Collection<DifferentialExpressionAnalysis> diffAnalyses = differentialExpressionAnalysisService
-                    .findByInvestigation( expressionExperiment );
+            try {
 
-            differentialExpressionAnalysisService.thaw( diffAnalyses );
+                Collection<DifferentialExpressionAnalysis> diffAnalyses = differentialExpressionAnalysisService
+                        .findByInvestigation( expressionExperiment );
 
-            for ( DifferentialExpressionAnalysis existingAnalysis : diffAnalyses ) {
+                if ( diffAnalyses.isEmpty() ) continue;
 
-                for ( ExpressionAnalysisResultSet resultSet : existingAnalysis.getResultSets() ) {
-                    if ( resultSet.getExperimentalFactors().size() > 1 ) {
-                        continue;
-                    }
-                    ExperimentalFactor factor = resultSet.getExperimentalFactors().iterator().next();
-                    if ( factor.getName().equals( "batch" ) ) {
-                        log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
-                        ds.deleteOldAnalysis( expressionExperiment, existingAnalysis );
-                        expressionExperimentReportService.generateSummary( expressionExperiment.getId() );
+                differentialExpressionAnalysisService.thaw( diffAnalyses );
+
+                for ( DifferentialExpressionAnalysis existingAnalysis : diffAnalyses ) {
+
+                    for ( ExpressionAnalysisResultSet resultSet : existingAnalysis.getResultSets() ) {
+                        if ( resultSet.getExperimentalFactors().size() > 1 ) {
+                            continue;
+                        }
+                        ExperimentalFactor factor = resultSet.getExperimentalFactors().iterator().next();
+                        if ( factor.getName().equals( "batch" ) ) {
+                            log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
+                            ds.deleteOldAnalysis( expressionExperiment, existingAnalysis );
+                            expressionExperimentReportService.generateSummary( expressionExperiment.getId() );
+                            this.successObjects.add( ee );
+                        }
                     }
                 }
+
+            } catch ( Exception e ) {
+                this.errorObjects.add( ee + ": " + e.getMessage() );
+                log.error( e, e );
             }
         }
 
