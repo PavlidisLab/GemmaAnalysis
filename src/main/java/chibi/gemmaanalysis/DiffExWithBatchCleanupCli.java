@@ -99,7 +99,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                 log.error( e, e );
             }
         }
-
+        super.summarizeProcessing();
         return null;
     }
 

@@ -122,7 +122,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @throws IOException
      */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
-        MatrixWriter<Double> mw = new MatrixWriter<Double>();
+        MatrixWriter mw = new MatrixWriter();
         FileWriter fw = new FileWriter( new File( filename ) );
         mw.write( fw, mat, null, true, true );
     }
