@@ -29,7 +29,7 @@ import cern.colt.list.DoubleArrayList;
 
 import ubic.basecode.math.DescriptiveWithMissing;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
-import ubic.gemma.model.common.quantitationtype.QuantitationType;
+import ubic.gemma.expression.experiment.QuantitationTypeValueObject;
 import ubic.gemma.model.common.quantitationtype.ScaleType;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
@@ -111,7 +111,7 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
 
         Long id = null;
         String shortName = null;
-        QuantitationType quantitationType = null;
+        QuantitationTypeValueObject quantitationType = null;
         DoubleArrayList r = new DoubleArrayList();
 
         for ( DoubleVectorValueObject v : vectos ) {
@@ -189,7 +189,7 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
              * Extract data
              */
             Collection<DoubleVectorValueObject> vectos = processedExpressionDataVectorService.getProcessedDataArrays(
-                    ee, 100, false );
+                    ee, 100 );
 
             onLogScale( vectos );
 

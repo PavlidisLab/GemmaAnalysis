@@ -45,6 +45,7 @@ import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorDao
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
+import ubic.gemma.model.expression.designElement.CompositeSequenceValueObject;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
@@ -1276,9 +1277,9 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 exps.add( expressionExperimentService.load( expIds[i] ) );
             }
 
-            Collection<Gene> pargene = new ArrayList<Gene>();
-            pargene.add( par );
-            pargene.add( gene );
+            Collection<Long> pargene = new ArrayList<Long>();
+            pargene.add( par.getId() );
+            pargene.add( gene.getId() );
 
             // for each experiment, call getProcessedDataArrays
             for ( ExpressionExperiment ee : exps ) {
@@ -1288,19 +1289,18 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 Collection<DoubleVectorValueObject> dvvos = processedExpressionDataVectorService
                         .getProcessedDataArrays( ees, pargene );
 
-                Map<CompositeSequence, double[]> parData = new HashMap<CompositeSequence, double[]>();
-                Map<CompositeSequence, double[]> geneData = new HashMap<CompositeSequence, double[]>();
+                Map<CompositeSequenceValueObject, double[]> parData = new HashMap<CompositeSequenceValueObject, double[]>();
+                Map<CompositeSequenceValueObject, double[]> geneData = new HashMap<CompositeSequenceValueObject, double[]>();
 
-                Map<CompositeSequence, Integer> probemappingCount = new HashMap<CompositeSequence, Integer>();
+                Map<CompositeSequenceValueObject, Integer> probemappingCount = new HashMap<CompositeSequenceValueObject, Integer>();
 
                 // separate data into PAR or gene - the returned object does not
                 // differenciate which probes belong to PAR or gene
                 for ( DoubleVectorValueObject dvvo : dvvos ) {
-                    Collection<Gene> genelist = dvvo.getGenes();
+                    Collection<Long> genelist = dvvo.getGenes();
 
                     boolean isParGene = false;
-                    for ( Gene g : genelist ) {
-                        long id = g.getId();
+                    for ( Long id : genelist ) {
                         if ( id == gene.getId() ) {
                             geneData.put( dvvo.getDesignElement(), dvvo.getData() );
                             isParGene = true;
@@ -1319,10 +1319,10 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                     probemappingCount.put( dvvo.getDesignElement(), new Integer( dvvo.getGenes().size() ) );
                 }
 
-                for ( CompositeSequence pd : parData.keySet() ) {
+                for ( CompositeSequenceValueObject pd : parData.keySet() ) {
                     double[] pdata = parData.get( pd );
 
-                    for ( CompositeSequence gd : geneData.keySet() ) {
+                    for ( CompositeSequenceValueObject gd : geneData.keySet() ) {
                         double[] gdata = geneData.get( gd );
 
                         // check if vectors the same length
