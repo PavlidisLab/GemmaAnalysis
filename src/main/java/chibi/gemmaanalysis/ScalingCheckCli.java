@@ -29,7 +29,7 @@ import cern.colt.list.DoubleArrayList;
 
 import ubic.basecode.math.DescriptiveWithMissing;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
-import ubic.gemma.expression.experiment.QuantitationTypeValueObject;
+import ubic.gemma.model.common.quantitationtype.QuantitationTypeValueObject;
 import ubic.gemma.model.common.quantitationtype.ScaleType;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
