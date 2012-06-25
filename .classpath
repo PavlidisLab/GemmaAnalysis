@@ -27,7 +27,7 @@
 	<classpathentry kind="var" path="M2_REPO/commons-pool/commons-pool/1.5.4/commons-pool-1.5.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1.jar" sourcepath="M2_REPO/dom4j/dom4j/1.6.1/dom4j-1.6.1-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/easymock/easymock/2.5.2/easymock-2.5.2.jar"/>
-	<classpathentry kind="var" path="M2_REPO/net/sf/ehcache/ehcache-core/2.4.4/ehcache-core-2.4.4.jar" sourcepath="M2_REPO/net/sf/ehcache/ehcache/1.2.3/ehcache-1.2.3-sources.jar"/>
+	<classpathentry kind="var" path="M2_REPO/net/sf/ehcache/ehcache-core/2.5.2/ehcache-core-2.5.2.jar" sourcepath="/M2_REPO/net/sf/ehcache/ehcache-core/2.5.2/ehcache-core-2.5.2-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/hibernate/hibernate-core/3.6.7.Final/hibernate-core-3.6.7.Final.jar" sourcepath="/M2_REPO/org/hibernate/hibernate-core/3.6.7.Final/hibernate-core-3.6.7.Final-sources.jar"/>
 	<classpathentry kind="var" path="M2_REPO/com/ibm/icu/icu4j/3.4.4/icu4j-3.4.4.jar"/>
 	<classpathentry kind="var" path="M2_REPO/jaxen/jaxen/1.1/jaxen-1.1.jar"/>
