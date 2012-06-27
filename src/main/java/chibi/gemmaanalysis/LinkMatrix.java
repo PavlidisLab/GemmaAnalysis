@@ -37,12 +37,12 @@ import org.apache.commons.logging.LogFactory;
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.basecode.ontology.model.OntologyTerm;
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
+import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.model.genome.Gene; 
+import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 import cern.colt.list.ObjectArrayList;
 
@@ -357,7 +357,7 @@ public class LinkMatrix {
             // Get the gene->eeIds map
             CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
                     stringency, 0 );
-            Map<Long, Collection<Long>> geneEEMap = coexpressed.getKnownGeneCoexpression()
+            Map<Long, Collection<Long>> geneEEMap = coexpressed.getGeneCoexpression()
                     .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
             this.count( gene.getId(), geneEEMap );
             i++;
@@ -616,6 +616,10 @@ public class LinkMatrix {
         this.geneService = geneService;
     }
 
+    public void setGoService( GeneOntologyService goService ) {
+        this.goService = goService;
+    }
+
     public void setProbeLinkCoexpressionAnalyzer( ProbeLinkCoexpressionAnalyzer probeLinkCoexpressionAnalyzer ) {
         this.probeLinkCoexpressionAnalyzer = probeLinkCoexpressionAnalyzer;
     }
@@ -730,9 +734,5 @@ public class LinkMatrix {
         if ( genesInTaxon == null || genesInTaxon.size() == 0 ) return;
 
         init( ees, genes, genesInTaxon );
-    }
-
-    public void setGoService( GeneOntologyService goService ) {
-        this.goService = goService;
     }
 }
