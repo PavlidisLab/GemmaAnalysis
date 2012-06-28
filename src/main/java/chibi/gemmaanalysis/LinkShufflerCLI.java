@@ -26,6 +26,18 @@ import ubic.gemma.model.genome.Gene;
  * @author raymond (refactor)
  */
 public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
+    public static void main( String[] args ) {
+        LinkShufflerCLI shuffle = new LinkShufflerCLI();
+        StopWatch watch = new StopWatch();
+        watch.start();
+        Exception ex = shuffle.doWork( args );
+        if ( ex != null ) {
+            ex.printStackTrace();
+        }
+        watch.stop();
+        log.info( "Finished: " + watch );
+    }
+
     /*
      * How many shuffled runs to do. 2 or 3 is enough to get a quick idea of what the results will look like; 100 is
      * better for final analysis.
@@ -44,6 +56,40 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
 
     private String outFileName;
 
+    @SuppressWarnings("static-access")
+    @Override
+    protected void buildOptions() {
+        super.buildOptions();
+
+        Option iterationNum = OptionBuilder.hasArg().withArgName( " Shuffling iterations " )
+                .withDescription( " The number of shuffling iterations (default = 2) " ).withLongOpt( "iterationNum" )
+                .create( 'i' );
+        addOption( iterationNum );
+
+        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" )
+                .withDescription( "Print out link details for shuffled data sets" ).withLongOpt( "outputShuffledData" )
+                .create( 'l' );
+        addOption( outputShuffledLinks );
+
+        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" )
+                .withDescription( "Perform a real link analysis and output it to link-data.txt" )
+                .withLongOpt( "realAnalysis" ).create( 'r' );
+        addOption( realAnalysis );
+
+        Option outputFile = OptionBuilder.hasArg().isRequired().withArgName( "Output File" )
+                .withDescription( "Output shuffle statistics to this file" ).withLongOpt( "outFile" ).create( 'o' );
+        addOption( outputFile );
+
+        /*
+         * Not supported
+         */
+        // Option linkStringency = OptionBuilder.hasArg().withArgName( "Link
+        // support threshold (stringency)" )
+        // .withDescription( "Link Stringency " ).withLongOpt( "linkStringency"
+        // ).create( 'l' );
+        // addOption( linkStringency );
+    }
+
     @Override
     protected Exception doWork( String[] args ) {
         Exception err = processCommandLine( "Shuffle Links ", args );
@@ -53,7 +99,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
 
         LinkStatisticsService lss = getBean( LinkStatisticsService.class );
 
-        Collection<Gene> genes = geneService.loadKnownGenes( taxon );
+        Collection<Gene> genes = geneService.loadAll( taxon );
 
         LinkConfirmationStatistics confStats = null;
 
@@ -107,50 +153,9 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
         return null;
     }
 
-    public static void main( String[] args ) {
-        LinkShufflerCLI shuffle = new LinkShufflerCLI();
-        StopWatch watch = new StopWatch();
-        watch.start();
-        Exception ex = shuffle.doWork( args );
-        if ( ex != null ) {
-            ex.printStackTrace();
-        }
-        watch.stop();
-        log.info( "Finished: " + watch );
-    }
-
-    @SuppressWarnings("static-access")
     @Override
-    protected void buildOptions() {
-        super.buildOptions();
-
-        Option iterationNum = OptionBuilder.hasArg().withArgName( " Shuffling iterations " )
-                .withDescription( " The number of shuffling iterations (default = 2) " ).withLongOpt( "iterationNum" )
-                .create( 'i' );
-        addOption( iterationNum );
-
-        Option outputShuffledLinks = OptionBuilder.withArgName( "Shuffled output" )
-                .withDescription( "Print out link details for shuffled data sets" ).withLongOpt( "outputShuffledData" )
-                .create( 'l' );
-        addOption( outputShuffledLinks );
-
-        Option realAnalysis = OptionBuilder.withArgName( "Real analysis (unshuffled)" )
-                .withDescription( "Perform a real link analysis and output it to link-data.txt" )
-                .withLongOpt( "realAnalysis" ).create( 'r' );
-        addOption( realAnalysis );
-
-        Option outputFile = OptionBuilder.hasArg().isRequired().withArgName( "Output File" )
-                .withDescription( "Output shuffle statistics to this file" ).withLongOpt( "outFile" ).create( 'o' );
-        addOption( outputFile );
-
-        /*
-         * Not supported
-         */
-        // Option linkStringency = OptionBuilder.hasArg().withArgName( "Link
-        // support threshold (stringency)" )
-        // .withDescription( "Link Stringency " ).withLongOpt( "linkStringency"
-        // ).create( 'l' );
-        // addOption( linkStringency );
+    protected String[] getAdditionalSpringConfigLocations() {
+        return new String[] { "classpath*:chibi/beans.xml" };
     }
 
     @Override
@@ -171,11 +176,6 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
 
         outFileName = getOptionValue( 'o' );
 
-    }
-
-    @Override
-    protected String[] getAdditionalSpringConfigLocations() {
-        return new String[] { "classpath*:chibi/beans.xml" };
     }
 
 }

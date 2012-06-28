@@ -36,11 +36,11 @@ import org.apache.commons.lang.StringUtils;
 
 import ubic.gemma.analysis.expression.coexpression.CoexpressionValueObjectExt;
 import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
+import ubic.gemma.genome.gene.service.GeneService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.association.coexpression.Gene2GeneCoexpressionService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.taxon.service.TaxonService;
-import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**
@@ -50,6 +50,18 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
 public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     private static final int DEFAULT_STRINGINCY = 2;
+
+    public static void main( String args[] ) {
+        Gene2GeneCoexpressionResultsCli run = new Gene2GeneCoexpressionResultsCli();
+        try {
+            Exception ex = run.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
 
     private int stringency;
 
@@ -68,18 +80,6 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     protected TaxonService taxonService;
 
     protected GeneCoexpressionService geneCoexpressionService;
-
-    public static void main( String args[] ) {
-        Gene2GeneCoexpressionResultsCli run = new Gene2GeneCoexpressionResultsCli();
-        try {
-            Exception ex = run.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
 
     @SuppressWarnings("static-access")
     @Override
@@ -160,7 +160,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         if ( this.hasOption( 'r' ) ) {
             String rOption = this.getOptionValue( 'r' );
             assert taxon != null;
-            if ( rOption.equals( "all" ) ) geneList = geneService.loadKnownGenes( taxon );
+            if ( rOption.equals( "all" ) ) geneList = geneService.loadAll( taxon );
         }
         // no random option
         else {
@@ -192,26 +192,38 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     }
 
-    /**
-     * Read in a list of genes; calls helper method, <code>readGeneListFile()</code>
-     * 
-     * @param inFile - file name to read
-     * @param taxon
-     * @return collection of genes
-     * @throws IOException
-     */
-    private Collection<String> readGeneListFile( String inFile ) throws IOException {
-        log.info( "Reading " + inFile );
-        Collection<String> lines = new ArrayList<String>();
-        BufferedReader in = new BufferedReader( new FileReader( inFile ) );
-        String line;
-        while ( ( line = in.readLine() ) != null ) {
-            // if ( line.startsWith( "#" ) ) continue;
-            String s = line.trim();
-            lines.add( s );
+    private String coexpressedResult( CoexpressionValueObjectExt cvo ) {
+        String queryGene = cvo.getQueryGene().getOfficialSymbol();
+        String foundGene = cvo.getFoundGene().getOfficialSymbol();
+        Integer numDSTested = cvo.getNumTestedIn();
+        StringBuilder buf = new StringBuilder();
+
+        // only positive correlation
+        if ( cvo.getPosSupp() > 0 && cvo.getNegSupp() == 0 ) {
+            buf.append( cvo.getPosSupp() + "\t" );
         }
-        in.close();
-        return lines;
+        // only negative correlation
+        else if ( cvo.getNegSupp() > 0 && cvo.getPosSupp() == 0 ) {
+            buf.append( "\t" + cvo.getNegSupp() );
+        }
+        // negative and positive
+        else
+            buf.append( cvo.getPosSupp() + "\t" + cvo.getNegSupp() );
+        String[] fields = new String[] { queryGene, foundGene, numDSTested.toString(), buf.toString() };
+        return StringUtils.join( fields, "\t" );
+
+    }
+
+    private void createColumnHeadings() throws IOException {
+        System.out.println( "Query_Gene\tCoexpressed_Gene\tDatasets_Tested\t+Correlation\t-Correlation" );
+
+        String dir = "../";
+        String query = "";
+        if ( queryGenesOnly == true ) query = "-qgOnly";
+        String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
+        BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
+        out.write( "Query_Gene\tTotal_Degree\n" );
+        out.close();
     }
 
     /**
@@ -238,49 +250,6 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
         }
         return genes;
-    }
-
-    private void outputCoexpressionResults() throws IOException {
-        int geneCount = 0;
-
-        createColumnHeadings();
-
-        while ( geneCount < geneList.size() ) {
-
-            // use a subset of genes
-            Collection<Gene> geneSubset = new ArrayList<Gene>( SUBSETSIZE );
-            Object[] geneArray = geneList.toArray();
-            for ( int i = 0; i < SUBSETSIZE; i++ ) {
-                if ( geneCount == geneList.size() ) break;
-                geneSubset.add( ( Gene ) geneArray[geneCount] );
-                geneCount++;
-            }
-            // use subset list of genes, size SUBSETSIZE
-            Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( 717L,
-                    geneSubset, stringency, 0, queryGenesOnly, true );
-
-            Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cmvo );
-
-            printDegreeCount( coexpressionList );
-
-            printCoexpressionResults( coexpressionList );
-
-            log.info( "Genes analyzed so far: " + geneCount );
-        }
-        log.info( "Total number of genes analyzed" + geneCount );
-
-    }
-
-    private void createColumnHeadings() throws IOException {
-        System.out.println( "Query_Gene\tCoexpressed_Gene\tDatasets_Tested\t+Correlation\t-Correlation" );
-
-        String dir = "../";
-        String query = "";
-        if ( queryGenesOnly == true ) query = "-qgOnly";
-        String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
-        BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
-        out.write( "Query_Gene\tTotal_Degree\n" );
-        out.close();
     }
 
     /**
@@ -312,25 +281,34 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         return results;
     }
 
-    private String coexpressedResult( CoexpressionValueObjectExt cvo ) {
-        String queryGene = cvo.getQueryGene().getOfficialSymbol();
-        String foundGene = cvo.getFoundGene().getOfficialSymbol();
-        Integer numDSTested = cvo.getNumTestedIn();
-        StringBuilder buf = new StringBuilder();
+    private void outputCoexpressionResults() throws IOException {
+        int geneCount = 0;
 
-        // only positive correlation
-        if ( cvo.getPosSupp() > 0 && cvo.getNegSupp() == 0 ) {
-            buf.append( cvo.getPosSupp() + "\t" );
+        createColumnHeadings();
+
+        while ( geneCount < geneList.size() ) {
+
+            // use a subset of genes
+            Collection<Gene> geneSubset = new ArrayList<Gene>( SUBSETSIZE );
+            Object[] geneArray = geneList.toArray();
+            for ( int i = 0; i < SUBSETSIZE; i++ ) {
+                if ( geneCount == geneList.size() ) break;
+                geneSubset.add( ( Gene ) geneArray[geneCount] );
+                geneCount++;
+            }
+            // use subset list of genes, size SUBSETSIZE
+            Collection<CoexpressionValueObjectExt> cmvo = geneCoexpressionService.coexpressionSearchQuick( 717L,
+                    geneSubset, stringency, 0, queryGenesOnly, true );
+
+            Map<String, Collection<String>> coexpressionList = organizeCoexpressionValueObjectResults( cmvo );
+
+            printDegreeCount( coexpressionList );
+
+            printCoexpressionResults( coexpressionList );
+
+            log.info( "Genes analyzed so far: " + geneCount );
         }
-        // only negative correlation
-        else if ( cvo.getNegSupp() > 0 && cvo.getPosSupp() == 0 ) {
-            buf.append( "\t" + cvo.getNegSupp() );
-        }
-        // negative and positive
-        else
-            buf.append( cvo.getPosSupp() + "\t" + cvo.getNegSupp() );
-        String[] fields = new String[] { queryGene, foundGene, numDSTested.toString(), buf.toString() };
-        return StringUtils.join( fields, "\t" );
+        log.info( "Total number of genes analyzed" + geneCount );
 
     }
 
@@ -383,6 +361,28 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Read in a list of genes; calls helper method, <code>readGeneListFile()</code>
+     * 
+     * @param inFile - file name to read
+     * @param taxon
+     * @return collection of genes
+     * @throws IOException
+     */
+    private Collection<String> readGeneListFile( String inFile ) throws IOException {
+        log.info( "Reading " + inFile );
+        Collection<String> lines = new ArrayList<String>();
+        BufferedReader in = new BufferedReader( new FileReader( inFile ) );
+        String line;
+        while ( ( line = in.readLine() ) != null ) {
+            // if ( line.startsWith( "#" ) ) continue;
+            String s = line.trim();
+            lines.add( s );
+        }
+        in.close();
+        return lines;
     }
 
     // private boolean isNumber( String string ) {

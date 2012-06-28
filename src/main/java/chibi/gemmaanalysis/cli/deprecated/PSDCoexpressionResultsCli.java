@@ -13,17 +13,29 @@ import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.analysis.expression.coexpression.CoexpressionValueObjectExt;
 import ubic.gemma.analysis.expression.coexpression.GeneCoexpressionService;
+import ubic.gemma.genome.gene.service.GeneService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.analysis.expression.coexpression.GeneCoexpressionAnalysisService;
 import ubic.gemma.model.association.coexpression.Gene2GeneCoexpressionService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
 public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     private static final int DEFAULT_STRINGINCY = 2;
+
+    public static void main( String args[] ) {
+        PSDCoexpressionResultsCli run = new PSDCoexpressionResultsCli();
+        try {
+            Exception ex = run.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
 
     private int stringency;
 
@@ -51,18 +63,6 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
     protected GeneCoexpressionService geneCoexpressionService;
 
     protected GeneCoexpressionAnalysisService geneCoexpressionAnalysisService;
-
-    public static void main( String args[] ) {
-        PSDCoexpressionResultsCli run = new PSDCoexpressionResultsCli();
-        try {
-            Exception ex = run.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
 
     @SuppressWarnings("static-access")
     @Override
@@ -110,7 +110,7 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
         try {
             Collection<Gene> genes = null;
             if ( allGenes == true )
-                genes = geneService.loadKnownGenes( taxon );
+                genes = geneService.loadAll( taxon );
             else
                 genes = getGenes();
 
@@ -226,28 +226,26 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     }
 
-    /**
-     * Read in a list of genes; calls helper method, <code>readGeneListFile()</code>
-     * 
-     * @param inFile - file name to read
-     * @param taxon
-     * @return collection of genes
-     * @throws IOException
-     */
-    private void readGeneListFile( String inFile ) throws IOException {
-        log.info( "Reading " + inFile );
-        Collection<String> lines = new ArrayList<String>();
-        BufferedReader in = new BufferedReader( new FileReader( inFile ) );
-        String line;
-        while ( ( line = in.readLine() ) != null ) {
-            // if ( line.startsWith( "#" ) ) continue;
-            String s = line.trim();
-            lines.add( s );
-        }
-        in.close();
-        // to be used later
-        rawGeneList = lines;
+    private String coexpressedResult( CoexpressionValueObjectExt cvo ) {
+        String queryGene = cvo.getQueryGene().getOfficialSymbol();
+        String foundGene = cvo.getFoundGene().getOfficialSymbol();
+        // Integer numDSTested = cvo.getNumTestedIn();
+        // StringBuilder buf = new StringBuilder();
+        // String[] fields;
+        if ( details == true ) {
+            return cvo.toString();
 
+        }
+        return queryGene + "\t" + foundGene;
+
+    }
+
+    private void createColumnHeadings() {
+        // output column headings for main coexpression results file
+        if ( details == true )
+            System.out.println( "Query_Gene\tCoexpressed_Gene\tSupport\tSign" );
+        else
+            System.out.println( "Query_Gene\tCoexpressed_Gene" );
     }
 
     /**
@@ -294,25 +292,27 @@ public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     }
 
-    private void createColumnHeadings() {
-        // output column headings for main coexpression results file
-        if ( details == true )
-            System.out.println( "Query_Gene\tCoexpressed_Gene\tSupport\tSign" );
-        else
-            System.out.println( "Query_Gene\tCoexpressed_Gene" );
-    }
-
-    private String coexpressedResult( CoexpressionValueObjectExt cvo ) {
-        String queryGene = cvo.getQueryGene().getOfficialSymbol();
-        String foundGene = cvo.getFoundGene().getOfficialSymbol();
-        // Integer numDSTested = cvo.getNumTestedIn();
-        // StringBuilder buf = new StringBuilder();
-        // String[] fields;
-        if ( details == true ) {
-            return cvo.toString();
-
+    /**
+     * Read in a list of genes; calls helper method, <code>readGeneListFile()</code>
+     * 
+     * @param inFile - file name to read
+     * @param taxon
+     * @return collection of genes
+     * @throws IOException
+     */
+    private void readGeneListFile( String inFile ) throws IOException {
+        log.info( "Reading " + inFile );
+        Collection<String> lines = new ArrayList<String>();
+        BufferedReader in = new BufferedReader( new FileReader( inFile ) );
+        String line;
+        while ( ( line = in.readLine() ) != null ) {
+            // if ( line.startsWith( "#" ) ) continue;
+            String s = line.trim();
+            lines.add( s );
         }
-        return queryGene + "\t" + foundGene;
+        in.close();
+        // to be used later
+        rawGeneList = lines;
 
     }
 

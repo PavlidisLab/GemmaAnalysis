@@ -24,6 +24,7 @@ import org.apache.commons.lang.time.StopWatch;
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
+import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
@@ -32,7 +33,6 @@ import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 
 /**
@@ -41,11 +41,30 @@ import ubic.gemma.model.genome.Gene;
  * @author raymond
  */
 public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingCLI {
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        ExpressionAnalysisCLI analysis = new ExpressionAnalysisCLI();
+        StopWatch watch = new StopWatch();
+        watch.start();
+
+        log.info( "Starting expression analysis" );
+        Exception e = analysis.doWork( args );
+        if ( e != null ) log.error( e.getMessage() );
+        watch.stop();
+        log.info( "Finished expression analysis in " + watch );
+    }
+
     private String outFilePrefix;
 
     private ArrayDesignService adService;
 
     public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
+
+    ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    CompositeSequenceService compositeSequenceService;
 
     /*
      * (non-Javadoc)
@@ -63,6 +82,74 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         addOption( filterOption );
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
+     */
+    @Override
+    protected Exception doWork( String[] args ) {
+        Exception e = processCommandLine( "ExpressionAnalysis", args );
+        if ( e != null ) return e;
+
+        Collection<Gene> genes;
+
+        log.info( "Getting genes" );
+        genes = geneService.loadAll( taxon );
+        log.info( "Loaded " + genes.size() + " genes" );
+
+        DoubleMatrix<Gene, ExpressionExperiment> rankMatrix = getRankMatrix( genes, expressionExperiments );
+        // rankMatrix = filterRankmatrix(rankMatrix);
+
+        // gene names
+        Collection<Gene> rowGenes = rankMatrix.getRowNames();
+        try {
+            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".row_names.txt" ) );
+            for ( Gene gene : rowGenes ) {
+                String s = gene.getOfficialSymbol();
+                if ( s == null ) s = gene.getId().toString();
+                out.println( s );
+            }
+            out.close();
+        } catch ( IOException exc ) {
+            return exc;
+        }
+
+        // expression experiment names
+        Collection<ExpressionExperiment> colEes = rankMatrix.getColNames();
+        try {
+            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".col_names.txt" ) );
+            for ( ExpressionExperiment ee : colEes ) {
+                out.println( ee.getShortName() );
+            }
+            out.close();
+        } catch ( IOException exc ) {
+            return exc;
+        }
+
+        DecimalFormat formatter = ( DecimalFormat ) NumberFormat.getNumberInstance( Locale.US );
+        formatter.applyPattern( "0.0000" );
+        formatter.getDecimalFormatSymbols().setNaN( "NaN" );
+        try {
+            MatrixWriter<Gene, ExpressionExperiment> out = new MatrixWriter<Gene, ExpressionExperiment>( outFilePrefix
+                    + ".txt", formatter );
+            out.writeMatrix( rankMatrix, false );
+        } catch ( IOException exc ) {
+            return exc;
+        }
+
+        return null;
+    }
+
+    /**
+     * 
+     */
+    protected void initBeans() {
+        eeService = getBean( ExpressionExperimentService.class );
+        adService = getBean( ArrayDesignService.class );
+        processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
+    }
+
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -73,15 +160,17 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         initBeans();
     }
 
-    ProcessedExpressionDataVectorService processedExpressionDataVectorService;
-
-    /**
-     * 
-     */
-    protected void initBeans() {
-        eeService = getBean( ExpressionExperimentService.class );
-        adService = getBean( ArrayDesignService.class );
-        processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
     }
 
     /**
@@ -173,94 +262,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         }
 
         return matrix;
-    }
-
-    CompositeSequenceService compositeSequenceService;
-
-    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
-        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
-                .loadMultiple( csIds ) );
-        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
-        for ( CompositeSequence cs : genes.keySet() ) {
-            result.put( cs.getId(), new HashSet<Long>() );
-            for ( Gene g : genes.get( cs ) ) {
-                result.get( cs.getId() ).add( g.getId() );
-            }
-        }
-        return result;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
-    @Override
-    protected Exception doWork( String[] args ) {
-        Exception e = processCommandLine( "ExpressionAnalysis", args );
-        if ( e != null ) return e;
-
-        Collection<Gene> genes;
-
-        log.info( "Getting genes" );
-        genes = geneService.loadKnownGenes( taxon );
-        log.info( "Loaded " + genes.size() + " genes" );
-
-        DoubleMatrix<Gene, ExpressionExperiment> rankMatrix = getRankMatrix( genes, expressionExperiments );
-        // rankMatrix = filterRankmatrix(rankMatrix);
-
-        // gene names
-        Collection<Gene> rowGenes = rankMatrix.getRowNames();
-        try {
-            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".row_names.txt" ) );
-            for ( Gene gene : rowGenes ) {
-                String s = gene.getOfficialSymbol();
-                if ( s == null ) s = gene.getId().toString();
-                out.println( s );
-            }
-            out.close();
-        } catch ( IOException exc ) {
-            return exc;
-        }
-
-        // expression experiment names
-        Collection<ExpressionExperiment> colEes = rankMatrix.getColNames();
-        try {
-            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".col_names.txt" ) );
-            for ( ExpressionExperiment ee : colEes ) {
-                out.println( ee.getShortName() );
-            }
-            out.close();
-        } catch ( IOException exc ) {
-            return exc;
-        }
-
-        DecimalFormat formatter = ( DecimalFormat ) NumberFormat.getNumberInstance( Locale.US );
-        formatter.applyPattern( "0.0000" );
-        formatter.getDecimalFormatSymbols().setNaN( "NaN" );
-        try {
-            MatrixWriter<Gene, ExpressionExperiment> out = new MatrixWriter<Gene, ExpressionExperiment>( outFilePrefix + ".txt", formatter );
-            out.writeMatrix( rankMatrix, false );
-        } catch ( IOException exc ) {
-            return exc;
-        }
-
-        return null;
-    }
-
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        ExpressionAnalysisCLI analysis = new ExpressionAnalysisCLI();
-        StopWatch watch = new StopWatch();
-        watch.start();
-
-        log.info( "Starting expression analysis" );
-        Exception e = analysis.doWork( args );
-        if ( e != null ) log.error( e.getMessage() );
-        watch.stop();
-        log.info( "Finished expression analysis in " + watch );
     }
 
 }
