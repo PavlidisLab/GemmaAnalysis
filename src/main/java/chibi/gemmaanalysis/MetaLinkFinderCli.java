@@ -27,18 +27,17 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.genome.taxon.service.TaxonService;
+import ubic.gemma.model.genome.Gene;
+import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.ontology.providers.GeneOntologyService;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 import cern.colt.list.ObjectArrayList;
 
 /**
- * Run frequent itemset analysis.
+ * Run frequent itemset analysis. WARNING probably broken.
  * 
  * @author xwan
  * @version $Id$
@@ -58,7 +57,6 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
     private String matrixFile = null, eeMapFile = null, treeFile = null, taxonName = null;
     private Taxon taxon = null;
     private LinkMatrix linkMatrix = null;
-    private ProbeLinkCoexpressionAnalyzer probeLinkCoexpressionAnalyzer;
 
     @SuppressWarnings("static-access")
     @Override
@@ -173,8 +171,6 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
             geneService = this.getBean( GeneService.class );
             goService = this.getBean( GeneOntologyService.class );
             TaxonService taxonService = this.getBean( TaxonService.class );
-            probeLinkCoexpressionAnalyzer = this
-                    .getBean( ProbeLinkCoexpressionAnalyzer.class );
             taxon = taxonService.findByCommonName( taxonName );
             if ( taxon == null ) {
                 return new IllegalArgumentException( "The input species couldn't be found: " + taxonName );
@@ -188,7 +184,6 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
                 linkMatrix.setGeneService( geneService );
                 linkMatrix.setEEService( eeService );
                 linkMatrix.setGoService( goService );
-                linkMatrix.setProbeLinkCoexpressionAnalyzer( this.probeLinkCoexpressionAnalyzer );
                 try {
                     linkMatrix.toFile( this.matrixFile, this.eeMapFile );
                 } catch ( IOException e ) {

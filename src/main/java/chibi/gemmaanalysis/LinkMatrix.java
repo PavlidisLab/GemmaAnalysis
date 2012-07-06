@@ -36,10 +36,8 @@ import org.apache.commons.logging.LogFactory;
 
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.basecode.ontology.model.OntologyTerm;
-import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzer;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
@@ -47,9 +45,9 @@ import ubic.gemma.ontology.providers.GeneOntologyService;
 import cern.colt.list.ObjectArrayList;
 
 /**
- * Creates an efficient matrix holding information about gene links, and can answer some basic questions about genes in
- * the matrix. The matrix also knows how to index elements using gene pairs represented by two values packed into a
- * single bit array. That representation is used in classes storing links in trees.
+ * WARNING probably broken. Creates an efficient matrix holding information about gene links, and can answer some basic
+ * questions about genes in the matrix. The matrix also knows how to index elements using gene pairs represented by two
+ * values packed into a single bit array. That representation is used in classes storing links in trees.
  * <p>
  * FIXME this class mixes data structure and data access, along with 'utility' methods in a way that's a bit unclean
  * (this used be called LinkMatrixUtil).
@@ -146,11 +144,7 @@ public class LinkMatrix {
 
     private ExpressionExperimentService eeService = null;
 
-    // private CommandLineToolUtilService utilService = null;
-
     private int stringency = 2;
-
-    private ProbeLinkCoexpressionAnalyzer probeLinkCoexpressionAnalyzer;
 
     private GeneOntologyService goService;
 
@@ -345,23 +339,6 @@ public class LinkMatrix {
         int row = ( int ) ( packedId / shift );
         int col = ( int ) ( packedId % shift );
         return goService.calculateGoTermOverlap( getRowGene( row ), getColGene( col ) ).size();
-    }
-
-    /**
-     * For each gene, retrieve coexpression (from the database) and store in the matrix.
-     */
-    public void fillCountMatrix() {
-        int i = 1;
-        for ( Gene gene : targetGenes ) {
-            System.out.println( i + "/" + targetGenes.size() + "\t" + gene.getName() );
-            // Get the gene->eeIds map
-            CoexpressionCollectionValueObject coexpressed = probeLinkCoexpressionAnalyzer.linkAnalysis( gene, null,
-                    stringency, 0 );
-            Map<Long, Collection<Long>> geneEEMap = coexpressed.getGeneCoexpression()
-                    .getExpressionExperimentsWithSpecificProbeForCoexpressedGenes();
-            this.count( gene.getId(), geneEEMap );
-            i++;
-        }
     }
 
     /**
@@ -620,10 +597,6 @@ public class LinkMatrix {
         this.goService = goService;
     }
 
-    public void setProbeLinkCoexpressionAnalyzer( ProbeLinkCoexpressionAnalyzer probeLinkCoexpressionAnalyzer ) {
-        this.probeLinkCoexpressionAnalyzer = probeLinkCoexpressionAnalyzer;
-    }
-
     public void setStringency( int stringency ) {
         this.stringency = stringency;
     }
@@ -683,34 +656,6 @@ public class LinkMatrix {
      */
     private void computeShift() {
         shift = linkCountMatrix.rows() > linkCountMatrix.columns() ? linkCountMatrix.rows() : linkCountMatrix.columns();
-    }
-
-    /**
-     * Store link information in the matrix about a particular gene (and its coexpressed partners)
-     * 
-     * @param rowGeneId query gene
-     * @param geneEEsMap map of gene to EEs, where the keys are genes coexpressed with the query, and the EEs are those
-     *        where the coexpression occurred.
-     */
-    private void count( Long rowGeneId, Map<Long, Collection<Long>> geneEEsMap ) {
-        int rowIndex = -1, colIndex = -1, eeIndex = -1;
-        rowIndex = this.linkCountMatrix.getRowIndexByName( rowGeneId );
-        for ( Long colGeneId : geneEEsMap.keySet() ) {
-            try {
-                Collection<Long> eeIds = geneEEsMap.get( colGeneId );
-                colIndex = this.linkCountMatrix.getColIndexByName( colGeneId );
-                for ( Long eeId : eeIds ) {
-                    eeIndex = getEEIndex( eeId );
-                    if ( eeIndex < 0 ) {
-                        log.warn( "Couldn't find the ee index for ee " + eeId );
-                        continue;
-                    }
-                    this.linkCountMatrix.set( rowIndex, colIndex, eeIndex );
-                }
-            } catch ( Exception e ) {
-                continue;
-            }
-        }
     }
 
     /**
