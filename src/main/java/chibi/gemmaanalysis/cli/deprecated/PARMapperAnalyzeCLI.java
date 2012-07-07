@@ -34,8 +34,8 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.analysis.expression.coexpression.ProbeLinkCoexpressionAnalyzerImpl;
-import ubic.gemma.model.analysis.expression.coexpression.CoexpressionCollectionValueObject;
-import ubic.gemma.model.analysis.expression.coexpression.CoexpressionValueObject;
+import ubic.gemma.model.analysis.expression.coexpression.QueryGeneCoexpression;
+import ubic.gemma.model.analysis.expression.coexpression.CoexpressedGenePairValueObject;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.association.coexpression.Probe2ProbeCoexpressionService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -668,15 +668,15 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             // System.out.println("Linkanalysis " + par.getId() + "\t" + gene.getId());
 
             // search Gemma for links
-            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, eexps, 1, true, 0 );
+            Map<Gene, QueryGeneCoexpression> coexp = pca.linkAnalysis( pargene, eexps, 1, true, 0 );
 
             for ( Gene g : coexp.keySet() ) {
-                CoexpressionCollectionValueObject ccvo = coexp.get( g );
-                Collection<CoexpressionValueObject> cvos = ccvo.getAllGeneCoexpressionData( 0 );
+                QueryGeneCoexpression ccvo = coexp.get( g );
+                Collection<CoexpressedGenePairValueObject> cvos = ccvo.getAllGeneCoexpressionData( 0 );
 
                 // System.out.println("GeneID: " + g.getId()+" Size: " + cvos.size());
 
-                for ( CoexpressionValueObject cvo : cvos ) {
+                for ( CoexpressedGenePairValueObject cvo : cvos ) {
                     // System.out.println("\t\tTS: " + cvo);
 
                     // System.out.println(parFileEntries.get(par.getId())
@@ -720,15 +720,15 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             pargene.add( par );
 
             // this is where bug 1604 showed its face
-            Map<Gene, CoexpressionCollectionValueObject> coexp = pca.linkAnalysis( pargene, exps, stringency, false, 0 ); // low
+            Map<Gene, QueryGeneCoexpression> coexp = pca.linkAnalysis( pargene, exps, stringency, false, 0 ); // low
                                                                                                                           // stringency.
 
             if ( coexp == null || coexp.isEmpty() ) {
                 continue;
             }
 
-            CoexpressionCollectionValueObject ccvo = coexp.get( par );
-            Collection<CoexpressionValueObject> cvos = ccvo.getAllGeneCoexpressionData( 0 );
+            QueryGeneCoexpression ccvo = coexp.get( par );
+            Collection<CoexpressedGenePairValueObject> cvos = ccvo.getAllGeneCoexpressionData( 0 );
 
             int zeroCount = 0;
             String output_half = parFileEntries.get( par.getId() );
@@ -739,8 +739,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
                 continue;
             }
 
-            for ( CoexpressionValueObject cvo : cvos ) {
-                String output = output_half + "," + cvo.getGeneId() + "," + csize + "," + cvo.getPositiveScore() + ","
+            for ( CoexpressedGenePairValueObject cvo : cvos ) {
+                String output = output_half + "," + cvo.getCoexpressedGeneId() + "," + csize + "," + cvo.getPositiveScore() + ","
                         + cvo.getNegativeScore();
                 pco.println( output );
 
