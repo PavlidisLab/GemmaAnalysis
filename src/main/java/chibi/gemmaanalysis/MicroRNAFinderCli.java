@@ -141,7 +141,7 @@ public class MicroRNAFinderCli extends AbstractSpringAwareCLI {
         try {
 
             GoldenPathSequenceAnalysis analysis = new GoldenPathSequenceAnalysis( taxon );
-            Collection<CompositeSequence> allCSs = adService.loadCompositeSequences( arrayDesign );
+            Collection<CompositeSequence> allCSs = adService.getCompositeSequences( arrayDesign );
 
             compositeSequenceService.thaw( allCSs );
 

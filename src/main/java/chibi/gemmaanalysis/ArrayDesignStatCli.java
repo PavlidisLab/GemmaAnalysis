@@ -164,7 +164,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                     long numCsBlatResults = getArrayDesignService().numCompositeSequenceWithBlatResults( ad );
                     long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
                     long numGenes = getArrayDesignService().numGenes( ad );
-                    Collection<CompositeSequence> allCSs = getArrayDesignService().loadCompositeSequences( ad );
+                    Collection<CompositeSequence> allCSs = getArrayDesignService().getCompositeSequences( ad );
                     Collection<Long> csIds = new HashSet<Long>();
                     for ( CompositeSequence cs : allCSs )
                         csIds.add( cs.getId() );

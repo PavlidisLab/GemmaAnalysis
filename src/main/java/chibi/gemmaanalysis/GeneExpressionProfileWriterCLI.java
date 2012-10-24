@@ -82,7 +82,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
             Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
             for ( ArrayDesign ad : ads ) {
-                css.addAll( adService.loadCompositeSequences( ad ) );
+                css.addAll( adService.getCompositeSequences( ad ) );
             }
             Map<Gene, Collection<CompositeSequence>> gene2css = coexpAnalysisService.getGene2CsMap( css );
             ExpressionDataDoubleMatrix dataMatrix = coexpAnalysisService.getExpressionDataMatrix( ee, filterConfig );

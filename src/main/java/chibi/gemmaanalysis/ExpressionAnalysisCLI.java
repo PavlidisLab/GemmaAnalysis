@@ -204,7 +204,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
             Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
             for ( ArrayDesign ad : ads ) {
-                css.addAll( adService.loadCompositeSequences( ad ) );
+                css.addAll( adService.getCompositeSequences( ad ) );
             }
 
             Collection<ProcessedExpressionDataVector> dedvs = processedExpressionDataVectorService
@@ -214,7 +214,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( ee );
             Collection<Long> csIds = new HashSet<Long>();
             for ( ArrayDesign AD : ADs ) {
-                Collection<CompositeSequence> CSs = adService.loadCompositeSequences( AD );
+                Collection<CompositeSequence> CSs = adService.getCompositeSequences( AD );
                 for ( CompositeSequence CS : CSs ) {
                     csIds.add( CS.getId() );
                 }

@@ -275,7 +275,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         }
 
         // adService.thaw(arrayDesign);
-        Collection<CompositeSequence> allCSs = adService.loadCompositeSequences( arrayDesign );
+        Collection<CompositeSequence> allCSs = adService.getCompositeSequences( arrayDesign );
         for ( CompositeSequence cs : allCSs ) {
             this.rankData.put( cs, new DoubleArrayList() );
             this.presentAbsentData.put( cs, new DoubleArrayList() );
