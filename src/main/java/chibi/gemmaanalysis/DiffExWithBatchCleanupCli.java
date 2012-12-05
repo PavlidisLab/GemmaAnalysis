@@ -87,7 +87,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                         ExperimentalFactor factor = resultSet.getExperimentalFactors().iterator().next();
                         if ( factor.getName().equals( "batch" ) ) {
                             log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
-                            analyzerHelper.deleteOldAnalysis( expressionExperiment, existingAnalysis );
+                            analyzerHelper.deleteAnalysis( expressionExperiment, existingAnalysis );
                             expressionExperimentReportService.generateSummary( expressionExperiment.getId() );
                             this.successObjects.add( ee );
                         }
