@@ -53,7 +53,6 @@
 	<classpathentry kind="var" path="M2_REPO/prefuse/prefuse/beta/prefuse-beta.jar"/>
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/REngine/0.6-0/REngine-0.6-0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/RoSuDA/Rserve/0.6-0/Rserve-0.6-0.jar"/>
-	<classpathentry kind="var" path="M2_REPO/spark/spark/1.2/spark-1.2.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-beans/3.0.5.RELEASE/spring-beans-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-context/3.0.5.RELEASE/spring-context-3.0.5.RELEASE.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/springframework/spring-jdbc/3.0.5.RELEASE/spring-jdbc-3.0.5.RELEASE.jar"/>
