@@ -21,7 +21,7 @@ package chibi.gemmaanalysis;
 
 import java.util.Collection;
 
-import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisHelperService;
+import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalyzerService;
 import ubic.gemma.analysis.report.ExpressionExperimentReportService;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
@@ -56,10 +56,12 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
 
         DifferentialExpressionAnalysisService differentialExpressionAnalysisService = this
                 .getBean( DifferentialExpressionAnalysisService.class );
+
+        DifferentialExpressionAnalyzerService differentialExpressionAnalyzerService = this
+                .getBean( DifferentialExpressionAnalyzerService.class );
+
         ExpressionExperimentReportService expressionExperimentReportService = this
                 .getBean( ExpressionExperimentReportService.class );
-        DifferentialExpressionAnalysisHelperService analyzerHelper = this
-                .getBean( DifferentialExpressionAnalysisHelperService.class );
         for ( BioAssaySet ee : expressionExperiments ) {
             if ( !( ee instanceof ExpressionExperiment ) ) {
                 continue;
@@ -87,7 +89,8 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                         ExperimentalFactor factor = resultSet.getExperimentalFactors().iterator().next();
                         if ( factor.getName().equals( "batch" ) ) {
                             log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
-                            analyzerHelper.deleteAnalysis( expressionExperiment, existingAnalysis );
+                            differentialExpressionAnalyzerService.deleteAnalysis( expressionExperiment,
+                                    existingAnalysis );
                             expressionExperimentReportService.generateSummary( expressionExperiment.getId() );
                             this.successObjects.add( ee );
                         }
