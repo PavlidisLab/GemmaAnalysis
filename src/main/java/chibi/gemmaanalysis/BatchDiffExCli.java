@@ -277,6 +277,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig configWithoutBatch = new DifferentialExpressionAnalysisConfig();
+            configWithoutBatch.setQvalueThreshold( summaryQvalThreshold );
             configWithoutBatch.setFactorsToInclude( factors2 );
             DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, configWithoutBatch ).iterator().next();
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
@@ -301,6 +302,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             Collection<ExperimentalFactor> factors = experimentalFactors;
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
+            configIncludingBatch.setQvalueThreshold( summaryQvalThreshold );
+
             configIncludingBatch.setFactorsToInclude( factors );
 
             DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch ).iterator()
