@@ -131,6 +131,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
             processSequences( bioSequences );
 
+            log.info( "Phase II starting" );
+
             // ///////////////////////////////
             // Second phase: make sure composite sequences don't refer to sequences that have duplicates based on name,
             // using stricter equality criteria.
@@ -240,9 +242,14 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         // ///////////////////////////////
         // First stage: fix biosequences that lack database entries, when there is one for another essentially
         // identical sequence (and the name is the same as the accession)
+        int i = 0;
         for ( BioSequence sequence : bioSequences ) {
 
             Collection<BioSequence> reps = bss.findByName( sequence.getName() );
+
+            if ( ++i % 500 == 0 ) {
+                log.info( "Processing: " + i + "/" + bioSequences.size() + " sequences" );
+            }
 
             if ( reps.size() == 1 ) continue;
 
@@ -281,16 +288,11 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
                 log.info( sequence + " has a potential replica: " + rep );
 
-                // only do this if they have the same name
-                // if ( !rep.getName().equals( anchor.getName() ) ) {
-                // log.warn( rep + " and " + anchor + " have different names, skipping" );
-                // continue;
-                // }
-
                 switchAndDeleteExtra( anchor, rep );
 
             }
         }
+
     }
 
     private void switchAndDeleteExtra( BioSequence keeper, BioSequence toRemove ) {
