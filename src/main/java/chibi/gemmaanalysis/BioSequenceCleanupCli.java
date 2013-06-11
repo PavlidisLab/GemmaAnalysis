@@ -73,8 +73,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option justTestingOption = OptionBuilder.withLongOpt( "tryout" )
-                .withDescription( "Set to run without any database modifications" ).create( 't' );
+        Option justTestingOption = OptionBuilder.withDescription( "Set to run without any database modifications" )
+                .create( "dryrun" );
         addOption( justTestingOption );
 
         Option sequenceNameList = OptionBuilder.hasArg().withArgName( "file" )
@@ -190,7 +190,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     @Override
     protected void processOptions() {
         super.processOptions();
-        if ( this.hasOption( 'f' ) ) {
+        if ( this.hasOption( "dryrun" ) ) {
             this.justTesting = true;
             log.info( "TEST MODE: NO DATABASE UPDATES WILL BE PERFORMED" );
         }
@@ -318,6 +318,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
         Collection<BlatAssociation> bs2gps = blatAssociationService.find( toRemove );
 
+        // probably it would be better to just delete these.
         for ( BlatAssociation bs2gp : bs2gps ) {
             if ( !justTesting ) bs2gp.setBioSequence( keeper );
             if ( !justTesting ) blatAssociationService.update( bs2gp );
