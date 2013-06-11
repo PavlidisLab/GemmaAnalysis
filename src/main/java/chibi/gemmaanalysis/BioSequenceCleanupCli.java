@@ -321,10 +321,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
         Collection<BlatAssociation> bs2gps = blatAssociationService.find( toRemove );
 
-        // probably it would be better to just delete these.
         for ( BlatAssociation bs2gp : bs2gps ) {
-            if ( !justTesting ) bs2gp.setBioSequence( keeper );
-            if ( !justTesting ) blatAssociationService.update( bs2gp );
+            if ( !justTesting ) blatAssociationService.remove( bs2gp );
         }
 
         /*
