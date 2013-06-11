@@ -329,7 +329,10 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
          * Remove the other sequence.
          */
         log.info( "Deleting unused duplicate sequence " + toRemove );
-        if ( !justTesting ) bss.remove( toRemove );
+        if ( !justTesting ) {
+            bss.update( toRemove );
+            bss.remove( toRemove );
+        }
     }
 
 }
