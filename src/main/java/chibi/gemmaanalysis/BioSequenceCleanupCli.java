@@ -116,7 +116,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
             ads = this.arrayDesignService.loadAll();
         }
 
-        int i = 0;
         for ( ArrayDesign design : ads ) {
             log.info( design );
             design = unlazifyArrayDesign( design );
@@ -129,14 +128,19 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                 bioSequences.add( cs.getBiologicalCharacteristic() );
             }
 
-            processSequences( bioSequences );
+            processSequences( bioSequences ); // fast.
 
             log.info( "Phase II starting" );
 
             // ///////////////////////////////
             // Second phase: make sure composite sequences don't refer to sequences that have duplicates based on name,
             // using stricter equality criteria.
+            int i = 0;
             for ( CompositeSequence cs : design.getCompositeSequences() ) {
+
+                if ( ++i % 500 == 0 ) {
+                    log.info( "Processing: " + i + "/" + bioSequences.size() + " sequences" );
+                }
 
                 BioSequence anchorSeq = cs.getBiologicalCharacteristic();
                 if ( anchorSeq == null ) {
@@ -178,9 +182,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                     }
                     switchAndDeleteExtra( anchorSeq, toChange );
 
-                    if ( ++i % 2000 == 0 ) {
-                        log.info( "Processed " + i );
-                    }
                 }
             }
         }
@@ -242,14 +243,10 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         // ///////////////////////////////
         // First stage: fix biosequences that lack database entries, when there is one for another essentially
         // identical sequence (and the name is the same as the accession)
-        int i = 0;
+
         for ( BioSequence sequence : bioSequences ) {
 
             Collection<BioSequence> reps = bss.findByName( sequence.getName() );
-
-            if ( ++i % 500 == 0 ) {
-                log.info( "Processing: " + i + "/" + bioSequences.size() + " sequences" );
-            }
 
             if ( reps.size() == 1 ) continue;
 
@@ -295,6 +292,10 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
     }
 
+    /**
+     * @param keeper
+     * @param toRemove
+     */
     private void switchAndDeleteExtra( BioSequence keeper, BioSequence toRemove ) {
 
         // all composite sequences for bs2 will be switched to bs1.
