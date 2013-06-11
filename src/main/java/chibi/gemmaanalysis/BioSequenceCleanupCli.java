@@ -106,7 +106,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                 }
 
                 Collection<BioSequence> bioSequences = bss.loadMultiple( ids );
-                bss.thaw( bioSequences );
+                bioSequences = bss.thaw( bioSequences );
                 processSequences( bioSequences );
                 return null;
             } catch ( Exception e ) {
@@ -149,7 +149,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
                 seqs.remove( anchorSeq );
 
-                this.bss.thaw( seqs );
+                seqs = this.bss.thaw( seqs );
 
                 // ensure this group really does contain all duplicates.
                 if ( log.isDebugEnabled() )
@@ -246,7 +246,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
             if ( reps.size() == 1 ) continue;
 
-            bss.thaw( reps );
+            reps = bss.thaw( reps );
 
             // pass 1: find an anchor.
             BioSequence anchor = null;
