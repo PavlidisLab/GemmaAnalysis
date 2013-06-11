@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis.cli.deprecated;
+package chibi.gemmaanalysis;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -48,21 +48,6 @@ import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
  */
 public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
-    private boolean justTesting = false;
-
-    @SuppressWarnings("static-access")
-    @Override
-    protected void buildOptions() {
-        super.buildOptions();
-        Option justTestingOption = OptionBuilder.withLongOpt( "tryout" ).withDescription(
-                "Set to run without any database modifications" ).create( 'f' );
-        addOption( justTestingOption );
-
-        Option sequenceNameList = OptionBuilder.hasArg().withArgName( "file" ).withDescription(
-                "File with list of biosequence ids to check." ).create( 'b' );
-        addOption( sequenceNameList );
-    }
-
     public static void main( String[] args ) {
         BioSequenceCleanupCli p = new BioSequenceCleanupCli();
         try {
@@ -75,30 +60,28 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         }
     }
 
-    BioSequenceService bss;
-    CompositeSequenceService css;
-    BlatResultService blatResultService;
-    BlatAssociationService blatAssociationService;
+    private BlatAssociationService blatAssociationService;
+
+    private BlatResultService blatResultService;
+
+    private BioSequenceService bss;
+    private CompositeSequenceService css;
     private String file = null;
+    private boolean justTesting = false;
 
+    @SuppressWarnings("static-access")
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( 'f' ) ) {
-            this.justTesting = true;
-            log.info( "TEST MODE: NO DATABASE UPDATES WILL BE PERFORMED" );
-        }
+    protected void buildOptions() {
+        super.buildOptions();
+        Option justTestingOption = OptionBuilder.withLongOpt( "tryout" )
+                .withDescription( "Set to run without any database modifications" ).create( 't' );
+        addOption( justTestingOption );
 
-        if ( this.hasOption( 'b' ) ) {
-            this.file = getOptionValue( 'b' );
-        }
-
-        bss = this.getBean(BioSequenceService.class );
-        css = this.getBean(CompositeSequenceService.class );
-        blatResultService = this.getBean( BlatResultService.class);
-        blatAssociationService = this.getBean(BlatAssociationService.class );
+        Option sequenceNameList = OptionBuilder.hasArg().withArgName( "file" )
+                .withDescription( "File with list of biosequence ids to check." ).create( 'b' );
+        addOption( sequenceNameList );
     }
- 
+
     @Override
     protected Exception doWork( String[] args ) {
 
@@ -136,7 +119,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         int i = 0;
         for ( ArrayDesign design : ads ) {
             log.info( design );
-            unlazifyArrayDesign( design );
+            design = unlazifyArrayDesign( design );
 
             Collection<BioSequence> bioSequences = new HashSet<BioSequence>();
 
@@ -204,6 +187,52 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
     }
 
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        if ( this.hasOption( 'f' ) ) {
+            this.justTesting = true;
+            log.info( "TEST MODE: NO DATABASE UPDATES WILL BE PERFORMED" );
+        }
+
+        if ( this.hasOption( 'b' ) ) {
+            this.file = getOptionValue( 'b' );
+        }
+
+        bss = this.getBean( BioSequenceService.class );
+        css = this.getBean( CompositeSequenceService.class );
+        blatResultService = this.getBean( BlatResultService.class );
+        blatAssociationService = this.getBean( BlatAssociationService.class );
+    }
+
+    /**
+     * Test whether two sequences are effectively equal (ignore the ID)
+     * 
+     * @param one
+     * @param that
+     * @return
+     */
+    private boolean equals( BioSequence one, BioSequence that ) {
+
+        one = bss.thaw( one );
+        that = bss.thaw( that );
+
+        if ( one.getSequenceDatabaseEntry() != null
+                && that.getSequenceDatabaseEntry() != null
+                && !one.getSequenceDatabaseEntry().getAccession()
+                        .equals( that.getSequenceDatabaseEntry().getAccession() ) ) return false;
+
+        if ( one.getTaxon() != null && that.getTaxon() != null && !one.getTaxon().equals( that.getTaxon() ) )
+            return false;
+
+        if ( one.getName() != null && that.getName() != null && !one.getName().equals( that.getName() ) ) return false;
+
+        if ( one.getSequence() != null && that.getSequence() != null && !one.getSequence().equals( that.getSequence() ) )
+            return false;
+
+        return true;
+    }
+
     /**
      * @param bioSequences
      */
@@ -237,8 +266,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
             for ( BioSequence rep : reps ) {
                 if ( rep.getSequenceDatabaseEntry() != null ) {
 
-                    if ( rep.getSequenceDatabaseEntry().getAccession().equals(
-                            anchor.getSequenceDatabaseEntry().getAccession() ) ) {
+                    if ( rep.getSequenceDatabaseEntry().getAccession()
+                            .equals( anchor.getSequenceDatabaseEntry().getAccession() ) ) {
                         log.warn( anchor + " and " + rep + " have equivalent database entries for accession" );
 
                         // they might have different names, but we don't care. One of them has to go.
@@ -299,34 +328,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
          */
         log.info( "Deleting unused duplicate sequence " + toRemove );
         if ( !justTesting ) bss.remove( toRemove );
-    }
-
-    /**
-     * Test whether two sequences are effectively equal (ignore the ID)
-     * 
-     * @param one
-     * @param that
-     * @return
-     */
-    private boolean equals( BioSequence one, BioSequence that ) {
-
-        one = bss.thaw( one );
-        that = bss.thaw( that );
-
-        if ( one.getSequenceDatabaseEntry() != null
-                && that.getSequenceDatabaseEntry() != null
-                && !one.getSequenceDatabaseEntry().getAccession().equals(
-                        that.getSequenceDatabaseEntry().getAccession() ) ) return false;
-
-        if ( one.getTaxon() != null && that.getTaxon() != null && !one.getTaxon().equals( that.getTaxon() ) )
-            return false;
-
-        if ( one.getName() != null && that.getName() != null && !one.getName().equals( that.getName() ) ) return false;
-
-        if ( one.getSequence() != null && that.getSequence() != null && !one.getSequence().equals( that.getSequence() ) )
-            return false;
-
-        return true;
     }
 
 }
