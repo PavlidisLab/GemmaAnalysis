@@ -330,7 +330,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
          */
         log.info( "Deleting unused duplicate sequence " + toRemove );
         if ( !justTesting ) {
-            bss.update( toRemove );
+            toRemove = bss.load( toRemove.getId() );
             bss.remove( toRemove );
         }
     }
