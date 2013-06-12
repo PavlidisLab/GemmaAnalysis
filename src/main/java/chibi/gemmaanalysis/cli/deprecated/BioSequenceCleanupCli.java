@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -45,7 +45,9 @@ import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
  * 
  * @author pavlidis
  * @version $Id$
+ * @deprecated because we shouldn't really need this any more.
  */
+@Deprecated
 public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
     public static void main( String[] args ) {
@@ -326,11 +328,15 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         }
 
         /*
+         * This will fail with platforms that use AnnotationAssocations. That's easily fixed, but I prefer it this way
+         * because those aren't real sequences.
+         */
+
+        /*
          * Remove the other sequence.
          */
         log.info( "Deleting unused duplicate sequence " + toRemove );
         if ( !justTesting ) {
-            toRemove = bss.load( toRemove.getId() );
             bss.remove( toRemove );
         }
     }
