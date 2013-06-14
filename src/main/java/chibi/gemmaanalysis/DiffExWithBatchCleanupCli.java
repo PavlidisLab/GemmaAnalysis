@@ -29,6 +29,7 @@ import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisS
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
+import ubic.gemma.model.expression.experiment.ExperimentalFactorService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
@@ -87,7 +88,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
                             continue;
                         }
                         ExperimentalFactor factor = resultSet.getExperimentalFactors().iterator().next();
-                        if ( factor.getName().equals( "batch" ) ) {
+                        if ( factor.getName().equals( ExperimentalFactorService.BATCH_FACTOR_NAME ) ) {
                             log.info( "Deleting analysis with batch factor, Id=" + existingAnalysis.getId() );
                             differentialExpressionAnalyzerService.deleteAnalysis( expressionExperiment,
                                     existingAnalysis );
