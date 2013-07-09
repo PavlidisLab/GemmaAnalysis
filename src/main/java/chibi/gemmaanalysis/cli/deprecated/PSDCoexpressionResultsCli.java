@@ -21,6 +21,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.util.AbstractSpringAwareCLI;
 
+@Deprecated
 public class PSDCoexpressionResultsCli extends AbstractSpringAwareCLI {
 
     private static final int DEFAULT_STRINGINCY = 2;

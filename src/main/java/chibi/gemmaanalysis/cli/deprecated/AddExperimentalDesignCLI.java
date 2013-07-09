@@ -34,6 +34,7 @@ import ubic.gemma.util.AbstractSpringAwareCLI;
  * @author klc
  * @version $Id$
  */
+@Deprecated
 public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
 
     // These were the previous EE ids that had no experimentalDesign
@@ -65,9 +66,7 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
     @Override
     protected void processOptions() {
         super.processOptions();
-
         this.eeService = getBean( ExpressionExperimentService.class );
-
     }
 
     /**

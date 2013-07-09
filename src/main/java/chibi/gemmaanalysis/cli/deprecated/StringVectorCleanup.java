@@ -43,6 +43,7 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
  * @author pavlidis
  * @version $Id$
  */
+@Deprecated
 public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
 
     @SuppressWarnings("static-access")

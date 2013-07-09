@@ -53,6 +53,7 @@ import chibi.gemmaanalysis.ProbeMapperCli;
  * @author pavlidis
  * @version $Id$
  */
+@Deprecated
 public class ProbeMapperGui extends JFrame {
     /**
      * 
@@ -73,7 +74,7 @@ public class ProbeMapperGui extends JFrame {
     private JButton outputFileBrowseButton = null;
     private JPanel locationMethodPanel = null;
     private JLabel locationMethodLabel = null;
-    JComboBox locationMethodComboBox = null;
+    JComboBox<String> locationMethodComboBox = null;
 
     ThreePrimeDistanceMethod method = ThreePrimeDistanceMethod.RIGHT;
     protected File inputFile;
@@ -353,9 +354,9 @@ public class ProbeMapperGui extends JFrame {
      * 
      * @return javax.swing.JComboBox
      */
-    private JComboBox getLocationMethodComboBox() {
+    private JComboBox<String> getLocationMethodComboBox() {
         if ( locationMethodComboBox == null ) {
-            locationMethodComboBox = new JComboBox();
+            locationMethodComboBox = new JComboBox<String>();
             locationMethodComboBox.setBounds( 209, 17, 234, 20 );
             locationMethodComboBox.addItem( "Center" );
             locationMethodComboBox.addItem( "3' end" );

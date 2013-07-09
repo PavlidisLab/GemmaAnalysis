@@ -31,6 +31,7 @@ import ubic.gemma.util.SequenceBinUtils;
  * @author pavlidis
  * @version $Id$
  */
+@Deprecated
 public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
 
     @Override
