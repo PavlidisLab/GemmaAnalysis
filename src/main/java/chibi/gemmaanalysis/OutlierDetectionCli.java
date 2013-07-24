@@ -26,13 +26,13 @@ import java.io.Writer;
 import java.util.Collection;
 import java.util.Date;
 
+import ubic.basecode.util.DateUtil;
 import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.util.DateUtil;
 
 /**
  * Checks experiments for outliers
