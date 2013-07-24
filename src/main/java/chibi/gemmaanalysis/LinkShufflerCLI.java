@@ -12,7 +12,7 @@ import java.util.List;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.genome.Gene;

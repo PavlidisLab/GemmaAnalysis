@@ -21,7 +21,7 @@ package chibi.gemmaanalysis.cli.deprecated;
 
 import java.util.HashSet;
 
-import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.common.description.Characteristic;

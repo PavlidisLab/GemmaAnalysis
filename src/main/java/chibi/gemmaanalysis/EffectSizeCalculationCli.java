@@ -9,7 +9,7 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 
 import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;

@@ -30,8 +30,8 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.StopWatch;
 
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;

@@ -8,7 +8,6 @@
 	</classpathentry>
 	<classpathentry including="**/*.java" kind="src" path="src/main/resources"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/baseCode"/>
-	<classpathentry combineaccessrules="false" kind="src" path="/Gemma"/>
 	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
 		<attributes>
 			<attribute name="optional" value="true"/>
@@ -25,5 +24,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry combineaccessrules="false" kind="src" path="/gemma-core"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

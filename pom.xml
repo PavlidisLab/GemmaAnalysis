@@ -44,6 +44,12 @@
 			<groupId>gemma</groupId>
 			<artifactId>gemma-core</artifactId>
 			<version>1.8-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>commons-lang</artifactId>
+					<groupId>commons-lang</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 	</dependencies>
 	<repositories>

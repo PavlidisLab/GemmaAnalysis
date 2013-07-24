@@ -30,7 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -601,32 +601,7 @@ public class LinkMatrix {
         this.stringency = stringency;
     }
 
-    // The following codes for testing matrix and output
-    public void testBitMatrix() {
-        CompressedBitMatrix<Long, Long> matrix = new CompressedBitMatrix<Long, Long>( 21, 11, 125 );
-        for ( int i = 0; i < 21; i++ )
-            matrix.addRowName( new Long( i ) );
-        for ( int i = 0; i < 11; i++ )
-            matrix.addColumnName( new Long( i ) );
-        matrix.set( 0, 0, 0 );
-        matrix.set( 0, 0, 12 );
-        matrix.set( 0, 0, 24 );
-        matrix.set( 20, 0, 0 );
-        matrix.set( 20, 0, 12 );
-        matrix.set( 20, 0, 24 );
-        matrix.set( 0, 10, 0 );
-        matrix.set( 0, 10, 12 );
-        matrix.set( 0, 10, 24 );
-        matrix.set( 20, 10, 0 );
-        matrix.set( 20, 10, 12 );
-        matrix.set( 20, 10, 24 );
-        try {
-            matrix.toFile( "test.File" );
-        } catch ( IOException e ) {
-            System.out.println( e.getMessage() );
-        }
-    }
-
+  
     public void toFile( String matrixFile, String eeMapFile ) throws IOException {
         linkCountMatrix.toFile( matrixFile );
         FileWriter out = new FileWriter( new File( eeMapFile ) );
