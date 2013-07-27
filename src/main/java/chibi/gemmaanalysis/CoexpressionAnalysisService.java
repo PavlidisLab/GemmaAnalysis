@@ -57,7 +57,7 @@ import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.util.ConfigUtils;
+import ubic.gemma.util.Settings;
 import cern.colt.list.DoubleArrayList;
 
 /**
@@ -382,7 +382,7 @@ public class CoexpressionAnalysisService {
         Collection<HistogramSampler> histSamplers = new HashSet<HistogramSampler>();
         for ( BioAssaySet bas : ees ) {
             ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-            String fileName = ConfigUtils.getAnalysisStoragePath() + ee.getShortName() + ".correlDist.txt";
+            String fileName = Settings.getAnalysisStoragePath() + ee.getShortName() + ".correlDist.txt";
             try {
                 HistogramSampler sampler = readHistogramFile( fileName );
                 if ( sampler == null )
