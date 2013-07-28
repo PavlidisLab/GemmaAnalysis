@@ -89,11 +89,6 @@
 					<name>Pavlab</name>
 					<url>file:///space/maven2</url>
 				</snapshotRepository>
-				<site>
-					<id>localDeploy</id>
-					<name>localDeploy</name>
-					<url>file:///space/gemmaData/baseCode-site</url>
-				</site>
 			</distributionManagement>
 		</profile>
 	</profiles>
