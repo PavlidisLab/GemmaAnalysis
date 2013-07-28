@@ -70,4 +70,31 @@
 			</releases>
 		</repository>
 	</repositories>
+	<profiles>
+		<profile>
+			<id>local-deploy</id>
+			<activation>
+				<property>
+					<name>deploy.local</name>
+				</property>
+			</activation>
+			<distributionManagement>
+				<repository>
+					<id>repo</id>
+					<name>Pavlab</name>
+					<url>file:///space/maven2</url>
+				</repository>
+				<snapshotRepository>
+					<id>repo</id>
+					<name>Pavlab</name>
+					<url>file:///space/maven2</url>
+				</snapshotRepository>
+				<site>
+					<id>localDeploy</id>
+					<name>localDeploy</name>
+					<url>file:///space/gemmaData/baseCode-site</url>
+				</site>
+			</distributionManagement>
+		</profile>
+	</profiles>
 </project>
