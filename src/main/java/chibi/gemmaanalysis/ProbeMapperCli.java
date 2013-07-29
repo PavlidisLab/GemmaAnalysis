@@ -315,7 +315,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         writeHeader( writer );
 
         for ( String probe : results.keySet() ) {
-            BlatAssociation best = BlatAssociationScorer.scoreResults( results.get( probe ) );
+            BlatAssociation best = BlatAssociationScorer.scoreResults( results.get( probe ), config );
             if ( best == null ) {
                 continue;
             }
