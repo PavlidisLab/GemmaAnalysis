@@ -86,8 +86,7 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
     protected void buildOptions() {
         super.buildOptions();
         Option outputFileOption = OptionBuilder.hasArg().withArgName( "filename" )
-                .withDescription( "Name and path of output file." )
-                .withLongOpt( "output" ).create( 'o' );
+                .withDescription( "Name and path of output file." ).withLongOpt( "output" ).create( 'o' );
 
         addOption( outputFileOption );
 
@@ -118,9 +117,9 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         if ( !hasOption( "output" ) ) {
             System.out.println( "Output file name is required." );
             throw new RuntimeException();
-        } else {
-            this.outputFileName = getOptionValue( "output" );
         }
+        this.outputFileName = getOptionValue( "output" );
+
         this.useRegression = hasOption( "regression" );
         this.useCombinedMethod = hasOption( "combined" );
         this.findByMedian = hasOption( "findByMedian" );
@@ -213,9 +212,8 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
             return outlierWrapper.findOutliersByCombinedMethod( ee, outlierDetector );
         }
 
-        else {
-            return outlierWrapper.findOutliers( ee, outlierDetector, useRegression, findByMedian );
-        }
+        return outlierWrapper.findOutliers( ee, outlierDetector, useRegression, findByMedian );
+
     }
 
     /*** Write results to the output file; file name must be given as argument ***/
