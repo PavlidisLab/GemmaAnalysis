@@ -32,6 +32,7 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.lang3.reflect.FieldUtils;
 
 import ubic.gemma.analysis.sequence.BlatAssociationScorer;
 import ubic.gemma.analysis.sequence.ProbeMapper;
@@ -471,8 +472,12 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         assert this.taxon != null;
         for ( BlatResult blatResult : blatResults ) {
             blatResult.getQuerySequence().setTaxon( taxon );
-            blatResult.getTargetChromosome().setTaxon( taxon );
-            blatResult.getTargetAlignedRegion().getChromosome().setTaxon( taxon );
+            try {
+                FieldUtils.writeField( blatResult.getTargetChromosome(), "taxon", taxon, true );
+                FieldUtils.writeField( blatResult.getTargetAlignedRegion().getChromosome(), "taxon", taxon, true );
+            } catch ( IllegalAccessException e ) {
+                e.printStackTrace();
+            }
         }
 
         Map<String, Collection<BlatAssociation>> allRes = probeMapper.processBlatResults( goldenPathAnalysis,
