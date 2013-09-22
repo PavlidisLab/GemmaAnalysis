@@ -29,9 +29,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
 import ubic.gemma.analysis.preprocess.OutlierDetails;
-import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.OutlierDetectionServiceWrapper;
-import ubic.gemma.analysis.preprocess.OutlierDetectionServiceWrapperImpl;
 import ubic.gemma.analysis.preprocess.OutlierDetectionTestDetails;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
@@ -135,8 +133,6 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         }
 
         File file = new File( outputFileName );
-        NumberFormat nf = NumberFormat.getInstance();
-        nf.setMaximumFractionDigits( 4 );
 
         try {
 
@@ -170,11 +166,11 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
                     OutlierDetectionTestDetails testDetails = findOutliers( ee );
 
                     if ( useCombinedMethod ) {
-                        writeResultsToFileCombined( bw, file, nf, ee, testDetails );
+                        writeResultsToFileCombined( bw, ee, testDetails );
                     } else if ( findByMedian ) {
-                        writeResultsToFileByMedian( bw, file, nf, ee, testDetails );
+                        writeResultsToFileByMedian( bw, ee, testDetails );
                     } else {
-                        writeResultsToFileBasic( bw, file, nf, ee, testDetails );
+                        writeResultsToFileBasic( bw, ee, testDetails );
                     }
 
                     bw.flush();
@@ -204,22 +200,22 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
 
         log.info( "Processing experiment " + ee.getShortName() );
 
-        OutlierDetectionService outlierDetector = this.getBean( OutlierDetectionService.class );
-        OutlierDetectionServiceWrapper outlierWrapper = new OutlierDetectionServiceWrapperImpl();
+        OutlierDetectionServiceWrapper outlierDetector = this.getBean( OutlierDetectionServiceWrapper.class );
 
         if ( useCombinedMethod ) {
             log.info( "Will combine results from two methods..." );
-            return outlierWrapper.findOutliersByCombinedMethod( ee, outlierDetector );
+            return outlierDetector.findOutliersByCombinedMethod( ee );
         }
 
-        return outlierWrapper.findOutliers( ee, outlierDetector, useRegression, findByMedian );
+        return outlierDetector.findOutliers( ee, useRegression, findByMedian );
 
     }
 
     /*** Write results to the output file; file name must be given as argument ***/
-    private void writeResultsToFileBasic( BufferedWriter bw, File file, NumberFormat nf, ExpressionExperiment ee,
+    private void writeResultsToFileBasic( BufferedWriter bw, ExpressionExperiment ee,
             OutlierDetectionTestDetails testDetails ) {
-
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
             ee = this.eeService.thawLite( ee );
@@ -253,9 +249,10 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
     }
 
     /*** Write results to the output file; file name must be given as argument ***/
-    private void writeResultsToFileByMedian( BufferedWriter bw, File file, NumberFormat nf, ExpressionExperiment ee,
+    private void writeResultsToFileByMedian( BufferedWriter bw, ExpressionExperiment ee,
             OutlierDetectionTestDetails testDetails ) {
-
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
             ee = this.eeService.thawLite( ee );
@@ -288,9 +285,10 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
     }
 
     /*** Write results to the output file; file name must be given as argument ***/
-    private void writeResultsToFileCombined( BufferedWriter bw, File file, NumberFormat nf, ExpressionExperiment ee,
+    private void writeResultsToFileCombined( BufferedWriter bw, ExpressionExperiment ee,
             OutlierDetectionTestDetails testDetails ) {
-
+        NumberFormat nf = NumberFormat.getInstance();
+        nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
             ee = this.eeService.thawLite( ee );
