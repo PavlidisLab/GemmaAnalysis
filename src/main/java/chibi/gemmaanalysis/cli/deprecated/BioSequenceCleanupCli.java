@@ -94,9 +94,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         if ( !this.arrayDesignsToProcess.isEmpty() ) {
             ads.addAll( this.arrayDesignsToProcess );
         } else if ( file != null ) {
-            try {
-                InputStream is = new FileInputStream( file );
-                BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
+            try (InputStream is = new FileInputStream( file );
+                    BufferedReader br = new BufferedReader( new InputStreamReader( is ) );) {
 
                 String id = null;
                 Collection<Long> ids = new HashSet<Long>();

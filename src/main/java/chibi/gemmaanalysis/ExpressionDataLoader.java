@@ -65,15 +65,7 @@ public class ExpressionDataLoader {
     }
 
     public void writeExpressionDataToFile( String paraFileName ) {
-        BufferedWriter writer = null;
-        try {
-            writer = new BufferedWriter( new FileWriter( this.analysisResultsPath + paraFileName ) );
-        } catch ( IOException e ) {
-            throw new RuntimeException( "File for output expression data " + this.analysisResultsPath + paraFileName
-                    + "could not be opened" );
-        }
-
-        try {
+        try (BufferedWriter writer = new BufferedWriter( new FileWriter( this.analysisResultsPath + paraFileName ) )) {
             writer.write( "Experiment Name: " + this.experimentName + "\n" );
             writer.write( "Accession: " + this.experiment.getAccession().getAccession() + "\n" );
             writer.write( "Name: " + this.experiment.getName() + "\n" );
@@ -95,7 +87,6 @@ public class ExpressionDataLoader {
                 writer.write( dataVector.getQuantitationType().getType().getValue() + "\t" );
                 writer.write( "\n" );
             }
-            writer.close();
         } catch ( IOException e ) {
             log.error( "Error in write data into file" );
         }

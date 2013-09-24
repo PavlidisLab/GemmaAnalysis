@@ -167,97 +167,98 @@ public class LinkMatrix {
     public LinkMatrix( String matrixFile, String eeMapFile, ExpressionExperimentService eeService,
             GeneService geneService, GeneOntologyService goService ) throws IOException {
         this.goService = goService;
-        BufferedReader in = new BufferedReader( new FileReader( new File( matrixFile ) ) );
-        String row = null;
-        int i;
-        boolean hasConfig = false, hasRowNames = false, hasColNames = false;
-        Collection<Long> geneIds = new HashSet<Long>();
-        while ( ( row = in.readLine() ) != null ) {
-            row = row.trim();
-            if ( StringUtils.isBlank( row ) ) continue;
-            String[] subItems = row.split( "\t" );
-            for ( i = 0; i < subItems.length; i++ )
-                if ( StringUtils.isBlank( subItems[i] ) ) break;
-            if ( i != subItems.length ) {
-                String mesg = "The empty Element is not allowed: " + row;
-                log.info( mesg );
-                throw new IOException( mesg );
-            }
-            if ( !hasConfig ) {
-                if ( subItems.length != 3 ) {
-                    String mesg = "Data File Format Error for configuration " + row;
-                    log.info( mesg );
-                    throw new IOException( mesg );
-                }
-                linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ),
-                        Integer.valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
-                hasConfig = true;
-            } else if ( !hasRowNames ) {
-                if ( subItems.length != linkCountMatrix.rows() ) {
-                    String mesg = "Data File Format Error for Row Names " + row;
-                    log.info( mesg );
-                    throw new IOException( mesg );
-                }
-                for ( i = 0; i < subItems.length; i++ ) {
-                    linkCountMatrix.addRowName( new Long( subItems[i].trim() ) );
-                    geneIds.add( new Long( subItems[i].trim() ) );
-                }
-                hasRowNames = true;
-            } else if ( !hasColNames ) {
-                if ( subItems.length != linkCountMatrix.columns() ) {
-                    String mesg = "Data File Format Error for Col Names " + row;
-                    log.info( mesg );
-                    throw new IOException( mesg );
-                }
-                for ( i = 0; i < subItems.length; i++ ) {
-                    linkCountMatrix.addColumnName( new Long( subItems[i].trim() ) );
-                    geneIds.add( new Long( subItems[i].trim() ) );
-                }
-                hasColNames = true;
-            } else {
-                int rowIndex = Integer.valueOf( subItems[0] );
-                int colIndex = Integer.valueOf( subItems[1] );
-                double values[] = new double[subItems.length - 2];
-                for ( i = 2; i < subItems.length; i++ )
-                    values[i - 2] = Double.longBitsToDouble( Long.parseLong( subItems[i], 16 ) );
-                linkCountMatrix.set( rowIndex, colIndex, values );
-            }
-        }
-        in.close();
-
-        Collection<Gene> allGenes = geneService.loadMultiple( geneIds );
-        for ( Gene gene : allGenes ) {
-            geneMap.put( gene.getId(), gene );
-        }
-        if ( eeMapFile != null ) {
-            in = new BufferedReader( new FileReader( new File( eeMapFile ) ) );
-            this.eeIndexMap = new HashMap<Long, Integer>();
-            int vectorSize = 0;
+        try (BufferedReader in = new BufferedReader( new FileReader( new File( matrixFile ) ) );) {
+            String row = null;
+            int i;
+            boolean hasConfig = false, hasRowNames = false, hasColNames = false;
+            Collection<Long> geneIds = new HashSet<Long>();
             while ( ( row = in.readLine() ) != null ) {
                 row = row.trim();
                 if ( StringUtils.isBlank( row ) ) continue;
                 String[] subItems = row.split( "\t" );
-                if ( subItems.length != 2 ) continue;
                 for ( i = 0; i < subItems.length; i++ )
                     if ( StringUtils.isBlank( subItems[i] ) ) break;
                 if ( i != subItems.length ) {
-                    String mesg = "Data File Format Error for ee Map " + row;
+                    String mesg = "The empty Element is not allowed: " + row;
                     log.info( mesg );
                     throw new IOException( mesg );
                 }
-                this.eeIndexMap.put( new Long( subItems[0].trim() ), new Integer( subItems[1].trim() ) );
-                if ( Integer.valueOf( subItems[1].trim() ).intValue() > vectorSize )
-                    vectorSize = Integer.valueOf( subItems[1].trim() ).intValue();
+                if ( !hasConfig ) {
+                    if ( subItems.length != 3 ) {
+                        String mesg = "Data File Format Error for configuration " + row;
+                        log.info( mesg );
+                        throw new IOException( mesg );
+                    }
+                    linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ),
+                            Integer.valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
+                    hasConfig = true;
+                } else if ( !hasRowNames ) {
+                    if ( subItems.length != linkCountMatrix.rows() ) {
+                        String mesg = "Data File Format Error for Row Names " + row;
+                        log.info( mesg );
+                        throw new IOException( mesg );
+                    }
+                    for ( i = 0; i < subItems.length; i++ ) {
+                        linkCountMatrix.addRowName( new Long( subItems[i].trim() ) );
+                        geneIds.add( new Long( subItems[i].trim() ) );
+                    }
+                    hasRowNames = true;
+                } else if ( !hasColNames ) {
+                    if ( subItems.length != linkCountMatrix.columns() ) {
+                        String mesg = "Data File Format Error for Col Names " + row;
+                        log.info( mesg );
+                        throw new IOException( mesg );
+                    }
+                    for ( i = 0; i < subItems.length; i++ ) {
+                        linkCountMatrix.addColumnName( new Long( subItems[i].trim() ) );
+                        geneIds.add( new Long( subItems[i].trim() ) );
+                    }
+                    hasColNames = true;
+                } else {
+                    int rowIndex = Integer.valueOf( subItems[0] );
+                    int colIndex = Integer.valueOf( subItems[1] );
+                    double values[] = new double[subItems.length - 2];
+                    for ( i = 2; i < subItems.length; i++ )
+                        values[i - 2] = Double.longBitsToDouble( Long.parseLong( subItems[i], 16 ) );
+                    linkCountMatrix.set( rowIndex, colIndex, values );
+                }
             }
-            eeMap = new HashMap<Integer, ExpressionExperiment>();
-            for ( Long iter : this.eeIndexMap.keySet() ) {
-                ExpressionExperiment ee = eeService.load( iter );
-                eeMap.put( this.eeIndexMap.get( iter ), ee );
+
+            Collection<Gene> allGenes = geneService.loadMultiple( geneIds );
+            for ( Gene gene : allGenes ) {
+                geneMap.put( gene.getId(), gene );
             }
-            log.info( "Got " + this.eeIndexMap.size() + " in EE MAP" );
-            in.close();
+            if ( eeMapFile != null ) {
+                try (BufferedReader in2 = new BufferedReader( new FileReader( new File( eeMapFile ) ) );) {
+                    this.eeIndexMap = new HashMap<Long, Integer>();
+                    int vectorSize = 0;
+                    while ( ( row = in2.readLine() ) != null ) {
+                        row = row.trim();
+                        if ( StringUtils.isBlank( row ) ) continue;
+                        String[] subItems = row.split( "\t" );
+                        if ( subItems.length != 2 ) continue;
+                        for ( i = 0; i < subItems.length; i++ )
+                            if ( StringUtils.isBlank( subItems[i] ) ) break;
+                        if ( i != subItems.length ) {
+                            String mesg = "Data File Format Error for ee Map " + row;
+                            log.info( mesg );
+                            throw new IOException( mesg );
+                        }
+                        this.eeIndexMap.put( new Long( subItems[0].trim() ), new Integer( subItems[1].trim() ) );
+                        if ( Integer.valueOf( subItems[1].trim() ).intValue() > vectorSize )
+                            vectorSize = Integer.valueOf( subItems[1].trim() ).intValue();
+                    }
+                    eeMap = new HashMap<Integer, ExpressionExperiment>();
+                    for ( Long iter : this.eeIndexMap.keySet() ) {
+                        ExpressionExperiment ee = eeService.load( iter );
+                        eeMap.put( this.eeIndexMap.get( iter ), ee );
+                    }
+                    log.info( "Got " + this.eeIndexMap.size() + " in EE MAP" );
+
+                }
+            }
+            computeShift();
         }
-        computeShift();
     }
 
     /**
@@ -601,7 +602,6 @@ public class LinkMatrix {
         this.stringency = stringency;
     }
 
-  
     public void toFile( String matrixFile, String eeMapFile ) throws IOException {
         linkCountMatrix.toFile( matrixFile );
         FileWriter out = new FileWriter( new File( eeMapFile ) );

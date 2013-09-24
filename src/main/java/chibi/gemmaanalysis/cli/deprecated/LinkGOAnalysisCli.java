@@ -232,9 +232,9 @@ public class LinkGOAnalysisCli extends AbstractSpringAwareCLI {
         if ( fileName == null ) return ees;
         Collection<ExpressionExperiment> candidates = new HashSet<ExpressionExperiment>();
         Collection<String> eeNames = new HashSet<String>();
-        try {
-            InputStream is = new FileInputStream( fileName );
-            BufferedReader br = new BufferedReader( new InputStreamReader( is ) );
+        try (InputStream is = new FileInputStream( fileName );
+                BufferedReader br = new BufferedReader( new InputStreamReader( is ) );) {
+
             String shortName = null;
             while ( ( shortName = br.readLine() ) != null ) {
                 if ( StringUtils.isBlank( shortName ) ) continue;

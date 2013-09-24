@@ -91,11 +91,11 @@ public class LinkGraphClustering {
      * @param fileName
      */
     public void readTreeFromFile( String fileName ) {
-        try {
+        try (FileInputStream istream = new FileInputStream( fileName );
+                ObjectInputStream q = new ObjectInputStream( istream )) {
             /* Create a file to write the serialized tree to. */
             /* Open the file and set to read objects from it. */
-            FileInputStream istream = new FileInputStream( fileName );
-            ObjectInputStream q = new ObjectInputStream( istream );
+
             /* Read a tree object, and all the subtrees */
             this.eligibleNodes = ( ObjectArrayList ) q.readObject();
         } catch ( Exception e ) {
@@ -128,11 +128,10 @@ public class LinkGraphClustering {
      * @param fileName
      */
     public void saveToFile( String fileName ) {
-        try {
-            /* Create a file to write the serialized tree to. */
-            FileOutputStream ostream = new FileOutputStream( fileName );
-            /* Create the output stream */
-            ObjectOutputStream p = new ObjectOutputStream( ostream );
+        try ( /* Create a file to write the serialized tree to. */
+        FileOutputStream ostream = new FileOutputStream( fileName );
+        /* Create the output stream */
+        ObjectOutputStream p = new ObjectOutputStream( ostream );) {
 
             p.writeObject( this.eligibleNodes ); // Write the tree to the stream.
             p.flush();
@@ -147,9 +146,9 @@ public class LinkGraphClustering {
      * @param root
      */
     public void saveToTreeViewFile( String filePrefix, TreeNode root ) {
-        try {
-            FileWriter cdtOut = new FileWriter( new File( filePrefix + ".cdt" ) );
-            FileWriter gtrOut = new FileWriter( new File( filePrefix + ".gtr" ) );
+        try (FileWriter cdtOut = new FileWriter( new File( filePrefix + ".cdt" ) );
+                FileWriter gtrOut = new FileWriter( new File( filePrefix + ".gtr" ) );) {
+
             ObjectArrayList leafNodes = new ObjectArrayList();
             ObjectArrayList internalNodes = new ObjectArrayList();
             HashMap<TreeNode, String> nodeNames = new HashMap<TreeNode, String>();
