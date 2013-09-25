@@ -238,6 +238,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
     }
 
+    @SuppressWarnings("resource")
     @Override
     protected Exception doWork( String[] args ) {
 
@@ -721,7 +722,7 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
 
             // this is where bug 1604 showed its face
             Map<Gene, QueryGeneCoexpression> coexp = pca.linkAnalysis( pargene, exps, stringency, false, 0 ); // low
-                                                                                                                          // stringency.
+                                                                                                              // stringency.
 
             if ( coexp == null || coexp.isEmpty() ) {
                 continue;
@@ -740,8 +741,8 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
             }
 
             for ( CoexpressedGenePairValueObject cvo : cvos ) {
-                String output = output_half + "," + cvo.getCoexpressedGeneId() + "," + csize + "," + cvo.getPositiveScore() + ","
-                        + cvo.getNegativeScore();
+                String output = output_half + "," + cvo.getCoexpressedGeneId() + "," + csize + ","
+                        + cvo.getPositiveScore() + "," + cvo.getNegativeScore();
                 pco.println( output );
 
             }
@@ -1174,14 +1175,13 @@ public class PARMapperAnalyzeCLI extends AbstractSpringAwareCLI {
     private void readPARFile( String file ) {
         log.info( "Reading file: " + inFile );
 
-        BufferedReader in;
         Collection<String[]> fRecords = new ArrayList<String[]>();
         Map<String, Integer> fHash = null;
 
         String header;
 
-        try {
-            in = new BufferedReader( new FileReader( file ) );
+        try (BufferedReader in = new BufferedReader( new FileReader( file ) );) {
+
             String line;
             header = in.readLine();
             fHash = getIndices( header );
