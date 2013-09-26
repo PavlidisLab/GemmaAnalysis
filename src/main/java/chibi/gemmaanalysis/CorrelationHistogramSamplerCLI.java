@@ -95,12 +95,11 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
             header += ee.getShortName() + " ";
         }
 
-        try {
-            PrintWriter out = new PrintWriter( new FileWriter( outFileName ) );
+        try (PrintWriter out = new PrintWriter( new FileWriter( outFileName ) );) {
             out.println( header );
             for ( double d : samples )
                 out.println( d );
-            out.close();
+
         } catch ( IOException e ) {
             return e;
         }

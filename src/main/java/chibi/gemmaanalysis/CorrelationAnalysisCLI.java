@@ -135,39 +135,37 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
             matrixOut.setColNameMap( geneNameMap );
             matrixOut.writeMatrix( correlationMatrix, false );
 
-            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.row_names.txt" ) );
-            List<Gene> rows = correlationMatrix.getRowNames();
-            for ( Gene row : rows ) {
-                out.println( row );
+            try (PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.row_names.txt" ) );) {
+                List<Gene> rows = correlationMatrix.getRowNames();
+                for ( Gene row : rows ) {
+                    out.println( row );
+                }
             }
-            out.close();
 
-            out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.col_names.txt" ) );
-            Collection<BioAssaySet> cols = correlationMatrix.getSliceNames();
-            for ( BioAssaySet bas : cols ) {
-                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                out.println( ee.getShortName() );
+            try (PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".corr.col_names.txt" ) );) {
+                Collection<BioAssaySet> cols = correlationMatrix.getSliceNames();
+                for ( BioAssaySet bas : cols ) {
+                    ExpressionExperiment ee = ( ExpressionExperiment ) bas;
+                    out.println( ee.getShortName() );
+                }
             }
-            out.close();
-
-            // out = new MatrixWriter(outFilePrefix + ".max_corr.txt", formatter,
-            // geneNameMap, geneNameMap);
-            // out.writeMatrix(maxCorrelationMatrix, true);
-            // out.close();
-            //
-            // out = new MatrixWriter(outFilePrefix + ".max_corr.pVal.txt",
-            // formatter, geneNameMap, geneNameMap);
-            // out.writeMatrix(pValMatrix, true);
-            // out.close();
-            //
-            // out = new MatrixWriter(outFilePrefix + ".effect_size.txt",
-            // formatter, geneNameMap, geneNameMap);
-            // out.writeMatrix(effectSizeMatrix, true);
-            // out.close();
-
         } catch ( IOException e ) {
             return e;
         }
+        // out = new MatrixWriter(outFilePrefix + ".max_corr.txt", formatter,
+        // geneNameMap, geneNameMap);
+        // out.writeMatrix(maxCorrelationMatrix, true);
+        // out.close();
+        //
+        // out = new MatrixWriter(outFilePrefix + ".max_corr.pVal.txt",
+        // formatter, geneNameMap, geneNameMap);
+        // out.writeMatrix(pValMatrix, true);
+        // out.close();
+        //
+        // out = new MatrixWriter(outFilePrefix + ".effect_size.txt",
+        // formatter, geneNameMap, geneNameMap);
+        // out.writeMatrix(effectSizeMatrix, true);
+        // out.close();
 
         return null;
     }

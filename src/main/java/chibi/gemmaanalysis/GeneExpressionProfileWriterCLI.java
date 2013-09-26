@@ -86,9 +86,8 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
             }
             Map<Gene, Collection<CompositeSequence>> gene2css = coexpAnalysisService.getGene2CsMap( css );
             ExpressionDataDoubleMatrix dataMatrix = coexpAnalysisService.getExpressionDataMatrix( ee, filterConfig );
-            try {
-                String fileName = outFilePrefix + "." + ee.getShortName() + ".txt";
-                PrintWriter out = new PrintWriter( new FileWriter( fileName ) );
+            String fileName = outFilePrefix + "." + ee.getShortName() + ".txt";
+            try (PrintWriter out = new PrintWriter( new FileWriter( fileName ) );) {
                 for ( Gene gene : genes ) {
                     Collection<CompositeSequence> c = gene2css.get( gene );
                     for ( CompositeSequence cs : c ) {
@@ -111,7 +110,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
                         out.println( buf.toString() );
                     }
                 }
-                out.close();
+
             } catch ( IOException e ) {
                 return e;
             }

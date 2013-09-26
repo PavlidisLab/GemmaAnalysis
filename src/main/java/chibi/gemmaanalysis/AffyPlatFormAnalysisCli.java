@@ -239,6 +239,8 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
                 double ss = DescriptiveWithMissing.sumOfSquares( valList );
                 value = Descriptive.standardDeviation( DescriptiveWithMissing.variance( N, sum, ss ) );
                 break;
+            default:
+                break;
         }
         if ( Double.isNaN( value ) ) value = 0.0;
         return value;
@@ -306,8 +308,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             }
         }
         sortedList.sort();
-        try {
-            PrintStream output = new PrintStream( new FileOutputStream( new File( this.outFileName ) ) );
+        try (PrintStream output = new PrintStream( new FileOutputStream( new File( this.outFileName ) ) );) {
             for ( int i = 0; i < sortedList.size(); i++ ) {
                 SortedElement oneElement = ( SortedElement ) sortedList.get( i );
                 if ( oneElement.getDE().getName().toUpperCase().contains( "AFFY" ) ) continue;

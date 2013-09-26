@@ -163,11 +163,9 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             LinkStatistics realStats = lss.analyze( expressionExperiments, genes, taxon, false, filterNonSpecific );
             log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
-
-            try {
-                File outputFile = new File( "link-data." + taxon.getCommonName().replaceAll( "\\s", "_" ) + ".txt" );
-                log.info( "Writing 'real' links to " + outputFile );
-                Writer linksOut = new BufferedWriter( new FileWriter( outputFile ) );
+            File outputFile = new File( "link-data." + taxon.getCommonName().replaceAll( "\\s", "_" ) + ".txt" );
+            log.info( "Writing 'real' links to " + outputFile );
+            try (Writer linksOut = new BufferedWriter( new FileWriter( outputFile ) );) {
                 realStats.writeLinks( linksOut, 0 );
             } catch ( IOException e ) {
                 return e;
@@ -185,10 +183,9 @@ public class LinkStatisticsCLI extends ExpressionExperimentManipulatingCLI {
             shuffleRuns.add( sr.getLinkConfirmationStats() );
 
             if ( doShuffledOutput ) {
-                try {
-                    File shuffledOutputFile = new File( "shuffled-link-data-" + i + ".txt" );
-                    log.info( "Writing shuffled links for iteration " + i + " to " + shuffledOutputFile );
-                    Writer linksOut = new BufferedWriter( new FileWriter( shuffledOutputFile ) );
+                File shuffledOutputFile = new File( "shuffled-link-data-" + i + ".txt" );
+                log.info( "Writing shuffled links for iteration " + i + " to " + shuffledOutputFile );
+                try (Writer linksOut = new BufferedWriter( new FileWriter( shuffledOutputFile ) );) {
                     sr.writeLinks( linksOut, 2 );
                 } catch ( IOException e ) {
                     return e;

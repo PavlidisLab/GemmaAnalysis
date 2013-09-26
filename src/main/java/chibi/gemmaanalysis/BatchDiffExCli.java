@@ -123,8 +123,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
         MatrixWriter mw = new MatrixWriter();
-        FileWriter fw = new FileWriter( new File( filename ) );
-        mw.write( fw, mat, null, true, true );
+        try (FileWriter fw = new FileWriter( new File( filename ) );) {
+            mw.write( fw, mat, null, true, true );
+        }
     }
 
     /**
@@ -200,8 +201,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      */
     @Override
     protected void processExperiment( ExpressionExperiment ee ) {
-        Writer detailFile = null;
-        try {
+        String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
+
+        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );) {
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
@@ -408,8 +410,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /*
              * Print out details
              */
-            String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
-            detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );
 
             detailFile
                     .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tBEFOREQVAL\tBATCHQVAL\tBATAFTERQVAL\tAFTERQVAL\n" );
@@ -460,14 +460,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         } catch ( Exception e ) {
             log.error( e, e );
             errorObjects.add( ee + e.getMessage() );
-        } finally {
-            if ( detailFile != null ) {
-                try {
-                    detailFile.close();
-                } catch ( IOException e ) {
-                    log.error( e, e );
-                }
-            }
         }
     }
 

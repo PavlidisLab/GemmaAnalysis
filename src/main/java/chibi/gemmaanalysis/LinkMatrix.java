@@ -181,6 +181,7 @@ public class LinkMatrix {
                 if ( i != subItems.length ) {
                     String mesg = "The empty Element is not allowed: " + row;
                     log.info( mesg );
+                    in.close();
                     throw new IOException( mesg );
                 }
                 if ( !hasConfig ) {
@@ -242,6 +243,7 @@ public class LinkMatrix {
                         if ( i != subItems.length ) {
                             String mesg = "Data File Format Error for ee Map " + row;
                             log.info( mesg );
+                            in2.close();
                             throw new IOException( mesg );
                         }
                         this.eeIndexMap.put( new Long( subItems[0].trim() ), new Integer( subItems[1].trim() ) );

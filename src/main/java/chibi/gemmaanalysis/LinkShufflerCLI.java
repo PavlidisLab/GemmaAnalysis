@@ -111,8 +111,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
             log.info( realStats.getTotalLinkCount() + " gene links in total" );
             confStats = realStats.getLinkConfirmationStats();
 
-            try {
-                Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data.txt" ) ) );
+            try (Writer linksOut = new BufferedWriter( new FileWriter( new File( "link-data.txt" ) ) );) {
                 realStats.writeLinks( linksOut, 0 );
             } catch ( IOException e ) {
                 return e;
@@ -130,9 +129,8 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
             shuffleRuns.add( sr.getLinkConfirmationStats() );
 
             if ( doShuffledOutput ) {
-                try {
-                    Writer linksOut = new BufferedWriter(
-                            new FileWriter( new File( "shuffled-link-data-" + i + ".txt" ) ) );
+                try (Writer linksOut = new BufferedWriter( new FileWriter(
+                        new File( "shuffled-link-data-" + i + ".txt" ) ) );) {
                     sr.writeLinks( linksOut, 2 );
                 } catch ( IOException e ) {
                     return e;
@@ -142,8 +140,7 @@ public class LinkShufflerCLI extends ExpressionExperimentManipulatingCLI {
         }
 
         if ( numIterations > 0 ) {
-            try {
-                Writer out = new PrintWriter( outFileName );
+            try (Writer out = new PrintWriter( outFileName );) {
                 lss.writeStats( out, confStats, shuffleRuns );
             } catch ( IOException e ) {
                 return e;

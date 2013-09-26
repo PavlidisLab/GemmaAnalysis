@@ -221,9 +221,9 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
         String query = "";
         if ( queryGenesOnly == true ) query = "-qgOnly";
         String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
-        BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
-        out.write( "Query_Gene\tTotal_Degree\n" );
-        out.close();
+        try (BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );) {
+            out.write( "Query_Gene\tTotal_Degree\n" );
+        }
     }
 
     /**
@@ -343,12 +343,12 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
      * @throws IOException
      */
     private void printDegreeCount( Map<String, Collection<String>> coexpressionList ) throws IOException {
-        try {
-            String dir = "../";
-            String query = "";
-            if ( queryGenesOnly == true ) query = "-qgOnly";
-            String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
-            BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );
+
+        String dir = "../";
+        String query = "";
+        if ( queryGenesOnly == true ) query = "-qgOnly";
+        String outFile = getOptionValue( 'g' ) + "Stringency" + getOptionValue( 's' ) + query + "-Summary.txt";
+        try (BufferedWriter out = new BufferedWriter( new FileWriter( dir + outFile, true ) );) {
 
             for ( String queryGene : coexpressionList.keySet() ) {
 
@@ -356,7 +356,7 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
                 out.write( queryGene + "\t" + degree + "\n" );
 
             }
-            out.close();
+
         } catch ( IOException e ) {
 
             e.printStackTrace();
@@ -374,14 +374,14 @@ public class Gene2GeneCoexpressionResultsCli extends AbstractSpringAwareCLI {
     private Collection<String> readGeneListFile( String inFile ) throws IOException {
         log.info( "Reading " + inFile );
         Collection<String> lines = new ArrayList<String>();
-        BufferedReader in = new BufferedReader( new FileReader( inFile ) );
-        String line;
-        while ( ( line = in.readLine() ) != null ) {
-            // if ( line.startsWith( "#" ) ) continue;
-            String s = line.trim();
-            lines.add( s );
+        try (BufferedReader in = new BufferedReader( new FileReader( inFile ) );) {
+            String line;
+            while ( ( line = in.readLine() ) != null ) {
+                // if ( line.startsWith( "#" ) ) continue;
+                String s = line.trim();
+                lines.add( s );
+            }
         }
-        in.close();
         return lines;
     }
 

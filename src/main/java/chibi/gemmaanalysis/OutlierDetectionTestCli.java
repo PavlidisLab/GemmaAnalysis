@@ -138,53 +138,52 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
 
             file.createNewFile();
 
-            FileWriter fw = new FileWriter( file.getAbsoluteFile() );
-            BufferedWriter bw = new BufferedWriter( fw );
+            try (FileWriter fw = new FileWriter( file.getAbsoluteFile() ); BufferedWriter bw = new BufferedWriter( fw );) {
 
-            if ( useCombinedMethod )
-                bw.write( HEADER_COMBINED );
-            else if ( findByMedian && useRegression )
-                bw.write( HEADER_BY_MEDIAN_REG );
-            else if ( findByMedian )
-                bw.write( HEADER_BY_MEDIAN );
-            else if ( useRegression ) {
-                bw.write( HEADER_REG );
-            } else {
-                bw.write( HEADER );
-            }
-
-            bw.newLine();
-
-            for ( BioAssaySet bas : expressionExperiments ) {
-
-                if ( !( bas instanceof ExpressionExperiment ) ) continue;
-
-                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-
-                try {
-
-                    OutlierDetectionTestDetails testDetails = findOutliers( ee );
-
-                    if ( useCombinedMethod ) {
-                        writeResultsToFileCombined( bw, ee, testDetails );
-                    } else if ( findByMedian ) {
-                        writeResultsToFileByMedian( bw, ee, testDetails );
-                    } else {
-                        writeResultsToFileBasic( bw, ee, testDetails );
-                    }
-
-                    bw.flush();
-
-                } catch ( Exception e ) {
-                    log.error( "Error while processing " + ee + ": " + e.getMessage() );
-                    errorObjects.add( ee + ": " + e.getMessage() );
-                    continue;
+                if ( useCombinedMethod )
+                    bw.write( HEADER_COMBINED );
+                else if ( findByMedian && useRegression )
+                    bw.write( HEADER_BY_MEDIAN_REG );
+                else if ( findByMedian )
+                    bw.write( HEADER_BY_MEDIAN );
+                else if ( useRegression ) {
+                    bw.write( HEADER_REG );
+                } else {
+                    bw.write( HEADER );
                 }
 
-                successObjects.add( ee.toString() );
-            }
+                bw.newLine();
 
-            bw.close();
+                for ( BioAssaySet bas : expressionExperiments ) {
+
+                    if ( !( bas instanceof ExpressionExperiment ) ) continue;
+
+                    ExpressionExperiment ee = ( ExpressionExperiment ) bas;
+
+                    try {
+
+                        OutlierDetectionTestDetails testDetails = findOutliers( ee );
+
+                        if ( useCombinedMethod ) {
+                            writeResultsToFileCombined( bw, ee, testDetails );
+                        } else if ( findByMedian ) {
+                            writeResultsToFileByMedian( bw, ee, testDetails );
+                        } else {
+                            writeResultsToFileBasic( bw, ee, testDetails );
+                        }
+
+                        bw.flush();
+
+                    } catch ( Exception e ) {
+                        log.error( "Error while processing " + ee + ": " + e.getMessage() );
+                        errorObjects.add( ee + ": " + e.getMessage() );
+                        continue;
+                    }
+
+                    successObjects.add( ee.toString() );
+                }
+
+            }
 
         } catch ( Exception e ) {
             log.error( "Caught exception: " + e );

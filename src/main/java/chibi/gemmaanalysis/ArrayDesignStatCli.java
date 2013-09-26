@@ -137,8 +137,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         }
         Map<Long, Boolean> isMerged = adService.isMerged( adIds );
         Map<Long, Boolean> isSubsumed = adService.isSubsumed( adIds );
-        try {
-            FileWriter out = new FileWriter( new File( "arraydesignsummary.txt" ) );
+        try (FileWriter out = new FileWriter( new File( "arraydesignsummary.txt" ) );) {
             out.write( "taxon\tarray design name\tgenes\tprobes\tcsKnownGenes\tcsPredictedGenes\tcsProbeAlignedRegions\tcsBioSequences\tcsBlatResults" );
             for ( int i = 0; i <= MAXIMUM_COUNT; i++ )
                 out.write( "\tP2G_" + i );

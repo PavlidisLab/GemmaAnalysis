@@ -79,6 +79,8 @@ public class TreeNode implements Comparable<TreeNode>, Serializable {
             case TreeNode.ORDER:
                 res = order.compareTo( o.order ) * ( -1 );
                 break;
+            default:
+                break;
         }
         return res;
         // return maskBits.compareTo(o.maskBits)*(-1);

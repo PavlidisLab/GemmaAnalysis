@@ -583,10 +583,9 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
                         // return;}
                     }
 
-                    try {
-                        OutputStream out = new BufferedOutputStream( new FileOutputStream( selectedFile ) );
+                    try (OutputStream out = new BufferedOutputStream( new FileOutputStream( selectedFile ) );) {
                         display.saveImage( out, fType, 1.0 );
-                        out.close();
+
                     } catch ( IOException e ) {
                         e.printStackTrace();
                     }

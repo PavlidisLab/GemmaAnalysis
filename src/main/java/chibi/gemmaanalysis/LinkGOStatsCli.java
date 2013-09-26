@@ -235,8 +235,7 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
     }
 
     private void outputRealLinks() {
-        try {
-            FileWriter out = new FileWriter( new File( "analysis.txt" ) );
+        try (FileWriter out = new FileWriter( new File( "analysis.txt" ) );) {
 
             out.write( "Overlap" );
             for ( int j = 0; j < GO_MAXIMUM_COUNT; j++ )
@@ -253,7 +252,6 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
 
             // output( realStats, "realGODist.png" );
 
-            out.close();
         } catch ( Exception e ) {
             e.printStackTrace();
         }
@@ -504,77 +502,79 @@ public class LinkGOStatsCli extends ExpressionExperimentManipulatingCLI {
             throw new IOException( "Cannot read from " + filepath );
         }
         log.info( "Loading links from " + filepath );
-        BufferedReader in = new BufferedReader( new FileReader( f ) );
+        try (BufferedReader in = new BufferedReader( new FileReader( f ) );) {
 
-        Collection<GeneLink> links = new HashSet<GeneLink>();
+            Collection<GeneLink> links = new HashSet<GeneLink>();
 
-        Map<String, Gene> geneCache = new HashMap<String, Gene>();
+            Map<String, Gene> geneCache = new HashMap<String, Gene>();
 
-        int count = 0;
-        while ( in.ready() ) {
-            String line = in.readLine().trim();
-            if ( line.startsWith( "#" ) ) {
-                continue;
-            }
+            int count = 0;
+            while ( in.ready() ) {
+                String line = in.readLine().trim();
+                if ( line.startsWith( "#" ) ) {
+                    continue;
+                }
 
-            String[] strings = StringUtils.split( line );
-            String g1 = strings[0];
-            String g2 = strings[1];
+                String[] strings = StringUtils.split( line );
+                String g1 = strings[0];
+                String g2 = strings[1];
 
-            // skip any self links.
-            if ( g1.equals( g2 ) ) continue;
+                // skip any self links.
+                if ( g1.equals( g2 ) ) continue;
 
-            String support = strings[2];// positive only!
+                String support = strings[2];// positive only!
 
-            if ( support.equals( "0" ) ) continue;
+                if ( support.equals( "0" ) ) continue;
 
-            Gene gene1 = null;
-            Gene gene2 = null;
+                Gene gene1 = null;
+                Gene gene2 = null;
 
-            if ( geneCache.containsKey( g1 ) ) {
-                gene1 = geneCache.get( g1 );
-            } else {
-                Collection<Gene> genes = geneService.findByOfficialSymbol( g1 );
-                for ( Gene gene : genes ) {
-                    if ( gene.getTaxon().equals( taxon ) ) {
-                        geneCache.put( g1, gene );
-                        gene1 = gene;
-                        coveredGenes.add( gene1 );
-                        this.geneMap.put( gene1.getId(), gene1 );
-                        break;
+                if ( geneCache.containsKey( g1 ) ) {
+                    gene1 = geneCache.get( g1 );
+                } else {
+                    Collection<Gene> genes = geneService.findByOfficialSymbol( g1 );
+                    for ( Gene gene : genes ) {
+                        if ( gene.getTaxon().equals( taxon ) ) {
+                            geneCache.put( g1, gene );
+                            gene1 = gene;
+                            coveredGenes.add( gene1 );
+                            this.geneMap.put( gene1.getId(), gene1 );
+                            break;
+                        }
+                    }
+
+                }
+                if ( geneCache.containsKey( g2 ) ) {
+                    gene2 = geneCache.get( g2 );
+                } else {
+                    Collection<Gene> genes = geneService.findByOfficialSymbol( g2 );
+                    for ( Gene gene : genes ) {
+                        if ( gene.getTaxon().equals( taxon ) ) {
+                            geneCache.put( g2, gene );
+                            gene2 = gene;
+                            coveredGenes.add( gene2 );
+                            this.geneMap.put( gene2.getId(), gene2 );
+                            break;
+                        }
                     }
                 }
 
-            }
-            if ( geneCache.containsKey( g2 ) ) {
-                gene2 = geneCache.get( g2 );
-            } else {
-                Collection<Gene> genes = geneService.findByOfficialSymbol( g2 );
-                for ( Gene gene : genes ) {
-                    if ( gene.getTaxon().equals( taxon ) ) {
-                        geneCache.put( g2, gene );
-                        gene2 = gene;
-                        coveredGenes.add( gene2 );
-                        this.geneMap.put( gene2.getId(), gene2 );
-                        break;
-                    }
+                if ( gene1 == null || gene2 == null ) {
+                    log.error( "Could not locate one or both of '" + g1 + "' or '" + g2 + "' for "
+                            + taxon.getCommonName() );
+                    continue;
+                }
+
+                GeneLink geneLink = new GeneLink( gene1.getId(), gene2.getId(), new Double( support ) );
+                links.add( geneLink );
+                if ( ++count % 5e5 == 0 ) {
+                    log.info( "Loaded " + count + " links" );
                 }
             }
-
-            if ( gene1 == null || gene2 == null ) {
-                log.error( "Could not locate one or both of '" + g1 + "' or '" + g2 + "' for " + taxon.getCommonName() );
-                continue;
-            }
-
-            GeneLink geneLink = new GeneLink( gene1.getId(), gene2.getId(), new Double( support ) );
-            links.add( geneLink );
-            if ( ++count % 5e5 == 0 ) {
-                log.info( "Loaded " + count + " links" );
-            }
+            log.info( "Loaded " + count + " links" );
+            return links;
         }
-        in.close();
-        log.info( "Loaded " + count + " links" );
-        return links;
+
     }
 
     @Override

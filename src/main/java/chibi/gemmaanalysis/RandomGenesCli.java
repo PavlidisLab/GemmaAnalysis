@@ -91,28 +91,28 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         Object[] rawLinesInFile = readGeneListFile( inFile ).toArray();
         int geneCount = 0;
         String line;
-        BufferedWriter out = new BufferedWriter( new FileWriter( "random" + number + ".genes.txt" ) );
+        try (BufferedWriter out = new BufferedWriter( new FileWriter( "random" + number + ".genes.txt" ) );) {
 
-        Random r = new Random();
+            Random r = new Random();
 
-        while ( geneCount < number ) {
+            while ( geneCount < number ) {
 
-            int randomInt = r.nextInt( rawLinesInFile.length );
+                int randomInt = r.nextInt( rawLinesInFile.length );
 
-            line = ( String ) rawLinesInFile[randomInt];
+                line = ( String ) rawLinesInFile[randomInt];
 
-            Gene gene = geneService.load( Long.parseLong( line ) );
-            if ( gene == null ) {
-                log.error( "ERROR: Cannot find genes for ID: " + line );
-                continue;
+                Gene gene = geneService.load( Long.parseLong( line ) );
+                if ( gene == null ) {
+                    log.error( "ERROR: Cannot find genes for ID: " + line );
+                    continue;
+                }
+                gene = geneService.thaw( gene );
+
+                out.write( gene.getOfficialSymbol() + "\n" );
+
+                geneCount++;
             }
-            gene = geneService.thaw( gene );
-
-            out.write( gene.getOfficialSymbol() + "\n" );
-
-            geneCount++;
         }
-        out.close();
 
     }
 

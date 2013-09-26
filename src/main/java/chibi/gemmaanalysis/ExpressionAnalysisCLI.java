@@ -103,26 +103,22 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
         // gene names
         Collection<Gene> rowGenes = rankMatrix.getRowNames();
-        try {
-            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".row_names.txt" ) );
+        try (PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".row_names.txt" ) );) {
             for ( Gene gene : rowGenes ) {
                 String s = gene.getOfficialSymbol();
                 if ( s == null ) s = gene.getId().toString();
                 out.println( s );
             }
-            out.close();
         } catch ( IOException exc ) {
             return exc;
         }
 
         // expression experiment names
         Collection<ExpressionExperiment> colEes = rankMatrix.getColNames();
-        try {
-            PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".col_names.txt" ) );
+        try (PrintWriter out = new PrintWriter( new FileWriter( outFilePrefix + ".col_names.txt" ) );) {
             for ( ExpressionExperiment ee : colEes ) {
                 out.println( ee.getShortName() );
             }
-            out.close();
         } catch ( IOException exc ) {
             return exc;
         }
