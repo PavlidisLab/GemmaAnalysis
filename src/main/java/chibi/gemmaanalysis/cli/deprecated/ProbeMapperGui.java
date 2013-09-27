@@ -155,6 +155,7 @@ public class ProbeMapperGui extends JFrame {
     /**
      * 
      */
+    @SuppressWarnings("resource")
     protected void run() {
         ProbeMapperCli ptpl = new ProbeMapperCli();
         try {

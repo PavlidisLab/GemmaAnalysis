@@ -167,6 +167,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
     }
 
+    @SuppressWarnings("resource")
     @Override
     protected Exception doWork( String[] args ) {
 
