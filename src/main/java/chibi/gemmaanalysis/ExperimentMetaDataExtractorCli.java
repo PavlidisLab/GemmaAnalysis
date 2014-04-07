@@ -27,6 +27,7 @@ import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
 import ubic.gemma.model.common.auditAndSecurity.Status;
+import ubic.gemma.model.common.auditAndSecurity.eventType.TroubleStatusFlagEvent;
 import ubic.gemma.model.common.description.BibliographicReference;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -123,11 +124,20 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
             if ( auditEvent.getEventType() != null ) {
                 // this is the first "curation" event? Not clear, because many steps are automated. What should we
                 // count?
-                break;
+
+                // if not the first, then we can see if was 'trouble'.
+                if ( auditEvent.getEventType() instanceof TroubleStatusFlagEvent ) {
+                    // has trouble at some point...
+                }
+
             }
         }
 
         Status status = ee.getStatus();
+
+        if ( status.getTroubled() ) {
+
+        }
 
         ExpressionExperimentValueObject vo = eeService.loadValueObject( ee.getId() );
 
@@ -136,6 +146,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         BibliographicReference primaryPublication = ee.getPrimaryPublication();
 
     }
+
     AuditTrailService auditTrailService;
     ExperimentalDesignService experimentalDesignService;
 }
