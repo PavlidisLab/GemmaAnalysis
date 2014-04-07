@@ -22,6 +22,9 @@ package chibi.gemmaanalysis;
 import java.util.Collection;
 import java.util.List;
 
+import ubic.gemma.analysis.expression.coexpression.links.UnsuitableForAnalysisException;
+import ubic.gemma.analysis.preprocess.OutlierDetectionService;
+import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
@@ -59,6 +62,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         adService = getBean( ArrayDesignService.class );
         auditTrailService = getBean( AuditTrailService.class );
         experimentalDesignService = getBean( ExperimentalDesignService.class );
+        outlierDetectionService = getBean( OutlierDetectionService.class );
+
         for ( BioAssaySet bas : super.expressionExperiments ) {
 
             process( bas );
@@ -145,8 +150,25 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
         BibliographicReference primaryPublication = ee.getPrimaryPublication();
 
+        // this code taken from LinkAnalysisService.
+        BatchEffectDetails batchEffect = eeService.getBatchEffect( ee );
+        // FIXME might want to adjust this stringency.
+        if ( batchEffect != null && batchEffect.getPvalue() < 0.001 ) {
+
+            double componentVarianceProportion = batchEffect.getComponentVarianceProportion();
+            Integer component = batchEffect.getComponent();
+            // don't worry if it is a "minor" component. remember that is must be one of the first few to make it this
+            // far.
+            if ( component > 2 && componentVarianceProportion < 0.1 ) {
+                // FIXME might want to adjust this stringency
+                // ....
+            }
+
+        }
+
     }
 
     AuditTrailService auditTrailService;
     ExperimentalDesignService experimentalDesignService;
+    OutlierDetectionService outlierDetectionService;
 }
