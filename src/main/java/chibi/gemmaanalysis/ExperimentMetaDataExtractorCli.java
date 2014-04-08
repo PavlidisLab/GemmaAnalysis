@@ -22,7 +22,6 @@ package chibi.gemmaanalysis;
 import java.util.Collection;
 import java.util.List;
 
-import ubic.gemma.analysis.expression.coexpression.links.UnsuitableForAnalysisException;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
@@ -168,7 +167,6 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
     }
 
-    AuditTrailService auditTrailService;
     ExperimentalDesignService experimentalDesignService;
     OutlierDetectionService outlierDetectionService;
 }
