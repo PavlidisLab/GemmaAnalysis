@@ -43,6 +43,7 @@ import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
 import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
 import ubic.gemma.model.common.auditAndSecurity.Status;
@@ -75,6 +76,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     private static final String NA = "";
     private OutlierDetectionService outlierDetectionService;
     private StatusService statusService;
+    private ExperimentalDesignService edService;
 
     /*
      * (non-Javadoc)
@@ -87,7 +89,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         auditTrailService = getBean( AuditTrailService.class );
         outlierDetectionService = getBean( OutlierDetectionService.class );
         statusService = getBean( StatusService.class );
-
+        edService = getBean( ExperimentalDesignService.class );
+        
         process( super.expressionExperiments );
 
         return null;
@@ -155,7 +158,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
             String[] colNames = { "ShortName", "Taxon", "DateUpload", "DateCurated", "Platform", "Channel",
                     "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
-                    "Conditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "BatchPval",
+                    "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "BatchPval",
                     "IsTroubled", "PubTroubled", "PubYear", "PubJournal" };
             // log.debug( StringUtils.join( colNames, "\t" ) + "\n" );
             writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
@@ -205,7 +208,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         }
                     }
 
-                    ExperimentalDesign experimentalDesign = ee.getExperimentalDesign();
+                    ExperimentalDesign experimentalDesign = edService.load( vo.getExperimentalDesign() );
 
                     BatchEffectDetails batchEffect = eeService.getBatchEffect( ee );
                     if ( batchEffect == null ) {
@@ -244,9 +247,9 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             qt != null ? qt.getScale().getValue() : NA,
                             Integer.toString( vo.getProcessedExpressionVectorCount() ), // NumProfiles
                             Integer.toString( vo.getBioAssayCount() ), // NumSamples
+                            batchEffect != null ? Integer.toString( experimentalDesign.getExperimentalFactors().size() - 1 )
+                                    : Integer.toString( experimentalDesign.getExperimentalFactors().size() ), // NumFactors
                             Integer.toString( assayCount.size() ), // NumConditions
-                            batchEffect != null ? Integer.toString( experimentalDesign.getExperimentalFactors().size() )
-                                    : NA,
                             StringUtils.join( samplesPerConditionCount, "," ),
                             possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
                             Integer.toString( manualOutlierCount ),
