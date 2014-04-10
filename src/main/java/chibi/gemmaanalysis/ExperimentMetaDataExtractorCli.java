@@ -19,36 +19,62 @@
 
 package chibi.gemmaanalysis;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.io.Writer;
+import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.time.StopWatch;
+
+import ubic.basecode.dataStructure.CountingMap;
+import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
+import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
 import ubic.gemma.model.common.auditAndSecurity.Status;
-import ubic.gemma.model.common.auditAndSecurity.eventType.TroubleStatusFlagEvent;
+import ubic.gemma.model.common.auditAndSecurity.StatusService;
 import ubic.gemma.model.common.description.BibliographicReference;
+import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalDesign;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentSubSet;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
-import ubic.gemma.model.genome.Taxon;
+import ubic.gemma.util.FactorValueVector;
+import ubic.gemma.util.Settings;
 
 /**
- * TODO Document Me
+ * Extracts expression experiment meta data such as experimental design, array design, outlier count, and publication
+ * into a .txt.gz TSV file. See Bug 3968.
  * 
  * @author paul
  * @version $Id$
  */
 public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipulatingCLI {
 
-    private ArrayDesignService adService;
+    private static final String EXPERIMENT_META_DATA_BASENAME = "ExperimentMetaData";
+    private static final String VIEW_FILE_SUFFIX = ".txt.gz";
+    public static final String VIEW_DIR = Settings.getString( "gemma.appdata.home" ) + File.separatorChar + "dataFiles"
+            + File.separatorChar;
+    private static final String NA = "";
+    private OutlierDetectionService outlierDetectionService;
+    private StatusService statusService;
 
     /*
      * (non-Javadoc)
@@ -58,16 +84,11 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     @Override
     protected Exception doWork( String[] args ) {
         super.processCommandLine( "experiment metadata extract", args );
-        adService = getBean( ArrayDesignService.class );
         auditTrailService = getBean( AuditTrailService.class );
-        experimentalDesignService = getBean( ExperimentalDesignService.class );
         outlierDetectionService = getBean( OutlierDetectionService.class );
+        statusService = getBean( StatusService.class );
 
-        for ( BioAssaySet bas : super.expressionExperiments ) {
-
-            process( bas );
-
-        }
+        process( super.expressionExperiments );
 
         return null;
     }
@@ -75,98 +96,200 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     /**
      * @param bas
      */
-    private void process( BioAssaySet bas ) {
-        // File 1: For all experiments on Gemma
-        // Experiment GSE
-        // Taxon
-        // Date of upload
-        // Date of first curation
-        //
-        // Platform (GPL#)
-        // Two or one channelled
-        // Total number profiles Profiles:
-        // Number profiles remaining after filtering:
-        //
-        // Number samples
-        // Number of conditions
-        // Number of factors
-        //
-        // Number of replicates per condition
-        // suspected number of outliers (via autodetection)
-        // Manually removed outlier number
-        //
-        // Batch effect p-value (NA if none)
-        // Marked as trouble anywhere in history?
-        //
-        // Category (Normal, Exon, RNASeq)
-        // Publication status?
-        // Publication year
-        // Publication journal
-        //
-
-        /*
-         * Skip subsets.
-         */
-        if ( bas instanceof ExpressionExperimentSubSet ) return;
-
-        ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-
-        log.info( "Processing: " + ee );
-
-        ee = eeService.thawLite( ee );
-
-        Collection<ArrayDesign> arrayDesignsUsed = eeService.getArrayDesignsUsed( ee );
-
-        for ( ArrayDesign ad : arrayDesignsUsed ) {
-            ad = adService.thawLite( ad );
+    private void process( Collection<BioAssaySet> expressionExperiments ) {
+        try {
+            generateExperimentMetaData( expressionExperiments );
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
         }
-
-        Taxon t = eeService.getTaxon( ee );
-
-        List<AuditEvent> events = auditEventService.getEvents( ee );
-        for ( AuditEvent auditEvent : events ) {
-            if ( auditEvent.getEventType() != null ) {
-                // this is the first "curation" event? Not clear, because many steps are automated. What should we
-                // count?
-
-                // if not the first, then we can see if was 'trouble'.
-                if ( auditEvent.getEventType() instanceof TroubleStatusFlagEvent ) {
-                    // has trouble at some point...
-                }
-
-            }
-        }
-
-        Status status = ee.getStatus();
-
-        if ( status.getTroubled() ) {
-
-        }
-
-        ExpressionExperimentValueObject vo = eeService.loadValueObject( ee.getId() );
-
-        ExperimentalDesign experimentalDesign = ee.getExperimentalDesign();
-
-        BibliographicReference primaryPublication = ee.getPrimaryPublication();
-
-        // this code taken from LinkAnalysisService.
-        BatchEffectDetails batchEffect = eeService.getBatchEffect( ee );
-        // FIXME might want to adjust this stringency.
-        if ( batchEffect != null && batchEffect.getPvalue() < 0.001 ) {
-
-            double componentVarianceProportion = batchEffect.getComponentVarianceProportion();
-            Integer component = batchEffect.getComponent();
-            // don't worry if it is a "minor" component. remember that is must be one of the first few to make it this
-            // far.
-            if ( component > 2 && componentVarianceProportion < 0.1 ) {
-                // FIXME might want to adjust this stringency
-                // ....
-            }
-
-        }
-
     }
 
-    ExperimentalDesignService experimentalDesignService;
-    OutlierDetectionService outlierDetectionService;
+    /**
+     * @param datasetDiffexViewBasename
+     * @return
+     */
+    private File getViewFile( String datasetDiffexViewBasename ) {
+        return getOutputFile( datasetDiffexViewBasename + VIEW_FILE_SUFFIX );
+    }
+
+    public File getOutputFile( String filename ) {
+        String fullFilePath = VIEW_DIR + filename;
+        File f = new File( fullFilePath );
+
+        if ( f.exists() ) {
+            return f;
+        }
+
+        File parentDir = f.getParentFile();
+        if ( !parentDir.exists() ) parentDir.mkdirs();
+        return f;
+    }
+
+    private Date extractFirstCurationDate( ExpressionExperiment ee ) {
+        Date firstCurationDate = null;
+        List<Date> auditEventDates = new ArrayList<>();
+        for ( AuditEvent auditEvent : auditEventService.getEvents( ee ) ) {
+            if ( auditEvent.getEventType() != null ) {
+                auditEventDates.add( auditEvent.getDate() );
+            }
+        }
+
+        Collections.sort( auditEventDates );
+        int firstCurationIdx = 1; // assume first curation is the second oldest date
+        int dateIdx = 0;
+        for ( Date d : auditEventDates ) {
+            if ( dateIdx++ == firstCurationIdx ) {
+                firstCurationDate = d;
+                break;
+            }
+        }
+
+        return firstCurationDate;
+    }
+
+    public void generateExperimentMetaData( Collection<BioAssaySet> expressionExperiments ) throws IOException {
+
+        File file = getViewFile( EXPERIMENT_META_DATA_BASENAME );
+
+        try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
+
+            String[] colNames = { "ShortName", "Taxon", "DateUpload", "DateCurated", "Platform", "Channel",
+                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
+                    "Conditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "BatchPval",
+                    "IsTroubled", "PubTroubled", "PubYear", "PubJournal" };
+            // log.debug( StringUtils.join( colNames, "\t" ) + "\n" );
+            writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
+
+            int i = 0;
+            Collection<String> failedEEs = new ArrayList<>();
+
+            StopWatch timer = new StopWatch();
+            timer.start();
+
+            for ( BioAssaySet bas : expressionExperiments ) {
+                /*
+                 * Skip subsets
+                 */
+                if ( bas instanceof ExpressionExperimentSubSet ) return;
+
+                try {
+
+                    ExpressionExperiment ee = ( ExpressionExperiment ) bas;
+                    ee = eeService.thawLite( ee );
+                    ExpressionExperimentValueObject vo = eeService.loadValueObject( ee.getId() );
+
+                    log.info( "Processing (" + ++i + "/" + expressionExperiments.size() + ") : " + ee );
+
+                    BibliographicReference primaryPublication = ee.getPrimaryPublication();
+                    Status pubStatus = primaryPublication != null ? statusService.getStatus( primaryPublication )
+                            : null;
+                    Collection<ArrayDesign> arrayDesignsUsed = eeService.getArrayDesignsUsed( ee );
+                    if ( arrayDesignsUsed.size() > 1 ) {
+                        log.warn( "Multiple array designs found. Only the first array design will be reported." );
+                    }
+                    ArrayDesign arrayDesign = arrayDesignsUsed.iterator().next();
+                    Date firstCurationDate = extractFirstCurationDate( ee );
+
+                    QuantitationType qt = null;
+                    for ( QuantitationType q : ee.getQuantitationTypes() ) {
+                        if ( q.getIsPreferred() ) {
+                            qt = q;
+                            break;
+                        }
+                    }
+
+                    int manualOutlierCount = 0;
+                    for ( BioAssay ba : ee.getBioAssays() ) {
+                        if ( ba.getIsOutlier() ) {
+                            manualOutlierCount++;
+                        }
+                    }
+
+                    ExperimentalDesign experimentalDesign = ee.getExperimentalDesign();
+
+                    BatchEffectDetails batchEffect = eeService.getBatchEffect( ee );
+                    if ( batchEffect == null ) {
+                        log.warn( "Null batch effect info" );
+                    }
+
+                    // TODO This may takes ~10 min to execute
+                    // eeService.getExperimentsWithOutliers();
+                    // StopWatch timer = new StopWatch();
+                    // timer.start();
+                    // log.info( "Outlier detection service started " + timer.getTime() + "ms" );
+                    // Collection<OutlierDetails> possibleOutliers = outlierDetectionService.identifyOutliers( ee );
+                    // log.info( "Outlier time elapsed " + timer.getTime() + "ms" );
+                    Collection<OutlierDetails> possibleOutliers = null;
+
+                    Collection<String> samplesPerConditionCount = new ArrayList<>();
+                    // warning: this removes batchEffect factor!
+                    CountingMap<FactorValueVector> assayCount = ExperimentalDesignUtils.getDesignMatrix( ee, true );
+                    List<FactorValueVector> keys = assayCount.sortedKeyList( true );
+                    for ( FactorValueVector key : keys ) {
+                        samplesPerConditionCount.add( Integer.toString( assayCount.get( key ) ) );
+                    }
+
+                    String val[] = {
+                            vo.getShortName(),
+                            vo.getTaxon(),
+                            DateFormat.getDateInstance( DateFormat.MEDIUM ).format( vo.getDateCreated() ),
+                            DateFormat.getDateInstance( DateFormat.MEDIUM ).format( firstCurationDate ),
+                            arrayDesign.getShortName(),
+                            arrayDesign.getTechnologyType().getValue(), // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
+                                                                        // GSE37646), DUAL-MODE
+                                                                        // (one or two color)
+                            Boolean.toString( arrayDesign.getName().toLowerCase().contains( "exon" ) ), // exon GSE28383
+                            qt != null ? Boolean.toString( qt.getIsRatio() ) : NA,
+                            qt != null ? Boolean.toString( qt.getIsNormalized() ) : NA,
+                            qt != null ? qt.getScale().getValue() : NA,
+                            Integer.toString( vo.getProcessedExpressionVectorCount() ), // NumProfiles
+                            Integer.toString( vo.getBioAssayCount() ), // NumSamples
+                            Integer.toString( assayCount.size() ), // NumConditions
+                            batchEffect != null ? Integer.toString( experimentalDesign.getExperimentalFactors().size() )
+                                    : NA,
+                            StringUtils.join( samplesPerConditionCount, "," ),
+                            possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
+                            Integer.toString( manualOutlierCount ),
+                            batchEffect != null ? String.format( "%.2g", batchEffect.getPvalue() ) : NA,
+                            Boolean.toString( vo.getTroubled() ),
+                            pubStatus != null ? Boolean.toString( pubStatus.getTroubled() ) : NA,
+                            primaryPublication != null ? DateFormat.getDateInstance( DateFormat.MEDIUM ).format(
+                                    primaryPublication.getPublicationDate() ) : NA,
+                            primaryPublication != null ? primaryPublication.getPublication() : NA };
+
+                    // log.debug( StringUtils.join( val, "\t" ) + "\n" );
+                    writer.write( StringUtils.join( val, "\t" ) + "\n" );
+
+                } catch ( Exception e ) {
+                    failedEEs.add( ( ( ExpressionExperiment ) bas ).getShortName() );
+                    StringWriter sw = new StringWriter();
+                    e.printStackTrace( new PrintWriter( sw ) );
+                    log.error( sw.toString() );
+                }
+            }
+
+            log.info( "Finished processing in " + timer.getTime() + " ms. " );
+            log.info( "Writen to " + file );
+            log.info( "Number of failed experiment metadata extraction(s): " + failedEEs.size() + " / "
+                    + expressionExperiments.size() );
+
+            if ( failedEEs.size() > 0 ) {
+                log.info( "Skipped experiments:" );
+                log.info( StringUtils.join( failedEEs, "," ) );
+            }
+        }
+    }
+
+    public static void main( String[] args ) {
+        ExperimentMetaDataExtractorCli s = new ExperimentMetaDataExtractorCli();
+        try {
+            Exception ex = s.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
 }
