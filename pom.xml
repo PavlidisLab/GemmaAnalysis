@@ -45,10 +45,10 @@
 			<artifactId>gemma-core</artifactId>
 			<version>1.8-SNAPSHOT</version>
 			<exclusions>
-				<exclusion>
+				<!--exclusion>
 					<artifactId>commons-lang</artifactId>
 					<groupId>commons-lang</groupId>
-				</exclusion>
+				</exclusion-->
 			</exclusions>
 		</dependency>
 	</dependencies>
