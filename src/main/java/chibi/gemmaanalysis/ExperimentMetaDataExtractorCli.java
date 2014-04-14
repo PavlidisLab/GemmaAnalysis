@@ -90,7 +90,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         outlierDetectionService = getBean( OutlierDetectionService.class );
         statusService = getBean( StatusService.class );
         edService = getBean( ExperimentalDesignService.class );
-        
+
         process( super.expressionExperiments );
 
         return null;
@@ -156,8 +156,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
         try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
 
-            String[] colNames = { "ShortName", "Taxon", "DateUpload", "DateCurated", "Platform", "Channel",
-                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
+            String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "Platform", "Channel", "IsExonArray",
+                    "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
                     "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "BatchPval",
                     "IsTroubled", "PubTroubled", "PubYear", "PubJournal" };
             // log.debug( StringUtils.join( colNames, "\t" ) + "\n" );
@@ -217,12 +217,14 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
                     // TODO This may takes ~10 min to execute
                     // eeService.getExperimentsWithOutliers();
-                    // StopWatch timer = new StopWatch();
-                    // timer.start();
+                    StopWatch timerOutlier = new StopWatch();
+                    timerOutlier.start();
                     // log.info( "Outlier detection service started " + timer.getTime() + "ms" );
-                    // Collection<OutlierDetails> possibleOutliers = outlierDetectionService.identifyOutliers( ee );
-                    // log.info( "Outlier time elapsed " + timer.getTime() + "ms" );
-                    Collection<OutlierDetails> possibleOutliers = null;
+                    Collection<OutlierDetails> possibleOutliers = outlierDetectionService.identifyOutliers( ee );
+                    if ( timerOutlier.getTime() > 10000 ) {
+                        log.info( "Automatic outlier detection took " + timerOutlier.getTime() + "ms" );
+                    }
+                    // Collection<OutlierDetails> possibleOutliers = null;
 
                     Collection<String> samplesPerConditionCount = new ArrayList<>();
                     // warning: this removes batchEffect factor!
@@ -236,7 +238,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             vo.getShortName(),
                             vo.getTaxon(),
                             DateFormat.getDateInstance( DateFormat.MEDIUM ).format( vo.getDateCreated() ),
-                            DateFormat.getDateInstance( DateFormat.MEDIUM ).format( firstCurationDate ),
+                            vo != null ? Boolean.toString( vo.getIsPublic() ) : NA,
                             arrayDesign.getShortName(),
                             arrayDesign.getTechnologyType().getValue(), // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
                                                                         // GSE37646), DUAL-MODE
@@ -247,8 +249,9 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             qt != null ? qt.getScale().getValue() : NA,
                             Integer.toString( vo.getProcessedExpressionVectorCount() ), // NumProfiles
                             Integer.toString( vo.getBioAssayCount() ), // NumSamples
-                            batchEffect != null ? Integer.toString( experimentalDesign.getExperimentalFactors().size() - 1 )
-                                    : Integer.toString( experimentalDesign.getExperimentalFactors().size() ), // NumFactors
+                            batchEffect != null ? Integer
+                                    .toString( experimentalDesign.getExperimentalFactors().size() - 1 ) : Integer
+                                    .toString( experimentalDesign.getExperimentalFactors().size() ), // NumFactors
                             Integer.toString( assayCount.size() ), // NumConditions
                             StringUtils.join( samplesPerConditionCount, "," ),
                             possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
@@ -271,7 +274,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                 }
             }
 
-            log.info( "Finished processing in " + timer.getTime() + " ms. " );
+            log.info( "Finished processing " + expressionExperiments.size() + " datasets in " + timer.getTime()
+                    + " ms. " );
             log.info( "Writen to " + file );
             log.info( "Number of failed experiment metadata extraction(s): " + failedEEs.size() + " / "
                     + expressionExperiments.size() );
