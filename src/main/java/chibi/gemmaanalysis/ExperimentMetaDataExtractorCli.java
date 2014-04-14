@@ -29,11 +29,11 @@ import java.io.Writer;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.StopWatch;
 
@@ -44,7 +44,6 @@ import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
 import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
-import ubic.gemma.model.common.auditAndSecurity.AuditEvent;
 import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
 import ubic.gemma.model.common.auditAndSecurity.Status;
 import ubic.gemma.model.common.auditAndSecurity.StatusService;
@@ -71,12 +70,13 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
     private static final String EXPERIMENT_META_DATA_BASENAME = "ExperimentMetaData";
     private static final String VIEW_FILE_SUFFIX = ".txt.gz";
-    public static final String VIEW_DIR = Settings.getString( "gemma.appdata.home" ) + File.separatorChar + "dataFiles"
-            + File.separatorChar;
+    public static final String DEFAULT_VIEW_FILE = Settings.getString( "gemma.appdata.home" ) + File.separatorChar
+            + "dataFiles" + File.separatorChar + EXPERIMENT_META_DATA_BASENAME + VIEW_FILE_SUFFIX;
     private static final String NA = "";
     private OutlierDetectionService outlierDetectionService;
     private StatusService statusService;
     private ExperimentalDesignService edService;
+    private String viewFile = DEFAULT_VIEW_FILE;
 
     /*
      * (non-Javadoc)
@@ -96,6 +96,30 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         return null;
     }
 
+    @Override
+    @SuppressWarnings("static-access")
+    protected void buildOptions() {
+        super.buildOptions();
+
+        Option expOption = OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "GZipped output filename" )
+                .withLongOpt( "outfile" ).create( 'o' );
+
+        addOption( expOption );
+    }
+
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+
+        if ( hasOption( 'o' ) ) {
+            this.viewFile = getOptionValue( 'o' );
+            log.info( "GZipped txt output will be written to " + viewFile );
+        } else {
+            this.viewFile = DEFAULT_VIEW_FILE;
+        }
+
+    }
+
     /**
      * @param bas
      */
@@ -107,16 +131,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         }
     }
 
-    /**
-     * @param datasetDiffexViewBasename
-     * @return
-     */
-    private File getViewFile( String datasetDiffexViewBasename ) {
-        return getOutputFile( datasetDiffexViewBasename + VIEW_FILE_SUFFIX );
-    }
-
     public File getOutputFile( String filename ) {
-        String fullFilePath = VIEW_DIR + filename;
+        String fullFilePath = filename;
         File f = new File( fullFilePath );
 
         if ( f.exists() ) {
@@ -128,31 +144,9 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         return f;
     }
 
-    private Date extractFirstCurationDate( ExpressionExperiment ee ) {
-        Date firstCurationDate = null;
-        List<Date> auditEventDates = new ArrayList<>();
-        for ( AuditEvent auditEvent : auditEventService.getEvents( ee ) ) {
-            if ( auditEvent.getEventType() != null ) {
-                auditEventDates.add( auditEvent.getDate() );
-            }
-        }
-
-        Collections.sort( auditEventDates );
-        int firstCurationIdx = 1; // assume first curation is the second oldest date
-        int dateIdx = 0;
-        for ( Date d : auditEventDates ) {
-            if ( dateIdx++ == firstCurationIdx ) {
-                firstCurationDate = d;
-                break;
-            }
-        }
-
-        return firstCurationDate;
-    }
-
     public void generateExperimentMetaData( Collection<BioAssaySet> expressionExperiments ) throws IOException {
 
-        File file = getViewFile( EXPERIMENT_META_DATA_BASENAME );
+        File file = getOutputFile( this.viewFile );
 
         try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
 
@@ -191,7 +185,6 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         log.warn( "Multiple array designs found. Only the first array design will be reported." );
                     }
                     ArrayDesign arrayDesign = arrayDesignsUsed.iterator().next();
-                    Date firstCurationDate = extractFirstCurationDate( ee );
 
                     QuantitationType qt = null;
                     for ( QuantitationType q : ee.getQuantitationTypes() ) {
@@ -294,8 +287,12 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
             if ( ex != null ) {
                 ex.printStackTrace();
             }
+
+            System.exit( 0 );
         } catch ( Exception e ) {
-            throw new RuntimeException( e );
+            // throw new RuntimeException( e );
+            log.error( e.getMessage(), e );
+            System.exit( 1 );
         }
     }
 
