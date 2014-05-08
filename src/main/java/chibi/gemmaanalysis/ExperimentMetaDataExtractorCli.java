@@ -19,6 +19,8 @@
 
 package chibi.gemmaanalysis;
 
+import gemma.gsec.SecurityService;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -76,6 +78,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     private OutlierDetectionService outlierDetectionService;
     private StatusService statusService;
     private ExperimentalDesignService edService;
+    private SecurityService securityService;
     private String viewFile = DEFAULT_VIEW_FILE;
 
     /*
@@ -90,6 +93,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         outlierDetectionService = getBean( OutlierDetectionService.class );
         statusService = getBean( StatusService.class );
         edService = getBean( ExperimentalDesignService.class );
+        securityService = getBean( SecurityService.class );
 
         process( super.expressionExperiments );
 
@@ -105,6 +109,9 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                 .withLongOpt( "outfile" ).create( 'o' );
 
         addOption( expOption );
+
+        // to keep troubled experiments
+        this.addForceOption();
     }
 
     @Override
@@ -174,7 +181,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     ExpressionExperiment ee = ( ExpressionExperiment ) bas;
                     ee = eeService.thawLite( ee );
                     ExpressionExperimentValueObject vo = eeService.loadValueObject( ee.getId() );
-
+                    vo.setIsPublic( !securityService.isPrivate( ee ) );
                     log.info( "Processing (" + ++i + "/" + expressionExperiments.size() + ") : " + ee );
 
                     BibliographicReference primaryPublication = ee.getPrimaryPublication();
@@ -208,7 +215,6 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         log.warn( "Null batch effect info" );
                     }
 
-                    // TODO This may takes ~10 min to execute
                     // eeService.getExperimentsWithOutliers();
                     StopWatch timerOutlier = new StopWatch();
                     timerOutlier.start();
