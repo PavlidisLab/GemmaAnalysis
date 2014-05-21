@@ -26,13 +26,14 @@ import java.util.HashSet;
 import java.util.Map;
 
 import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
+import ubic.gemma.genome.gene.service.GeneService;
+import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.gene.service.GeneService;
 
 /**
  * CLI for ArrayDesignMapSummaryService
@@ -91,6 +92,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     }
 
     CompositeSequenceService compositeSequenceService;
+    private TaxonService taxonService;
 
     private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
         Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
@@ -117,6 +119,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         adService = this.getBean( ArrayDesignService.class );
         compositeSequenceService = this.getBean( CompositeSequenceService.class );
         geneService = this.getBean( GeneService.class );
+        taxonService = this.getBean( TaxonService.class );
         Collection<ArrayDesign> allArrayDesigns = adService.loadAll();
         Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<Taxon, Collection<ArrayDesign>>();
         Collection<Long> adIds = new HashSet<Long>();
@@ -127,6 +130,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 System.err.println( "ArrayDesign " + ad.getName() + " doesn't have a taxon" );
                 continue;
             }
+            taxon = taxonService.load( taxon.getId() );
             Collection<ArrayDesign> ads = null;
             ads = taxon2arraydesign.get( taxon );
             if ( ads == null ) {
