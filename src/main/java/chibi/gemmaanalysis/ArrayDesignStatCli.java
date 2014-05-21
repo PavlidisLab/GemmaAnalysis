@@ -20,10 +20,15 @@ package chibi.gemmaanalysis;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.lang.time.StopWatch;
 
 import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
 import ubic.gemma.genome.gene.service.GeneService;
@@ -34,6 +39,7 @@ import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
+import cern.colt.Arrays;
 
 /**
  * CLI for ArrayDesignMapSummaryService
@@ -47,11 +53,51 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     private GeneService geneService;
     private final static int MAXIMUM_COUNT = 10;
     private Collection<Long> geneIds = new HashSet<Long>();
+    private CompositeSequenceService compositeSequenceService;
+    private TaxonService taxonService;
+    private final static String DEFAULT_OUT_FILE = "arraydesignsummary.txt";
+    private String outFile;
+    private Taxon taxon;
+
+    @Override
+    @SuppressWarnings("static-access")
+    protected void buildOptions() {
+        super.buildOptions();
+
+        Option expOption = OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "TSV output filename" )
+                .withLongOpt( "outfile" ).create( 'o' );
+        addOption( expOption );
+
+        Option taxonOption = OptionBuilder.hasArg().withDescription( "taxon name" )
+                .withDescription( "Taxon of the expression experiments and genes" ).withLongOpt( "taxon" ).create( 't' );
+        addOption( taxonOption );
+    }
 
     @Override
     protected void processOptions() {
         super.processOptions();
         // FIXME: add HTML output option.
+
+        this.adService = this.getBean( ArrayDesignService.class );
+        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
+        this.geneService = this.getBean( GeneService.class );
+        this.taxonService = this.getBean( TaxonService.class );
+
+        if ( hasOption( 'o' ) ) {
+            this.outFile = getOptionValue( 'o' );
+            log.info( "Output will be written to " + outFile );
+        } else {
+            this.outFile = DEFAULT_OUT_FILE;
+        }
+
+        if ( hasOption( 't' ) ) {
+            String taxonName = getOptionValue( 't' );
+            this.taxon = taxonService.findByCommonName( taxonName );
+            if ( this.taxon == null ) {
+                log.error( "ERROR: Cannot find taxon " + taxonName );
+            }
+        }
+
     }
 
     Map<Long, Collection<Long>> getGeneId2CSIdsMap( Map<Long, Collection<Long>> csId2geneIds ) {
@@ -91,9 +137,6 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         return res;
     }
 
-    CompositeSequenceService compositeSequenceService;
-    private TaxonService taxonService;
-
     private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
         Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
                 .loadMultiple( csIds ) );
@@ -114,23 +157,37 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
      */
     @Override
     protected Exception doWork( String[] args ) {
+        Collection<String> failedAds = new ArrayList<>();
         Exception err = processCommandLine( "Array design stat summary", args );
         if ( err != null ) return err;
-        adService = this.getBean( ArrayDesignService.class );
-        compositeSequenceService = this.getBean( CompositeSequenceService.class );
-        geneService = this.getBean( GeneService.class );
-        taxonService = this.getBean( TaxonService.class );
-        Collection<ArrayDesign> allArrayDesigns = adService.loadAll();
+        if ( arrayDesignsToProcess == null || arrayDesignsToProcess.size() == 0 ) {
+            this.arrayDesignsToProcess = adService.loadAll();
+        }
         Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<Taxon, Collection<ArrayDesign>>();
         Collection<Long> adIds = new HashSet<Long>();
-        for ( ArrayDesign ad : allArrayDesigns ) {
-            adIds.add( ad.getId() );
+        for ( ArrayDesign ad : this.arrayDesignsToProcess ) {
+
             Taxon taxon = ad.getPrimaryTaxon();
             if ( taxon == null ) {
                 System.err.println( "ArrayDesign " + ad.getName() + " doesn't have a taxon" );
                 continue;
             }
             taxon = taxonService.load( taxon.getId() );
+
+            if ( taxon != null && taxon.getCommonName() == null ) {
+                log.warn( ad.getShortName() + " taxon common name is null" );
+                failedAds.add( ad.getShortName() );
+                continue;
+            }
+
+            // filter out taxon
+            if ( this.taxon != null && this.taxon.getCommonName() != null
+                    && !taxon.getCommonName().equalsIgnoreCase( this.taxon.getCommonName() ) ) {
+                continue;
+            }
+
+            adIds.add( ad.getId() );
+
             Collection<ArrayDesign> ads = null;
             ads = taxon2arraydesign.get( taxon );
             if ( ads == null ) {
@@ -141,15 +198,18 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         }
         Map<Long, Boolean> isMerged = adService.isMerged( adIds );
         Map<Long, Boolean> isSubsumed = adService.isSubsumed( adIds );
-        try (FileWriter out = new FileWriter( new File( "arraydesignsummary.txt" ) );) {
-            out.write( "taxon\tarray design name\tgenes\tprobes\tcsKnownGenes\tcsPredictedGenes\tcsProbeAlignedRegions\tcsBioSequences\tcsBlatResults" );
-            for ( int i = 0; i <= MAXIMUM_COUNT; i++ )
+        StopWatch timer = new StopWatch();
+        timer.start();
+        int lineCount = 0;
+        try (FileWriter out = new FileWriter( new File( this.outFile ) );) {
+            String header = "taxon\tshortName\tname\tgenes\tprobes\tcsWithGenes\tcsBioSequences\tcsBlatResults\tP2G_0";
+            out.write( header );
+            for ( int i = 1; i <= MAXIMUM_COUNT; i++ )
                 out.write( "\tP2G_" + i );
             for ( int i = 1; i <= MAXIMUM_COUNT; i++ )
                 out.write( "\tG2P_" + i );
             out.write( "\n" );
-            System.err
-                    .print( "taxon\tarray design name\tgenes\tprobes\tcsGenes\tcsPredictedGenes\tcsProbeAlignedRegions\tcsBioSequences\tcsBlatResults\n" );
+            System.err.print( header + "\n" );
             for ( Taxon taxon : taxon2arraydesign.keySet() ) {
                 Collection<ArrayDesign> ads = taxon2arraydesign.get( taxon );
                 Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
@@ -158,37 +218,53 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
 
                 }
                 for ( ArrayDesign ad : ads ) {
-                    boolean merged = isMerged.get( ad.getId() );
-                    if ( merged ) continue;
-                    boolean subsumed = isSubsumed.get( ad.getId() );
-                    if ( subsumed ) continue;
-                    long numProbes = getArrayDesignService().getCompositeSequenceCount( ad );
-                    long numCsBioSequences = getArrayDesignService().numCompositeSequenceWithBioSequences( ad );
-                    long numCsBlatResults = getArrayDesignService().numCompositeSequenceWithBlatResults( ad );
-                    long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
-                    long numGenes = getArrayDesignService().numGenes( ad );
-                    Collection<CompositeSequence> allCSs = getArrayDesignService().getCompositeSequences( ad );
-                    Collection<Long> csIds = new HashSet<Long>();
-                    for ( CompositeSequence cs : allCSs )
-                        csIds.add( cs.getId() );
-                    // FIXME this used to provide only known genes.
-                    Map<Long, Collection<Long>> csId2geneIds = this.getCs2GeneMap( csIds );
-                    Map<Long, Collection<Long>> geneId2csIds = getGeneId2CSIdsMap( csId2geneIds );
-                    int[] csStats = getStats( csId2geneIds, false );
-                    int[] geneStats = getStats( geneId2csIds, true );
-                    int cs2NoneGene = allCSs.size() - csId2geneIds.keySet().size();
-                    out.write( taxon.getCommonName() + "\t" + ad.getName() + "\t" + numGenes + "\t" + numProbes + "\t"
-                            + numCsGenes + "\t" + numCsBioSequences + "\t" + numCsBlatResults + "\t" + cs2NoneGene );
-                    for ( int i = 0; i < MAXIMUM_COUNT; i++ )
-                        out.write( "\t" + csStats[i] );
-                    for ( int i = 0; i < MAXIMUM_COUNT; i++ )
-                        out.write( "\t" + geneStats[i] );
-                    out.write( "\n" );
-                    System.err.print( taxon.getCommonName() + "\t" + ad.getName() + "\t" + numGenes + "\t" + numProbes
-                            + "\t" + numGenes + "\t" + numCsBioSequences + "\t" + numCsBlatResults + "\n" );
+
+                    try {
+                        boolean merged = isMerged.get( ad.getId() );
+                        if ( merged ) continue;
+                        boolean subsumed = isSubsumed.get( ad.getId() );
+                        if ( subsumed ) continue;
+                        long numProbes = getArrayDesignService().getCompositeSequenceCount( ad );
+                        long numCsBioSequences = getArrayDesignService().numCompositeSequenceWithBioSequences( ad );
+                        long numCsBlatResults = getArrayDesignService().numCompositeSequenceWithBlatResults( ad );
+                        long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
+                        long numGenes = getArrayDesignService().numGenes( ad );
+                        Collection<CompositeSequence> allCSs = getArrayDesignService().getCompositeSequences( ad );
+                        Collection<Long> csIds = new HashSet<Long>();
+                        for ( CompositeSequence cs : allCSs )
+                            csIds.add( cs.getId() );
+                        // FIXME this used to provide only known genes.
+                        Map<Long, Collection<Long>> csId2geneIds = this.getCs2GeneMap( csIds );
+                        Map<Long, Collection<Long>> geneId2csIds = getGeneId2CSIdsMap( csId2geneIds );
+                        int[] csStats = getStats( csId2geneIds, false );
+                        int[] geneStats = getStats( geneId2csIds, true );
+                        int cs2NoneGene = allCSs.size() - csId2geneIds.keySet().size();
+                        String line = taxon.getCommonName() + "\t" + ad.getShortName() + "\t" + ad.getName() + "\t"
+                                + numGenes + "\t" + numProbes + "\t" + numCsGenes + "\t" + numCsBioSequences + "\t"
+                                + numCsBlatResults + "\t" + cs2NoneGene;
+                        out.write( line );
+                        for ( int i = 0; i < MAXIMUM_COUNT; i++ ) {
+                            out.write( "\t" + csStats[i] );
+                        }
+                        for ( int i = 0; i < MAXIMUM_COUNT; i++ ) {
+                            out.write( "\t" + geneStats[i] );
+                        }
+                        out.write( "\n" );
+                        System.err.print( line + "\n" );
+
+                        lineCount++;
+                    } catch ( Exception e ) {
+                        log.error( e, e );
+                        failedAds.add( ad.getShortName() );
+                        continue;
+                    }
                 }
             }
             out.close();
+            log.info( "Skipped " + failedAds.size() + " array designs : " + Arrays.toString( failedAds.toArray() ) );
+            log.info( "Finished running in " + timer.getTime() + " ms." );
+            log.info( "Wrote " + lineCount + " lines to " + outFile );
+
         } catch ( Exception e ) {
             return e;
         }
