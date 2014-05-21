@@ -33,6 +33,8 @@ import org.apache.commons.lang.time.StopWatch;
 import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.genome.taxon.service.TaxonService;
+import ubic.gemma.model.common.auditAndSecurity.Status;
+import ubic.gemma.model.common.auditAndSecurity.StatusService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -58,6 +60,8 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     private final static String DEFAULT_OUT_FILE = "arraydesignsummary.txt";
     private String outFile;
     private Taxon taxon;
+    private StatusService statusService;
+    private final static String NA = "NA";
 
     @Override
     @SuppressWarnings("static-access")
@@ -82,6 +86,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
         this.geneService = this.getBean( GeneService.class );
         this.taxonService = this.getBean( TaxonService.class );
+        this.statusService = this.getBean( StatusService.class );
 
         if ( hasOption( 'o' ) ) {
             this.outFile = getOptionValue( 'o' );
@@ -202,7 +207,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         timer.start();
         int lineCount = 0;
         try (FileWriter out = new FileWriter( new File( this.outFile ) );) {
-            String header = "taxon\tshortName\tname\tgenes\tprobes\tcsWithGenes\tcsBioSequences\tcsBlatResults\tP2G_0";
+            String header = "taxon\tshortName\tname\tisTroubled\texperiments\tmergees\tsubsumes\tsubsumedBy\tgenes\tprobes\tcsWithGenes\tcsBioSequences\tcsBlatResults\tP2G_0";
             out.write( header );
             for ( int i = 1; i <= MAXIMUM_COUNT; i++ )
                 out.write( "\tP2G_" + i );
@@ -220,11 +225,20 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 for ( ArrayDesign ad : ads ) {
 
                     try {
-                        boolean merged = isMerged.get( ad.getId() );
-                        if ( merged ) continue;
-                        boolean subsumed = isSubsumed.get( ad.getId() );
-                        if ( subsumed ) continue;
-                        long numProbes = getArrayDesignService().getCompositeSequenceCount( ad );
+                        Status status = statusService.getStatus( ad );
+                        String isTroubled = status != null ? Boolean.toString( status.getTroubled().booleanValue() )
+                                : NA;
+                        ad = arrayDesignService.thawLite( ad );
+                        long mergees = ad.getMergees().size();
+                        long subsumes = ad.getSubsumedArrayDesigns().size();
+                        String subsumedBy = ad.getSubsumingArrayDesign() != null ? ad.getSubsumingArrayDesign()
+                                .getShortName() : NA;
+                        long numEEs = arrayDesignService.getExpressionExperiments( ad ).size();
+                        // boolean merged = isMerged.get( ad.getId() );
+                        // if ( merged ) continue;
+                        // boolean subsumed = isSubsumed.get( ad.getId() );
+                        // if ( subsumed ) continue;
+                        long numProbes = getArrayDesignService().getCompositeSequenceCount( ad ).longValue();
                         long numCsBioSequences = getArrayDesignService().numCompositeSequenceWithBioSequences( ad );
                         long numCsBlatResults = getArrayDesignService().numCompositeSequenceWithBlatResults( ad );
                         long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
@@ -240,8 +254,9 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                         int[] geneStats = getStats( geneId2csIds, true );
                         int cs2NoneGene = allCSs.size() - csId2geneIds.keySet().size();
                         String line = taxon.getCommonName() + "\t" + ad.getShortName() + "\t" + ad.getName() + "\t"
-                                + numGenes + "\t" + numProbes + "\t" + numCsGenes + "\t" + numCsBioSequences + "\t"
-                                + numCsBlatResults + "\t" + cs2NoneGene;
+                                + isTroubled + "\t" + numEEs + "\t" + mergees + "\t" + subsumes + "\t" + subsumedBy
+                                + "\t" + numGenes + "\t" + numProbes + "\t" + numCsGenes + "\t" + numCsBioSequences
+                                + "\t" + numCsBlatResults + "\t" + cs2NoneGene;
                         out.write( line );
                         for ( int i = 0; i < MAXIMUM_COUNT; i++ ) {
                             out.write( "\t" + csStats[i] );
