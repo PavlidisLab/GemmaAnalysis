@@ -31,7 +31,9 @@ import java.io.Writer;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.GZIPOutputStream;
 
 import org.apache.commons.cli.Option;
@@ -43,6 +45,9 @@ import ubic.basecode.dataStructure.CountingMap;
 import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
+import ubic.gemma.analysis.preprocess.batcheffects.BatchInfoPopulationServiceImpl;
+import ubic.gemma.analysis.preprocess.svd.SVDService;
+import ubic.gemma.analysis.preprocess.svd.SVDValueObject;
 import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
@@ -55,6 +60,7 @@ import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalDesign;
+import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentSubSet;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
@@ -80,6 +86,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     private ExperimentalDesignService edService;
     private SecurityService securityService;
     private String viewFile = DEFAULT_VIEW_FILE;
+    private SVDService svdService;
 
     /*
      * (non-Javadoc)
@@ -94,6 +101,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         statusService = getBean( StatusService.class );
         edService = getBean( ExperimentalDesignService.class );
         securityService = getBean( SecurityService.class );
+        svdService = getBean( SVDService.class );
 
         process( super.expressionExperiments );
 
@@ -151,6 +159,35 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         return f;
     }
 
+    public Collection<BatchEffectDetails> getBatchEffect( ExpressionExperiment ee, int maxcomp ) {
+        Collection<BatchEffectDetails> ret = new ArrayList<>();
+
+        for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
+            if ( BatchInfoPopulationServiceImpl.isBatchFactor( ef ) ) {
+                SVDValueObject svd = svdService.getSvdFactorAnalysis( ee.getId() );
+                if ( svd == null ) break;
+
+                for ( Integer component : svd.getFactorPvals().keySet() ) {
+                    if ( component.intValue() >= maxcomp ) {
+                        break;
+                    }
+                    Map<Long, Double> cmpEffects = svd.getFactorPvals().get( component );
+
+                    Double pval = cmpEffects.get( ef.getId() );
+                    if ( pval != null ) {
+                        BatchEffectDetails details = new BatchEffectDetails();
+                        details.setPvalue( pval.doubleValue() );
+                        details.setComponent( new Integer( component.intValue() + 1 ) );
+                        details.setComponentVarianceProportion( svd.getVariances()[component.intValue()].doubleValue() );
+                        ret.add( details );
+                    }
+
+                }
+            }
+        }
+        return ret;
+    }
+
     public void generateExperimentMetaData( Collection<BioAssaySet> expressionExperiments ) throws IOException {
 
         File file = getOutputFile( this.viewFile );
@@ -159,9 +196,10 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
             String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "Platform", "Channel", "IsExonArray",
                     "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
-                    "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "BatchPval",
-                    "IsTroubled", "PubTroubled", "PubYear", "PubJournal" };
-            // log.debug( StringUtils.join( colNames, "\t" ) + "\n" );
+                    "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "IsTroubled",
+                    "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var", "Batch.PC3.Var",
+                    "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval" };
+            // log.info( StringUtils.join( colNames, "\t" ) + "\n" );
             writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
 
             int i = 0;
@@ -195,7 +233,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
                     QuantitationType qt = null;
                     for ( QuantitationType q : ee.getQuantitationTypes() ) {
-                        if ( q.getIsPreferred() ) {
+                        if ( q.getIsPreferred().booleanValue() ) {
                             qt = q;
                             break;
                         }
@@ -203,16 +241,33 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
                     int manualOutlierCount = 0;
                     for ( BioAssay ba : ee.getBioAssays() ) {
-                        if ( ba.getIsOutlier() ) {
+                        if ( ba.getIsOutlier().booleanValue() ) {
                             manualOutlierCount++;
                         }
                     }
 
                     ExperimentalDesign experimentalDesign = edService.load( vo.getExperimentalDesign() );
 
-                    BatchEffectDetails batchEffect = eeService.getBatchEffect( ee );
-                    if ( batchEffect == null ) {
-                        log.warn( "Null batch effect info" );
+                    // Batch PCs
+                    int maxcomp = 3;
+                    BatchEffectDetails batchEffectPC1 = null;
+                    BatchEffectDetails batchEffectPC2 = null;
+                    BatchEffectDetails batchEffectPC3 = null;
+                    Collection<BatchEffectDetails> batchEffects = getBatchEffect( ee, maxcomp );
+                    Iterator<BatchEffectDetails> batchEffectsIterator;
+                    if ( batchEffects == null || batchEffects.size() == 0 ) {
+                        log.warn( "No batch effect info" );
+                    } else {
+                        batchEffectsIterator = batchEffects.iterator();
+                        if ( batchEffectsIterator.hasNext() ) {
+                            batchEffectPC1 = batchEffectsIterator.next();
+                        }
+                        if ( batchEffectsIterator.hasNext() ) {
+                            batchEffectPC2 = batchEffectsIterator.next();
+                        }
+                        if ( batchEffectsIterator.hasNext() ) {
+                            batchEffectPC3 = batchEffectsIterator.next();
+                        }
                     }
 
                     // eeService.getExperimentsWithOutliers();
@@ -225,12 +280,14 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     }
                     // Collection<OutlierDetails> possibleOutliers = null;
 
+                    // samples per condition
+                    boolean removeBatchFactor = false;
                     Collection<String> samplesPerConditionCount = new ArrayList<>();
-                    // warning: this removes batchEffect factor!
-                    CountingMap<FactorValueVector> assayCount = ExperimentalDesignUtils.getDesignMatrix( ee, true );
+                    CountingMap<FactorValueVector> assayCount = ExperimentalDesignUtils.getDesignMatrix( ee,
+                            removeBatchFactor );
                     List<FactorValueVector> keys = assayCount.sortedKeyList( true );
                     for ( FactorValueVector key : keys ) {
-                        samplesPerConditionCount.add( Integer.toString( assayCount.get( key ) ) );
+                        samplesPerConditionCount.add( Integer.toString( assayCount.get( key ).intValue() ) );
                     }
 
                     String val[] = {
@@ -243,26 +300,36 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                                                                         // GSE37646), DUAL-MODE
                                                                         // (one or two color)
                             Boolean.toString( arrayDesign.getName().toLowerCase().contains( "exon" ) ), // exon GSE28383
-                            qt != null ? Boolean.toString( qt.getIsRatio() ) : NA,
-                            qt != null ? Boolean.toString( qt.getIsNormalized() ) : NA,
+                            qt != null ? Boolean.toString( qt.getIsRatio().booleanValue() ) : NA,
+                            qt != null ? Boolean.toString( qt.getIsNormalized().booleanValue() ) : NA,
                             qt != null ? qt.getScale().getValue() : NA,
-                            Integer.toString( vo.getProcessedExpressionVectorCount() ), // NumProfiles
-                            Integer.toString( vo.getBioAssayCount() ), // NumSamples
-                            batchEffect != null ? Integer
-                                    .toString( experimentalDesign.getExperimentalFactors().size() - 1 ) : Integer
-                                    .toString( experimentalDesign.getExperimentalFactors().size() ), // NumFactors
+                            Integer.toString( vo.getProcessedExpressionVectorCount().intValue() ), // NumProfiles
+                            Integer.toString( vo.getBioAssayCount().intValue() ), // NumSamples
+                            ( batchEffects != null && batchEffects.size() > 0 ) ? Integer.toString( experimentalDesign
+                                    .getExperimentalFactors().size() - 1 ) : Integer.toString( experimentalDesign
+                                    .getExperimentalFactors().size() ), // NumFactors
                             Integer.toString( assayCount.size() ), // NumConditions
                             StringUtils.join( samplesPerConditionCount, "," ),
                             possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
                             Integer.toString( manualOutlierCount ),
-                            batchEffect != null ? String.format( "%.2g", batchEffect.getPvalue() ) : NA,
                             Boolean.toString( vo.getTroubled() ),
-                            pubStatus != null ? Boolean.toString( pubStatus.getTroubled() ) : NA,
+                            pubStatus != null ? Boolean.toString( pubStatus.getTroubled().booleanValue() ) : NA,
                             primaryPublication != null ? DateFormat.getDateInstance( DateFormat.MEDIUM ).format(
                                     primaryPublication.getPublicationDate() ) : NA,
-                            primaryPublication != null ? primaryPublication.getPublication() : NA };
+                            primaryPublication != null ? primaryPublication.getPublication() : NA,
 
-                    // log.debug( StringUtils.join( val, "\t" ) + "\n" );
+                            batchEffectPC1 != null ? Double.toString( batchEffectPC1.getComponentVarianceProportion() )
+                                    : NA,
+                            batchEffectPC2 != null ? Double.toString( batchEffectPC2.getComponentVarianceProportion() )
+                                    : NA,
+                            batchEffectPC3 != null ? Double.toString( batchEffectPC3.getComponentVarianceProportion() )
+                                    : NA,
+
+                            batchEffectPC1 != null ? Double.toString( batchEffectPC1.getPvalue() ) : NA,
+                            batchEffectPC2 != null ? Double.toString( batchEffectPC2.getPvalue() ) : NA,
+                            batchEffectPC3 != null ? Double.toString( batchEffectPC3.getPvalue() ) : NA, };
+
+                    // log.info( StringUtils.join( val, "\t" ) + "\n" );
                     writer.write( StringUtils.join( val, "\t" ) + "\n" );
 
                 } catch ( Exception e ) {
