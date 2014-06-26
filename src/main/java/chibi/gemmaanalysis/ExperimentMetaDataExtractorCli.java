@@ -194,8 +194,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
         try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
 
-            String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "Platform", "Channel", "IsExonArray",
-                    "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
+            String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "NumPlatform", "Platform", "Channel",
+                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
                     "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "IsTroubled",
                     "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var", "Batch.PC3.Var",
                     "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval" };
@@ -226,10 +226,17 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     Status pubStatus = primaryPublication != null ? statusService.getStatus( primaryPublication )
                             : null;
                     Collection<ArrayDesign> arrayDesignsUsed = eeService.getArrayDesignsUsed( ee );
-                    if ( arrayDesignsUsed.size() > 1 ) {
-                        log.warn( "Multiple array designs found. Only the first array design will be reported." );
+
+                    Collection<String> arrayDesignIsExon = new ArrayList<>();
+                    Collection<String> arrayDesignTechTypes = new ArrayList<>();
+                    Collection<String> arrayDesignShortNames = new ArrayList<>();
+
+                    // for multiple platforms e.g. GSE5949
+                    for ( ArrayDesign ad : arrayDesignsUsed ) {
+                        arrayDesignShortNames.add( ad.getShortName() );
+                        arrayDesignTechTypes.add( ad.getTechnologyType().getValue() );
+                        arrayDesignIsExon.add( ad.getName().toLowerCase().contains( "exon" ) + "" );
                     }
-                    ArrayDesign arrayDesign = arrayDesignsUsed.iterator().next();
 
                     QuantitationType qt = null;
                     for ( QuantitationType q : ee.getQuantitationTypes() ) {
@@ -295,11 +302,12 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             vo.getTaxon(),
                             DateFormat.getDateInstance( DateFormat.MEDIUM ).format( vo.getDateCreated() ),
                             vo != null ? Boolean.toString( vo.getIsPublic() ) : NA,
-                            arrayDesign.getShortName(),
-                            arrayDesign.getTechnologyType().getValue(), // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
-                                                                        // GSE37646), DUAL-MODE
-                                                                        // (one or two color)
-                            Boolean.toString( arrayDesign.getName().toLowerCase().contains( "exon" ) ), // exon GSE28383
+                            Integer.toString( arrayDesignsUsed.size() ),
+                            StringUtils.join( arrayDesignShortNames, ',' ),
+                            StringUtils.join( arrayDesignTechTypes, ',' ), // arrayDesign.getTechnologyType().getValue(),
+                                                                           // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
+                                                                           // GSE37646), DUAL-MODE (one or two color)
+                            StringUtils.join( arrayDesignIsExon, ',' ), // exon GSE28383
                             qt != null ? Boolean.toString( qt.getIsRatio().booleanValue() ) : NA,
                             qt != null ? Boolean.toString( qt.getIsNormalized().booleanValue() ) : NA,
                             qt != null ? qt.getScale().getValue() : NA,
