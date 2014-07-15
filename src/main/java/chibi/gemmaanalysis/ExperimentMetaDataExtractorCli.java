@@ -46,8 +46,10 @@ import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
 import ubic.gemma.analysis.preprocess.batcheffects.BatchInfoPopulationServiceImpl;
+import ubic.gemma.analysis.preprocess.filter.FilterConfig;
 import ubic.gemma.analysis.preprocess.svd.SVDService;
 import ubic.gemma.analysis.preprocess.svd.SVDValueObject;
+import ubic.gemma.analysis.service.ExpressionDataMatrixService;
 import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
@@ -87,6 +89,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     private SecurityService securityService;
     private String viewFile = DEFAULT_VIEW_FILE;
     private SVDService svdService;
+    private ExpressionDataMatrixService expressionDataMatrixService;
 
     /*
      * (non-Javadoc)
@@ -102,6 +105,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         edService = getBean( ExperimentalDesignService.class );
         securityService = getBean( SecurityService.class );
         svdService = getBean( SVDService.class );
+        expressionDataMatrixService = getBean( ExpressionDataMatrixService.class );
 
         process( super.expressionExperiments );
 
@@ -195,10 +199,10 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
 
             String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "NumPlatform", "Platform", "Channel",
-                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples",
-                    "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "IsTroubled",
-                    "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var", "Batch.PC3.Var",
-                    "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval", "NumFactors", "FactorNames",
+                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumFilteredProfiles",
+                    "NumSamples", "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier",
+                    "IsTroubled", "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var",
+                    "Batch.PC3.Var", "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval", "NumFactors", "FactorNames",
                     "FactorCategories" };
             // log.info( StringUtils.join( colNames, "\t" ) + "\n" );
             writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
@@ -308,6 +312,17 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         factorCategories.add( cat );
                     }
 
+                    int filteredProfilesCount = -1;
+
+                    try {
+                        FilterConfig filterConfig = new FilterConfig();
+                        filterConfig.setIgnoreMinimumSampleThreshold( true );
+                        filteredProfilesCount = expressionDataMatrixService.getFilteredMatrix( ee, filterConfig,
+                                expressionDataMatrixService.getProcessedExpressionDataVectors( ee ) ).rows();
+                    } catch ( Exception e ) {
+                        log.error( e.getMessage(), e );
+                    }
+
                     String val[] = {
                             vo.getShortName(),
                             vo.getTaxon(),
@@ -323,6 +338,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             qt != null ? Boolean.toString( qt.getIsNormalized().booleanValue() ) : NA,
                             qt != null ? qt.getScale().getValue() : NA,
                             Integer.toString( vo.getProcessedExpressionVectorCount().intValue() ), // NumProfiles
+                            Integer.toString( filteredProfilesCount ), // NumFilteredProfiles
                             Integer.toString( vo.getBioAssayCount().intValue() ), // NumSamples
                             Integer.toString( assayCount.size() ), // NumConditions
                             StringUtils.join( samplesPerConditionCount, "," ),
