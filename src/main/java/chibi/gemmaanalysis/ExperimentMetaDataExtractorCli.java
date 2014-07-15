@@ -195,10 +195,11 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         try (Writer writer = new OutputStreamWriter( new GZIPOutputStream( new FileOutputStream( file ) ) );) {
 
             String[] colNames = { "ShortName", "Taxon", "DateUpload", "IsPublic", "NumPlatform", "Platform", "Channel",
-                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples", "NumFactors",
+                    "IsExonArray", "QtIsRatio", "QtIsNormalized", "QtScale", "NumProfiles", "NumSamples",
                     "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier", "IsTroubled",
                     "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var", "Batch.PC3.Var",
-                    "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval" };
+                    "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval", "NumFactors", "FactorNames",
+                    "FactorCategories" };
             // log.info( StringUtils.join( colNames, "\t" ) + "\n" );
             writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
 
@@ -297,6 +298,16 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         samplesPerConditionCount.add( Integer.toString( assayCount.get( key ).intValue() ) );
                     }
 
+                    // factor names
+                    Collection<ExperimentalFactor> factors = ee.getExperimentalDesign().getExperimentalFactors();
+                    Collection<String> factorNames = new ArrayList<String>();
+                    Collection<String> factorCategories = new ArrayList<String>();
+                    for ( ExperimentalFactor f : factors ) {
+                        factorNames.add( f.getName() );
+                        String cat = f.getCategory() != null ? f.getCategory().getCategory() : NA;
+                        factorCategories.add( cat );
+                    }
+
                     String val[] = {
                             vo.getShortName(),
                             vo.getTaxon(),
@@ -313,9 +324,6 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             qt != null ? qt.getScale().getValue() : NA,
                             Integer.toString( vo.getProcessedExpressionVectorCount().intValue() ), // NumProfiles
                             Integer.toString( vo.getBioAssayCount().intValue() ), // NumSamples
-                            ( batchEffects != null && batchEffects.size() > 0 ) ? Integer.toString( experimentalDesign
-                                    .getExperimentalFactors().size() - 1 ) : Integer.toString( experimentalDesign
-                                    .getExperimentalFactors().size() ), // NumFactors
                             Integer.toString( assayCount.size() ), // NumConditions
                             StringUtils.join( samplesPerConditionCount, "," ),
                             possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
@@ -335,7 +343,14 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
                             batchEffectPC1 != null ? Double.toString( batchEffectPC1.getPvalue() ) : NA,
                             batchEffectPC2 != null ? Double.toString( batchEffectPC2.getPvalue() ) : NA,
-                            batchEffectPC3 != null ? Double.toString( batchEffectPC3.getPvalue() ) : NA, };
+                            batchEffectPC3 != null ? Double.toString( batchEffectPC3.getPvalue() ) : NA,
+
+                            // factors
+                            factors != null ? Integer.toString( factors.size() ) : NA, // NumFactors
+                            factorNames != null ? StringUtils.join( factorNames, "," ) : NA,
+                            factorCategories != null ? StringUtils.join( factorCategories, "," ) : NA,
+
+                    };
 
                     // log.info( StringUtils.join( val, "\t" ) + "\n" );
                     writer.write( StringUtils.join( val, "\t" ) + "\n" );
