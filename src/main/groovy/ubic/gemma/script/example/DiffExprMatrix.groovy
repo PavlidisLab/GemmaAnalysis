@@ -7,7 +7,6 @@ import ubic.gemma.tasks.visualization.DifferentialExpressionVisualizationValueOb
 import ubic.gemma.model.analysis.expression.diff.Direction;
 import ubic.gemma.model.analysis.expression.diff.ContrastVO;
 import ubic.gemma.model.analysis.expression.diff.ContrastsValueObject;
-//import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionValueObject;
 import ubic.gemma.tasks.visualization.DifferentialExpressionSearchTaskCommand;
 
 CITATION = """\
@@ -21,8 +20,7 @@ CITATION = """\
 # 
 """
 
-//println "citation ${CITATION}";
-
+// flags for outputting results to diff files
 P = 0;
 CORR_P = 1;
 LOG_FC = 2;
@@ -126,8 +124,12 @@ def printMatrix( answer, prop ) {
 			} else if ( prop == CORR_P ) {
 				val = cell.getCorrectedPValue();
 			} else {
-				val = "";
+				throw new Error("Property ${prop} is not supported.");
 			}
+			//if ( val == null ) {
+			//	val = "";
+			//}
+			// null values are printed as "nu"
 			buf.append( String.format( "\t%.2f", val ) );
 		}
 		buf.append( "\n" );
@@ -149,7 +151,6 @@ def printConditions( answer ) {
 }
 
 def save( str, fileName ) {
-	f = opts.getOptionValue("o") + "-eeMetaData.txt";
 	outFile = new File( fileName );
 	outFile.delete();
 	fOut = new BufferedWriter(new PrintWriter(outFile));
@@ -162,22 +163,22 @@ def save( str, fileName ) {
 println "===========Conditions================";
 s = printConditions( answer );
 //println "${s}";
-save( s, opts.getOptionValue("o") + "-eeMetaData.txt" );
+save( "# Expression experiment metadata\n" + s, opts.getOptionValue("o") + "-eeMetaData.txt" );
 
 println "===========PValue===========";
 s = printMatrix( answer, P );
 //println "${s}";
-save( s, opts.getOptionValue("o") + "-pvalue.txt" );
+save( "# P-value\n" + s, opts.getOptionValue("o") + "-pvalue.txt" );
 
 println "===========Corrected PValue===========";
 s = printMatrix( answer, CORR_P );
 //println "${s}";
-save( s, opts.getOptionValue("o") + "-qvalue.txt" );
+save( "# Corrected p-value\n" + s, opts.getOptionValue("o") + "-qvalue.txt" );
 
 println "===========Log Fold Change===========";
 s = printMatrix( answer, LOG_FC );
 //println "${s}";
-save( s, opts.getOptionValue("o") + "-logFC.txt" );
+save( "# Log fold change\n" + s, opts.getOptionValue("o") + "-logFC.txt" );
 
 //println "Answer ${answer}";
 
