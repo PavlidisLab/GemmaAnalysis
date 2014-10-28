@@ -203,7 +203,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     "NumSamples", "NumConditions", "NumReplicatesPerCondition", "PossibleOutliers", "CuratedOutlier",
                     "IsTroubled", "PubTroubled", "PubYear", "PubJournal", "Batch.PC1.Var", "Batch.PC2.Var",
                     "Batch.PC3.Var", "Batch.PC1.Pval", "Batch.PC2.Pval", "Batch.PC3.Pval", "NumFactors", "FactorNames",
-                    "FactorCategories" };
+                    "FactorCategories", "NumFactorValues" };
             // log.info( StringUtils.join( colNames, "\t" ) + "\n" );
             writer.write( StringUtils.join( colNames, "\t" ) + "\n" );
 
@@ -304,12 +304,14 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
 
                     // factor names
                     Collection<ExperimentalFactor> factors = ee.getExperimentalDesign().getExperimentalFactors();
-                    Collection<String> factorNames = new ArrayList<String>();
-                    Collection<String> factorCategories = new ArrayList<String>();
+                    Collection<String> factorNames = new ArrayList<>();
+                    Collection<String> factorCategories = new ArrayList<>();
+                    Collection<Integer> factorValues = new ArrayList<>();
                     for ( ExperimentalFactor f : factors ) {
                         factorNames.add( f.getName() );
                         String cat = f.getCategory() != null ? f.getCategory().getCategory() : NA;
                         factorCategories.add( cat );
+                        factorValues.add( Integer.valueOf( f.getFactorValues().size() ) );
                     }
 
                     int filteredProfilesCount = -1;
@@ -365,6 +367,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             factors != null ? Integer.toString( factors.size() ) : NA, // NumFactors
                             factorNames != null ? StringUtils.join( factorNames, "," ) : NA,
                             factorCategories != null ? StringUtils.join( factorCategories, "," ) : NA,
+                            factorValues != null ? StringUtils.join( factorValues, "," ) : NA,
 
                     };
 
