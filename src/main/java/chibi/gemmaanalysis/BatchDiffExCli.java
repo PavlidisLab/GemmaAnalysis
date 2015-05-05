@@ -244,7 +244,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                  * Note that later on we can still end up with a model that is not of full rank, so combat will fail.
                  * This can sometimes be ameliorated by dropping covariates.
                  */
-
                 this.errorObjects
                         .add( "Batch effect is not correctable; possibly contains batches with only one sample: "
                                 + ee.getShortName() );
@@ -315,7 +314,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * Determine how many genes are diff ex wrt batch. The other factors are tracked; this shows how we would do
              * if we tried to simply directly include batch in the model
              */
-            Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+            Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectDetails = new HashMap<>();
 
             for ( ExpressionAnalysisResultSet brs : withBatchEffectResults.getResultSets() ) {
                 assert brs.getExperimentalFactors().size() == 1;
