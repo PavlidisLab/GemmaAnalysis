@@ -183,6 +183,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         details.setPvalue( pval.doubleValue() );
                         details.setComponent( new Integer( component.intValue() + 1 ) );
                         details.setComponentVarianceProportion( svd.getVariances()[component.intValue()].doubleValue() );
+                        details.setHasBatchInformation( true );
                         ret.add( details );
                     }
 
