@@ -95,7 +95,7 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
      */
     @Override
     protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( "Add Experimental Design", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) {
             return err;
         }
@@ -128,6 +128,16 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
         ee.setExperimentalDesign( ed );
         eeService.update( ee );
 
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

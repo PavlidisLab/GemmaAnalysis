@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import ubic.basecode.io.ByteArrayConverter;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.datastructure.matrix.VectorMarshall;
 import ubic.gemma.model.common.quantitationtype.PrimitiveType;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
@@ -54,7 +55,10 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
                 "Examine ALL vectors for correct sizes, "
                         + "not just string types. Slow but useful check of the integrity of the system" ).create( 'f' ) );
     }
-
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.DEPRECATED;
+    }
     @Override
     protected void processOptions() {
         super.processOptions();
@@ -70,7 +74,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception e = processCommandLine( "remove tabs from strings and check vectors", args );
+        Exception e = processCommandLine( args );
         if ( e != null ) return e;
 
         qts = this.getBean( QuantitationTypeService.class );
@@ -172,5 +176,15 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
             log.fatal( e, e );
         }
 
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 }

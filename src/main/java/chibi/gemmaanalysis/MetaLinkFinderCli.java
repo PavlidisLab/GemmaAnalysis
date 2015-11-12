@@ -162,7 +162,7 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
         // GraphVisualization graphVisualization1 = new GraphVisualization(new Object[0]);
         // graphVisualization1.run();
         // if(1== 1) return null;
-        Exception err = processCommandLine( "Link Analysis Data Loader", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) {
             return err;
         }
@@ -274,6 +274,15 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

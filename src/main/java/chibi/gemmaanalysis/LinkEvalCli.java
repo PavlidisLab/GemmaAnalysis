@@ -31,6 +31,7 @@ import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.dataStructure.matrix.SparseRaggedDoubleMatrix;
 import ubic.basecode.math.RandomChooser;
 import ubic.basecode.ontology.model.OntologyTerm;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.genome.gene.service.GeneService;
 import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -72,7 +73,10 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         }
 
     }
-
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
     private static class GenePair extends ArrayList<List<Gene>> implements Comparable<GenePair> {
 
         /**
@@ -521,7 +525,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     @Override
     protected Exception doWork( String[] args ) {
 
-        Exception err = processCommandLine( "Compute Go Overlap ", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) return err;
 
         StringBuilder buf = new StringBuilder();
@@ -1788,6 +1792,15 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
             log.error( "Couldn't write to file: " + ioe );
 
         }
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

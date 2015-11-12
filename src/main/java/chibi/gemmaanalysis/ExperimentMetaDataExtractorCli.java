@@ -52,6 +52,7 @@ import ubic.gemma.analysis.preprocess.svd.SVDValueObject;
 import ubic.gemma.analysis.service.ExpressionDataMatrixService;
 import ubic.gemma.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
 import ubic.gemma.model.common.auditAndSecurity.Status;
@@ -91,6 +92,11 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     private SVDService svdService;
     private ExpressionDataMatrixService expressionDataMatrixService;
 
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.METADATA;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -98,7 +104,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
      */
     @Override
     protected Exception doWork( String[] args ) {
-        super.processCommandLine( "experiment metadata extract", args );
+        super.processCommandLine( args );
         auditTrailService = getBean( AuditTrailService.class );
         outlierDetectionService = getBean( OutlierDetectionService.class );
         statusService = getBean( StatusService.class );
@@ -410,6 +416,17 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
             log.error( e.getMessage(), e );
             System.exit( 1 );
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

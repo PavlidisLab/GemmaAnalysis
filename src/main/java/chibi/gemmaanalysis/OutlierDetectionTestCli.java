@@ -32,6 +32,7 @@ import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionServiceWrapper;
 import ubic.gemma.analysis.preprocess.OutlierDetectionTestDetails;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
@@ -73,7 +74,10 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         }
         System.exit( 0 );
     }
-
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
     @Override
     public String getShortDesc() {
         return "Run outlier detection tool on given data set(s)";
@@ -126,7 +130,7 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( "Outlier Detection Test", args );
+        Exception err = processCommandLine( args );
 
         if ( err != null ) {
             return err;
@@ -335,6 +339,16 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         platforms = buffer.substring( 0, buffer.length() - 1 );
 
         return platforms;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

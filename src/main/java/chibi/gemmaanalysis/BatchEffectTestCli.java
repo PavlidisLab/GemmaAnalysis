@@ -22,6 +22,7 @@ import ubic.gemma.analysis.preprocess.batcheffects.BatchConfoundValueObject;
 import ubic.gemma.analysis.preprocess.svd.SVDService;
 import ubic.gemma.analysis.preprocess.svd.SVDValueObject;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -45,6 +46,16 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
         super.buildOptions();
     }
 
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.EXPERIMENT;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return "Test for batch effects";
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -53,7 +64,7 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
     @Override
     protected Exception doWork( String[] args ) {
 
-        Exception ex = super.processCommandLine( "BatchEffectPopulation", args );
+        Exception ex = super.processCommandLine( args );
         if ( ex != null ) return ex;
         SVDService svdService = this.getBean( SVDService.class );
 
@@ -133,6 +144,16 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
     public static void main( String[] args ) {
         BatchEffectTestCli b = new BatchEffectTestCli();
         b.doWork( args );
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return "batchEffectTest";
     }
 
 }

@@ -33,7 +33,7 @@ import ubic.gemma.model.expression.experiment.ExperimentalFactorService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
- * Delete analyses which include 'batch' as a factor.
+ * One-off; dDelete analyses which include 'batch' as a factor.
  * 
  * @author paul
  * @version $Id$
@@ -53,7 +53,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
     @Override
     protected Exception doWork( String[] args ) {
 
-        processCommandLine( "Delete undesirable analysis", args );
+        processCommandLine( args );
 
         DifferentialExpressionAnalysisService differentialExpressionAnalysisService = this
                 .getBean( DifferentialExpressionAnalysisService.class );
@@ -104,6 +104,15 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
             }
         }
         super.summarizeProcessing();
+        return null;
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
         return null;
     }
 

@@ -163,7 +163,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
     @Override
     protected Exception doWork( String[] args ) {
         Collection<String> failedAds = new ArrayList<>();
-        Exception err = processCommandLine( "Array design stat summary", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) return err;
         if ( arrayDesignsToProcess == null || arrayDesignsToProcess.size() == 0 ) {
             this.arrayDesignsToProcess = adService.loadAll();
@@ -296,6 +296,16 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return "platformStats";
     }
 
 }

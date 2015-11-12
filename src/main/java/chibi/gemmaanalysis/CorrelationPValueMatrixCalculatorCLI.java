@@ -46,7 +46,7 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
 
     @Override
     protected Exception doWork( String[] args ) {
-        processCommandLine( "DoubleMatrixReader", args );
+        processCommandLine( args );
 
         String taxonName = "human";
         taxon = Taxon.Factory.newInstance();
@@ -75,6 +75,15 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
         Exception exc = cli.doWork( args );
         if ( exc != null ) log.error( exc.getMessage() );
 
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

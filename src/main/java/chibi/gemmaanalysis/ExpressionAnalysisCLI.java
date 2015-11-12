@@ -24,6 +24,7 @@ import org.apache.commons.lang3.time.StopWatch;
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -63,7 +64,13 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
 
     ProcessedExpressionDataVectorService processedExpressionDataVectorService;
-
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLIContextCLI#getCommandGroup()
+     */
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
     CompositeSequenceService compositeSequenceService;
 
     /*
@@ -89,7 +96,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      */
     @Override
     protected Exception doWork( String[] args ) {
-        Exception e = processCommandLine( "ExpressionAnalysis", args );
+        Exception e = processCommandLine( args );
         if ( e != null ) return e;
 
         Collection<Gene> genes;
@@ -258,6 +265,15 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         }
 
         return matrix;
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

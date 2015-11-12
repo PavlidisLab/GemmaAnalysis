@@ -92,7 +92,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
     protected Exception doWork( String[] args ) {
-        Exception exc = processCommandLine( "EffectSizeCalculation ", args );
+        Exception exc = processCommandLine( args );
         if ( exc != null ) {
             return exc;
         }
@@ -174,5 +174,14 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
             log.error( exc.getMessage() );
         }
         log.info( "Finished analysis in " + watch.getTime() / 1000 + " seconds" );
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

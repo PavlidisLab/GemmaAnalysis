@@ -262,7 +262,7 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( "AffYPlatFormAnalysisCli ", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) {
             return err;
         }
@@ -349,6 +349,16 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         } catch ( Exception e ) {
             throw new RuntimeException( e );
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

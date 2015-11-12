@@ -67,7 +67,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception exc = processCommandLine( "CorrelationHistogramSampling", args );
+        Exception exc = processCommandLine( args );
         if ( exc != null ) return exc;
 
         Collection<HistogramSampler> samplers = coexprAnalysisService.getHistogramSamplers( this.expressionExperiments );
@@ -115,6 +115,15 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         CorrelationHistogramSamplerCLI analysis = new CorrelationHistogramSamplerCLI();
         Exception exc = analysis.doWork( args );
         if ( exc != null ) log.error( exc.getMessage() );
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

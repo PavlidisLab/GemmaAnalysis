@@ -87,7 +87,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     @Override
     protected Exception doWork( String[] args ) {
 
-        Exception err = processCommandLine( "Sequence cleanup", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) return err;
 
         Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
@@ -338,6 +338,15 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         if ( !justTesting ) {
             bss.remove( toRemove );
         }
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
 }

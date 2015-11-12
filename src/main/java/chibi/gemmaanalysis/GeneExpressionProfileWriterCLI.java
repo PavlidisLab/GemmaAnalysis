@@ -67,7 +67,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
 
     @Override
     protected Exception doWork( String[] args ) {
-        processCommandLine( "ExpressionProfileWriterCLI", args );
+        processCommandLine( args );
 
         Collection<Gene> genes;
         try {
@@ -123,6 +123,16 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         GeneExpressionProfileWriterCLI cli = new GeneExpressionProfileWriterCLI();
         Exception e = cli.doWork( args );
         if ( e != null ) log.error( e.getMessage() );
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+         return null;
     }
 
 }

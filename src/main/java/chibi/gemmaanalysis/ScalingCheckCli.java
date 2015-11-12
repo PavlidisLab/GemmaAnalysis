@@ -80,7 +80,7 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
      */
     @Override
     protected Exception doWork( String[] args ) {
-        Exception error = super.processCommandLine( "batch diff ex test", args );
+        Exception error = super.processCommandLine( args );
         if ( error != null ) return error;
         this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
 

@@ -46,7 +46,7 @@ public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        processCommandLine( "physicalLocationBinFiller", args );
+        processCommandLine( args );
 
         PhysicalLocationDao pld = this.getBean( PhysicalLocationDao.class );
 
@@ -63,6 +63,16 @@ public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
             }
         }
 
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
         return null;
     }
 }

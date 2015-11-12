@@ -62,7 +62,7 @@ public class PARMapper extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception exc = processCommandLine( "PARMapper", args );
+        Exception exc = processCommandLine( args );
         if ( exc != null ) return exc;
 
         this.taxonService = this.getBean( TaxonService.class );
@@ -124,6 +124,16 @@ public class PARMapper extends AbstractSpringAwareCLI {
             throw new RuntimeException( e );
         }
 
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

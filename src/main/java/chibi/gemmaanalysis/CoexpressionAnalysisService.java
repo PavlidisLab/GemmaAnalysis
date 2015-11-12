@@ -65,11 +65,6 @@ import cern.colt.list.DoubleArrayList;
  * <p>
  * TODO DOCUMENT ME
  * 
- * @spring.bean id="coexpressionAnalysisService"
- * @spring.property name="eeService" ref="expressionExperimentService"
- * @spring.property name="dedvService" ref="designElementDataVectorService"
- * @spring.property name="adService" ref="arrayDesignService"
- * @spring.property name="csService" ref="compositeSequenceService"
  * @author Raymond
  * @version $Id$
  */

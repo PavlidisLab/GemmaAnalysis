@@ -30,6 +30,7 @@ import ubic.basecode.util.DateUtil;
 import ubic.gemma.analysis.preprocess.OutlierDetails;
 import ubic.gemma.analysis.preprocess.OutlierDetectionService;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -52,7 +53,10 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
         c.doWork( args );
 
     }
-
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
     OutlierDetectionService outlierDetectionService;
 
     Writer summaryFile;
@@ -99,7 +103,7 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
      */
     @Override
     protected Exception doWork( String[] args ) {
-        Exception error = super.processCommandLine( "outlier detection", args );
+        Exception error = super.processCommandLine( args );
         if ( error != null ) return error;
 
         this.outlierDetectionService = this.getBean( OutlierDetectionService.class );
@@ -170,6 +174,16 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
         if ( this.hasOption( REGRESSION_OPT ) ) {
             this.useRegression = true;
         }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return "outlierDetect";
     }
 
 }

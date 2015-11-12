@@ -172,7 +172,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     protected Exception doWork( String[] args ) {
 
         try {
-            Exception err = processCommandLine( "probeMapper", args );
+            Exception err = processCommandLine( args );
             if ( err != null ) return err;
 
             Writer resultsOut = null;
@@ -218,7 +218,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 if ( moreArgs.length == 0 ) {
                     System.out
                             .println( "You must provide either a Blat result file, a FASTA file, a Genbank identifier file, or some Genbank identifiers" );
-                    printHelp( "probeMapper" );
+                    printHelp();
                     return new Exception( "Missing genbank identifiers" );
                 }
 
@@ -554,6 +554,16 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 + "Blat.targetAlignmentLength" + "\t" + "Blat.score" + "\t" + "Gene.symbol" + "\t" + "Gene.NCBIid"
                 + "\t" + "threePrime.distance" + "\t" + "exonOverlap" + "\t" + "Blat.Chromosome" + "\t"
                 + "Blat.targetStart" + "\t" + "Blat.targetEnd" + "\n" );
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

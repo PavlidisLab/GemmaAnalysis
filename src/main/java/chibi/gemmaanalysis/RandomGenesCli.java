@@ -57,7 +57,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( "Get Random Genes ", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) return err;
 
         try {
@@ -136,6 +136,16 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         }
         in.close();
         return lines;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
     }
 
 }

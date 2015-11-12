@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -369,7 +370,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
     @Override
     protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( "Sequence associator", args );
+        Exception err = processCommandLine( args );
         if ( err != null ) return err;
         Taxon taxon = taxonService.findByCommonName( taxonName );
         genesPerProbe( taxon );
@@ -400,5 +401,14 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
      */
     public void setCompositeSequenceService( CompositeSequenceService compositeSequenceService ) {
         this.compositeSequenceService = compositeSequenceService;
+    }
+
+    /* (non-Javadoc)
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
