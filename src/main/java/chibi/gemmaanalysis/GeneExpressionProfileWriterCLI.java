@@ -132,7 +132,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
      */
     @Override
     public String getCommandName() {
-         return null;
+         return "writeProfiles";
     }
 
 }
