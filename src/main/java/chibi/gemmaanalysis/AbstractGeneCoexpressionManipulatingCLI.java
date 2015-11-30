@@ -28,6 +28,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.genome.Gene;
 
 /**
@@ -43,6 +44,11 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
 
     private String[] targetGeneSymbols;
     private String targetGeneFile;
+
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
 
     @SuppressWarnings("static-access")
     @Override
