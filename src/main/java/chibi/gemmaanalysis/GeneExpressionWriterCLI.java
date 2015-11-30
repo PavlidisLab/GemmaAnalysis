@@ -34,6 +34,7 @@ import org.springframework.util.StringUtils;
 
 import ubic.gemma.analysis.service.ExpressionDataMatrixService;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -52,6 +53,11 @@ import ubic.gemma.model.genome.Gene;
  * @version $Id$
  */
 public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI {
+
+    @Override
+    public String getShortDesc() {
+        return "Writes the expression level for a select group of genes for each sample";
+    }
 
     public static void main( String[] args ) {
         GeneExpressionWriterCLI cli = new GeneExpressionWriterCLI();
@@ -78,6 +84,11 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
     @Override
     public String getCommandName() {
         return "writeGeneData";
+    }
+
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
     }
 
     /**

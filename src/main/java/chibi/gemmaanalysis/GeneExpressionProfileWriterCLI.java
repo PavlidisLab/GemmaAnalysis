@@ -29,6 +29,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
@@ -40,6 +41,7 @@ import ubic.gemma.model.genome.Gene;
 /**
  * @author raymond
  * @version $Id$
+ * @deprecated this seems redundant with GeneExpressionWriterCLI
  */
 public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionManipulatingCLI {
 
@@ -125,6 +127,11 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         if ( e != null ) log.error( e.getMessage() );
     }
 
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -132,7 +139,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
      */
     @Override
     public String getCommandName() {
-         return "writeProfiles";
+        return "null";
     }
 
 }

@@ -26,7 +26,7 @@ import ubic.gemma.util.AbstractCLI;
 
 /**
  * Generic command line information for GemmaAnalysis. This doesn't do anything but print some help.
- * 
+ * FIXME make this like the other one
  * @author paul
  * @author raymond
  * @version $Id$
