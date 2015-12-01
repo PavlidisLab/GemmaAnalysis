@@ -134,6 +134,7 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         return genes;
     }
 
+    @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
@@ -154,13 +155,8 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         Option queryGeneOption = OptionBuilder.create();
         addOption( queryGeneOption );
 
-        OptionBuilder.hasArg();
-        OptionBuilder.withArgName( "outfile" );
-        OptionBuilder.withDescription( "Output filename prefix" );
-        OptionBuilder.withLongOpt( "outfile" );
-        // Option outFilePrefixOption = OptionBuilder.create( 'o' );
-        Option outFilePrefixOption = OptionBuilder.create( 'o' );
-        addOption( outFilePrefixOption );
+        addOption( OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "Output filename prefix" )
+                .withLongOpt( "outfile" ).isRequired().create( 'o' ) );
 
     }
 
@@ -314,6 +310,11 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         super.processOptions();
         if ( hasOption( "queryGeneFile" ) ) queryGeneFile = getOptionValue( "queryGeneFile" );
         if ( hasOption( "queryGene" ) ) queryGeneSymbols = getOptionValues( "queryGene" );
+
+        if ( queryGeneFile == null && queryGeneSymbols == null ) {
+            throw new IllegalArgumentException(
+                    "You must provide either a query gene file or symbols from the command line" );
+        }
 
         outFilePrefix = getOptionValue( 'o' );
 
