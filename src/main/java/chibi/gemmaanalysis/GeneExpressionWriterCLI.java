@@ -100,11 +100,11 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
     public Map<Gene, Collection<CompositeSequence>> getGene2CsMap( Collection<CompositeSequence> css ) {
         Map<CompositeSequence, Collection<Gene>> cs2gene = csService.getGenes( css );
         // filter for specific cs 2 gene
-        for ( Iterator<Map.Entry<CompositeSequence, Collection<Gene>>> it = cs2gene.entrySet().iterator(); it.hasNext(); ) {
-            Map.Entry<CompositeSequence, Collection<Gene>> entry = it.next();
-            Collection<Gene> genes = entry.getValue();
-            if ( genes.size() > 1 ) it.remove();
-        }
+//        for ( Iterator<Map.Entry<CompositeSequence, Collection<Gene>>> it = cs2gene.entrySet().iterator(); it.hasNext(); ) {
+//            Map.Entry<CompositeSequence, Collection<Gene>> entry = it.next();
+//            Collection<Gene> genes = entry.getValue();
+//            if ( genes.size() > 1 ) it.remove();
+//        }
 
         Map<Gene, Collection<CompositeSequence>> gene2css = new HashMap<Gene, Collection<CompositeSequence>>();
         for ( Map.Entry<CompositeSequence, Collection<Gene>> entry : cs2gene.entrySet() ) {
