@@ -64,6 +64,17 @@ import ubic.gemma.util.EntityUtils;
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
 
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return "Performs multiple differential expression analyses under different conditions: Without including a batch covariate; "
+                + "with including it; and repeating those, after batch correction";
+    }
+
     /**
      * @param args
      */
