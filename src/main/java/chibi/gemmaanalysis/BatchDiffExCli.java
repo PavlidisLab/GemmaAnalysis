@@ -84,19 +84,19 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
     }
 
-    ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
+    private ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
 
-    DiffExAnalyzer lma;
+    private DiffExAnalyzer lma;
 
-    ArrayDesignService arrayDesignService;
+    private ArrayDesignService arrayDesignService;
 
-    CompositeSequenceService compositeSequenceService;
+    private CompositeSequenceService compositeSequenceService;
 
-    ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+    private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
-    Collection<ArrayDesign> seenArrays = new HashSet<ArrayDesign>();
+    private Collection<ArrayDesign> seenArrays = new HashSet<ArrayDesign>();
 
-    Map<CompositeSequence, Collection<Gene>> genes = new HashMap<CompositeSequence, Collection<Gene>>();
+    private Map<CompositeSequence, Collection<Gene>> genes = new HashMap<CompositeSequence, Collection<Gene>>();
 
     Transformer geneSymbolTransformer = new Transformer() {
         @Override
@@ -175,7 +175,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         if ( error != null ) return error;
         this.expressionExperimentBatchCorrectionService = this
                 .getBean( ExpressionExperimentBatchCorrectionService.class );
-        this.lma = this.getBean( LinearModelAnalyzer.class );
+        this.lma = new LinearModelAnalyzer();
         this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
         this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
 
