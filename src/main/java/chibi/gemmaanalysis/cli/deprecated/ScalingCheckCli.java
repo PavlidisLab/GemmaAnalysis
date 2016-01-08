@@ -17,7 +17,7 @@
  *
  */
 
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -26,7 +26,6 @@ import java.io.Writer;
 import java.util.Collection;
 
 import cern.colt.list.DoubleArrayList;
-
 import ubic.basecode.math.DescriptiveWithMissing;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.model.common.quantitationtype.QuantitationTypeValueObject;
@@ -37,13 +36,22 @@ import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
- * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
- * with including it; and repeating those, after batch correction
+ * One-off to check scale od ata
  * 
  * @author paul
  * @version $Id$
  */
 public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
+
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return null;
+    }
 
     /**
      * @param args
