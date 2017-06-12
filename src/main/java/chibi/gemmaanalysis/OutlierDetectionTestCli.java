@@ -1,8 +1,8 @@
 /*
  * The Gemma project.
- * 
+ *
  * Copyright (c) 2006-2012 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,11 +28,11 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
-import ubic.gemma.analysis.preprocess.OutlierDetails;
-import ubic.gemma.analysis.preprocess.OutlierDetectionServiceWrapper;
-import ubic.gemma.analysis.preprocess.OutlierDetectionTestDetails;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.analysis.preprocess.OutlierDetails;
+import ubic.gemma.core.analysis.preprocess.OutlierDetectionServiceWrapper;
+import ubic.gemma.core.analysis.preprocess.OutlierDetectionTestDetails;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
@@ -40,8 +40,8 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
  * Runs outlier detection methods on given data sets and writes results to file.
- * 
- * @version $Id$
+ *
+ * @version $Id: OutlierDetectionTestCli.java,v 1.5 2015/11/12 19:37:12 paul Exp $
  */
 public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI {
 
@@ -50,10 +50,6 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
     private static final String HEADER_BY_MEDIAN = "Experiment\tPlatform\t#Factors\t#Samples\t#Outliers\tDetails";
     private static final String HEADER_BY_MEDIAN_REG = "Experiment\tPlatform\t#Factors\t#SigFactors\t#Samples\t#Outliers\tDetails";
     private static final String HEADER_COMBINED = "Experiment\tPlatform\t#Factors\t#SigFactors\t#Samples\t#Removed\t#Outliers-basic\t#Outliers-by-median\t#Outliers-total\tDetails";
-    private String outputFileName;
-    private boolean useRegression = false;
-    private boolean findByMedian = false;
-    private boolean useCombinedMethod = false;
 
     /**
      * @param args
@@ -74,10 +70,28 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         }
         System.exit( 0 );
     }
+
+    private String outputFileName;
+    private boolean useRegression = false;
+    private boolean findByMedian = false;
+
+    private boolean useCombinedMethod = false;
+
     @Override
     public CommandGroup getCommandGroup() {
         return CommandGroup.ANALYSIS;
     }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
     @Override
     public String getShortDesc() {
         return "Run outlier detection tool on given data set(s)";
@@ -87,45 +101,43 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
     @SuppressWarnings("static-access")
     protected void buildOptions() {
         super.buildOptions();
-        Option outputFileOption = OptionBuilder.hasArg().withArgName( "filename" )
-                .withDescription( "Name and path of output file." ).withLongOpt( "output" ).create( 'o' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "filename" );
+        OptionBuilder
+                .withDescription( "Name and path of output file." );
+        OptionBuilder.withLongOpt( "output" );
+        Option outputFileOption = OptionBuilder.create( 'o' );
 
         addOption( outputFileOption );
 
-        Option regressionOption = OptionBuilder.withArgName( "regression" )
-                .withDescription( "Regress out significant experimental factors before detecting outliers." )
-                .withLongOpt( "regression" ).create( 'r' );
+        OptionBuilder.withArgName( "regression" );
+        OptionBuilder
+                .withDescription( "Regress out significant experimental factors before detecting outliers." );
+        OptionBuilder
+                .withLongOpt( "regression" );
+        Option regressionOption = OptionBuilder.create( 'r' );
 
         addOption( regressionOption );
 
-        Option findByMedianOption = OptionBuilder
-                .withArgName( "findByMedian" )
+        OptionBuilder
+                .withArgName( "findByMedian" );
+        OptionBuilder
                 .withDescription(
-                        "Find outliers by comparing first, second, or third quartiles of sample correlations." )
-                .withLongOpt( "findByMedian" ).create( 'm' );
+                        "Find outliers by comparing first, second, or third quartiles of sample correlations." );
+        OptionBuilder
+                .withLongOpt( "findByMedian" );
+        Option findByMedianOption = OptionBuilder.create( 'm' );
 
         addOption( findByMedianOption );
 
-        Option combinedMethodOption = OptionBuilder.withArgName( "combinedMethod" )
-                .withDescription( "Combine results from two outlier detection methods." ).withLongOpt( "combined" )
+        OptionBuilder.withArgName( "combinedMethod" );
+        OptionBuilder
+                .withDescription( "Combine results from two outlier detection methods." );
+        OptionBuilder.withLongOpt( "combined" );
+        Option combinedMethodOption = OptionBuilder
                 .create( 'c' );
 
         addOption( combinedMethodOption );
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( !hasOption( "output" ) ) {
-            System.out.println( "Output file name is required." );
-            throw new RuntimeException();
-        }
-        this.outputFileName = getOptionValue( "output" );
-
-        this.useRegression = hasOption( "regression" );
-        this.useCombinedMethod = hasOption( "combined" );
-        this.findByMedian = hasOption( "findByMedian" );
-
     }
 
     @Override
@@ -198,6 +210,21 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         return null;
     }
 
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        if ( !hasOption( "output" ) ) {
+            System.out.println( "Output file name is required." );
+            throw new RuntimeException();
+        }
+        this.outputFileName = getOptionValue( "output" );
+
+        this.useRegression = hasOption( "regression" );
+        this.useCombinedMethod = hasOption( "combined" );
+        this.findByMedian = hasOption( "findByMedian" );
+
+    }
+
     /*** Call the relevant outlier detection method ***/
     private OutlierDetectionTestDetails findOutliers( ExpressionExperiment ee ) {
 
@@ -212,6 +239,24 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
 
         return outlierDetector.findOutliers( ee, useRegression, findByMedian );
 
+    }
+
+    /*** Return names of platforms used in the experiment as string, separated by "/" ***/
+    private String getPlatforms( ExpressionExperiment ee ) {
+
+        StringBuilder buffer = new StringBuilder( 32 );
+        String platforms;
+
+        for ( BioAssay bioAssay : ee.getBioAssays() ) {
+            if ( buffer.indexOf( bioAssay.getArrayDesignUsed().getShortName() ) == -1 ) {
+                buffer.append( bioAssay.getArrayDesignUsed().getShortName() + "/" );
+                buffer.ensureCapacity( 10 );
+            }
+        }
+
+        platforms = buffer.substring( 0, buffer.length() - 1 );
+
+        return platforms;
     }
 
     /*** Write results to the output file; file name must be given as argument ***/
@@ -321,34 +366,6 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
-    }
-
-    /*** Return names of platforms used in the experiment as string, separated by "/" ***/
-    private String getPlatforms( ExpressionExperiment ee ) {
-
-        StringBuilder buffer = new StringBuilder( 32 );
-        String platforms;
-
-        for ( BioAssay bioAssay : ee.getBioAssays() ) {
-            if ( buffer.indexOf( bioAssay.getArrayDesignUsed().getShortName() ) == -1 ) {
-                buffer.append( bioAssay.getArrayDesignUsed().getShortName() + "/" );
-                buffer.ensureCapacity( 10 );
-            }
-        }
-
-        platforms = buffer.substring( 0, buffer.length() - 1 );
-
-        return platforms;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
     }
 
 }

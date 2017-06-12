@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,21 +33,33 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
-import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
-import ubic.basecode.io.writer.MatrixWriter;
-import ubic.gemma.analysis.preprocess.filter.FilterConfig;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.model.genome.Gene;
 import chibi.gemmaanalysis.CoexpressionAnalysisService.CoexpressionMatrices;
 import chibi.gemmaanalysis.CoexpressionAnalysisService.CorrelationMethod;
+import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
+import ubic.basecode.io.writer.MatrixWriter;
+import ubic.gemma.core.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.genome.Gene;
 
 /**
  * @author raymond
- * @version $Id$
+ * @version $Id: CorrelationAnalysisCLI.java,v 1.10 2015/11/12 19:37:11 paul Exp $
  */
 public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulatingCLI {
+    public static void main( String[] args ) {
+        CorrelationAnalysisCLI analysis = new CorrelationAnalysisCLI();
+        StopWatch watch = new StopWatch();
+        watch.start();
+        log.info( "Starting Correlation Analysis" );
+        Exception exc = analysis.doWork( args );
+        if ( exc != null ) {
+            log.error( exc.getMessage() );
+        }
+        log.info( "Finished analysis in " + watch );
+    }
+
     private String outFilePrefix;
 
     private CoexpressionAnalysisService coexpressionAnalysisService;
@@ -59,32 +71,38 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         filterConfig = new FilterConfig();
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "File prefix" )
-                .withDescription( "File prefix for saving the output" ).withLongOpt( "outFilePrefix" ).create( 'o' );
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "File prefix" );
+        OptionBuilder
+                .withDescription( "File prefix for saving the output" );
+        OptionBuilder.withLongOpt( "outFilePrefix" );
+        Option outputFileOption = OptionBuilder.create( 'o' );
         addOption( outputFileOption );
 
-        Option kMaxOption = OptionBuilder.hasArg().withArgName( "k" ).withDescription( "Select the kth largest value" )
-                .withType( Integer.class ).withLongOpt( "kValue" ).create( 'k' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "k" );
+        OptionBuilder.withDescription( "Select the kth largest value" );
+        OptionBuilder
+                .withType( Integer.class );
+        OptionBuilder.withLongOpt( "kValue" );
+        Option kMaxOption = OptionBuilder.create( 'k' );
         addOption( kMaxOption );
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( hasOption( 'o' ) ) {
-            this.outFilePrefix = getOptionValue( 'o' );
-        }
-
-        initBeans();
-    }
-
-    protected void initBeans() {
-        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
-        eeService = this.getBean( ExpressionExperimentService.class );
     }
 
     @Override
@@ -129,7 +147,7 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
 
         try {
             MatrixWriter<Gene, Gene> matrixOut;
-            matrixOut = new MatrixWriter<Gene, Gene>( outFilePrefix + ".corr.txt", formatter );
+            matrixOut = new MatrixWriter<>( outFilePrefix + ".corr.txt", formatter );
             matrixOut.setSliceNameMap( eeNameMap );
             matrixOut.setRowNameMap( geneNameMap );
             matrixOut.setColNameMap( geneNameMap );
@@ -170,24 +188,18 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
         return null;
     }
 
-    public static void main( String[] args ) {
-        CorrelationAnalysisCLI analysis = new CorrelationAnalysisCLI();
-        StopWatch watch = new StopWatch();
-        watch.start();
-        log.info( "Starting Correlation Analysis" );
-        Exception exc = analysis.doWork( args );
-        if ( exc != null ) {
-            log.error( exc.getMessage() );
-        }
-        log.info( "Finished analysis in " + watch );
+    protected void initBeans() {
+        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
     }
 
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
     @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+    protected void processOptions() {
+        super.processOptions();
+        if ( hasOption( 'o' ) ) {
+            this.outFilePrefix = getOptionValue( 'o' );
+        }
+
+        initBeans();
     }
 }

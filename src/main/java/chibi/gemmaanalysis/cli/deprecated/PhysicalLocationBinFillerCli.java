@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -20,28 +20,38 @@ package chibi.gemmaanalysis.cli.deprecated;
 
 import java.util.Collection;
 
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.PhysicalLocation;
-import ubic.gemma.model.genome.PhysicalLocationDao;
-import ubic.gemma.util.AbstractSpringAwareCLI;
-import ubic.gemma.util.SequenceBinUtils;
+import ubic.gemma.persistence.service.genome.PhysicalLocationDao;
+import ubic.gemma.persistence.util.SequenceBinUtils;
 
 /**
  * This is a one-off.
- * 
+ *
  * @author pavlidis
- * @version $Id$
+ * @version $Id: PhysicalLocationBinFillerCli.java,v 1.5 2015/11/12 19:37:12 paul Exp $
  */
 @Deprecated
 public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
 
-    @Override
-    protected void buildOptions() {
-        //
-    }
-
     public static void main( String[] args ) {
         PhysicalLocationBinFillerCli p = new PhysicalLocationBinFillerCli();
         p.doWork( args );
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    @Override
+    protected void buildOptions() {
+        //
     }
 
     @Override
@@ -63,16 +73,6 @@ public class PhysicalLocationBinFillerCli extends AbstractSpringAwareCLI {
             }
         }
 
-        return null;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
         return null;
     }
 }

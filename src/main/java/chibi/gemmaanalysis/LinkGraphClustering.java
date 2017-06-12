@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 Columbia University
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -31,9 +31,9 @@ import cern.colt.list.ObjectArrayList;
 
 /**
  * TODO Document Me
- * 
+ *
  * @author xwan
- * @version $Id$
+ * @version $Id: LinkGraphClustering.java,v 1.2 2013/09/24 01:55:58 paul Exp $
  */
 public class LinkGraphClustering {
 
@@ -45,7 +45,7 @@ public class LinkGraphClustering {
     public static void collectTreeNodes( ObjectArrayList leafNodes, ObjectArrayList internalNodes, TreeNode root ) {
         assert ( leafNodes != null && internalNodes != null );
         // dept first search for leaf node order
-        Stack<Object> stack = new Stack<Object>();
+        Stack<Object> stack = new Stack<>();
         stack.push( root );
         while ( !stack.empty() ) {
             TreeNode iter = ( TreeNode ) stack.pop();
@@ -104,7 +104,7 @@ public class LinkGraphClustering {
     }
 
     /**
-     * 
+     *
      */
     public void run() {
         this.init();
@@ -129,9 +129,9 @@ public class LinkGraphClustering {
      */
     public void saveToFile( String fileName ) {
         try ( /* Create a file to write the serialized tree to. */
-        FileOutputStream ostream = new FileOutputStream( fileName );
-        /* Create the output stream */
-        ObjectOutputStream p = new ObjectOutputStream( ostream );) {
+                FileOutputStream ostream = new FileOutputStream( fileName );
+                /* Create the output stream */
+                ObjectOutputStream p = new ObjectOutputStream( ostream );) {
 
             p.writeObject( this.eligibleNodes ); // Write the tree to the stream.
             p.flush();
@@ -151,7 +151,7 @@ public class LinkGraphClustering {
 
             ObjectArrayList leafNodes = new ObjectArrayList();
             ObjectArrayList internalNodes = new ObjectArrayList();
-            HashMap<TreeNode, String> nodeNames = new HashMap<TreeNode, String>();
+            HashMap<TreeNode, String> nodeNames = new HashMap<>();
 
             collectTreeNodes( leafNodes, internalNodes, root );
             TreeNode.setSorting( TreeNode.ORDER );
@@ -248,7 +248,7 @@ public class LinkGraphClustering {
 
     /**
      * Find the root node of the cluster that contains the link with maximum occurrences in the database
-     * 
+     *
      * @param level
      * @return
      */
@@ -288,7 +288,7 @@ public class LinkGraphClustering {
     }
 
     /**
-     * 
+     *
      */
     public void testSerilizable() {
         // this.Threshold = 2;
@@ -403,7 +403,7 @@ public class LinkGraphClustering {
     }
 
     /**
-     * 
+     *
      */
     private void init() {
         init( linkMatrix.getRawMatrix().rows(), linkMatrix.getRawMatrix().columns() );

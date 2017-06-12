@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -28,27 +28,52 @@ import java.util.Map;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.gemma.analysis.preprocess.filter.FilterConfig;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
+import chibi.gemmaanalysis.AbstractGeneCoexpressionManipulatingCLI;
+import chibi.gemmaanalysis.CoexpressionAnalysisService;
+import ubic.gemma.core.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 
 /**
  * @author raymond
- * @version $Id$
+ * @version $Id: GeneExpressionProfileWriterCLI.java,v 1.8 2015/11/30 23:50:56 paul Exp $
  * @deprecated this seems redundant with GeneExpressionWriterCLI
  */
+@Deprecated
 public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionManipulatingCLI {
 
+    public static void main( String[] args ) {
+        GeneExpressionProfileWriterCLI cli = new GeneExpressionProfileWriterCLI();
+        Exception e = cli.doWork( args );
+        if ( e != null ) log.error( e.getMessage() );
+    }
+
     private ArrayDesignService adService;
+
     private CoexpressionAnalysisService coexpAnalysisService;
 
     private String outFilePrefix;
+
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return "null";
+    }
 
     @Override
     protected void buildOptions() {
@@ -56,15 +81,6 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
 
         Option outFilePrefixOption = OptionBuilder.create( 'o' );
         addOption( outFilePrefixOption );
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        outFilePrefix = getOptionValue( 'o' );
-
-        adService = getBean( ArrayDesignService.class );
-        coexpAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
     @Override
@@ -82,7 +98,7 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         for ( BioAssaySet bas : this.expressionExperiments ) {
             ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
-            Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
+            Collection<CompositeSequence> css = new HashSet<>();
             for ( ArrayDesign ad : ads ) {
                 css.addAll( adService.getCompositeSequences( ad ) );
             }
@@ -121,25 +137,13 @@ public class GeneExpressionProfileWriterCLI extends AbstractGeneCoexpressionMani
         return null;
     }
 
-    public static void main( String[] args ) {
-        GeneExpressionProfileWriterCLI cli = new GeneExpressionProfileWriterCLI();
-        Exception e = cli.doWork( args );
-        if ( e != null ) log.error( e.getMessage() );
-    }
-
     @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.ANALYSIS;
-    }
+    protected void processOptions() {
+        super.processOptions();
+        outFilePrefix = getOptionValue( 'o' );
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return "null";
+        adService = getBean( ArrayDesignService.class );
+        coexpAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
 }

@@ -9,22 +9,44 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
+import cern.colt.list.DoubleArrayList;
 import ubic.basecode.math.distribution.HistogramSampler;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Taxon;
-import cern.colt.list.DoubleArrayList;
 
 public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipulatingCLI {
-    private CoexpressionAnalysisService coexprAnalysisService;
-
-    private int numSamples;
-    private String outFileName;
-    private int kMax;
     public static final int DEFAULT_NUM_SAMPLES = 1000;
 
     public static final int DEFAULT_K_MAX = 5;
+
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        CorrelationHistogramSamplerCLI analysis = new CorrelationHistogramSamplerCLI();
+        Exception exc = analysis.doWork( args );
+        if ( exc != null ) log.error( exc.getMessage() );
+    }
+
+    private CoexpressionAnalysisService coexprAnalysisService;
+    private int numSamples;
+
+    private String outFileName;
+
+    private int kMax;
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
     @Override
     protected void buildOptions() {
@@ -40,29 +62,6 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         Option kMaxOption = OptionBuilder.create( 'k' );
         addOption( kMaxOption );
 
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        String taxonName = getOptionValue( 't' );
-        taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( taxonName );
-        taxon = taxonService.find( taxon );
-
-        if ( hasOption( 'n' ) ) {
-            numSamples = getIntegerOptionValue( 'n' );
-        } else {
-            numSamples = DEFAULT_NUM_SAMPLES;
-        }
-        if ( hasOption( 'k' ) ) {
-            kMax = getIntegerOptionValue( 'k' );
-        } else {
-            kMax = DEFAULT_K_MAX;
-        }
-        outFileName = getOptionValue( 'o' );
-
-        coexprAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
     @Override
@@ -108,22 +107,27 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         return null;
     }
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        CorrelationHistogramSamplerCLI analysis = new CorrelationHistogramSamplerCLI();
-        Exception exc = analysis.doWork( args );
-        if ( exc != null ) log.error( exc.getMessage() );
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
     @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+    protected void processOptions() {
+        super.processOptions();
+        String taxonName = getOptionValue( 't' );
+        taxon = Taxon.Factory.newInstance();
+        taxon.setCommonName( taxonName );
+        taxon = taxonService.find( taxon );
+
+        if ( hasOption( 'n' ) ) {
+            numSamples = getIntegerOptionValue( 'n' );
+        } else {
+            numSamples = DEFAULT_NUM_SAMPLES;
+        }
+        if ( hasOption( 'k' ) ) {
+            kMax = getIntegerOptionValue( 'k' );
+        } else {
+            kMax = DEFAULT_K_MAX;
+        }
+        outFileName = getOptionValue( 'o' );
+
+        coexprAnalysisService = getBean( CoexpressionAnalysisService.class );
     }
 
 }

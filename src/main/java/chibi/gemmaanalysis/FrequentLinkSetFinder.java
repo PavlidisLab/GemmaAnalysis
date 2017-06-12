@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 Columbia University
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,14 +21,14 @@ package chibi.gemmaanalysis;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import cern.colt.list.ObjectArrayList;
+import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 
 /**
  * Find frequently-occuring links in a link matrix
- * 
+ *
  * @author xwan
- * @version $Id$
+ * @version $Id: FrequentLinkSetFinder.java,v 1.3 2011/11/06 19:15:55 paul Exp $
  */
 public class FrequentLinkSetFinder {
 
@@ -66,7 +66,7 @@ public class FrequentLinkSetFinder {
     }
 
     /**
-     * 
+     *
      */
     public void find() {
         find( this.getValidNodes() );
@@ -97,7 +97,7 @@ public class FrequentLinkSetFinder {
 
     /**
      * Prints information about the tree for a node.
-     * 
+     *
      * @param leafNode
      */
     public void outputPath( TreeNode leafNode ) {
@@ -208,7 +208,7 @@ public class FrequentLinkSetFinder {
 
     /**
      * This is the main method responsible for finding frequent itemsets once the tree is populated.
-     * 
+     *
      * @param rootNode
      * @param minExps
      */

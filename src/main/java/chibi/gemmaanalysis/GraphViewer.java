@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -54,6 +54,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.WindowConstants;
 
+import cern.colt.list.ObjectArrayList;
 import prefuse.Display;
 import prefuse.Visualization;
 import prefuse.action.ActionList;
@@ -91,30 +92,56 @@ import prefuse.visual.NodeItem;
 import prefuse.visual.VisualItem;
 import ubic.basecode.ontology.model.OntologyTerm;
 import ubic.gemma.model.genome.Gene;
-import cern.colt.list.ObjectArrayList;
 
 /**
  * @author xwan
- * @version $Id$
+ * @version $Id: GraphViewer.java,v 1.8 2013/09/26 22:13:28 paul Exp $
  */
 public class GraphViewer implements PropertyChangeListener, ActionListener, WindowListener {
-    private JFileChooser ed = null;
-    private Map<OntologyTerm, Integer> goTermsCounter = null;
+    public static class FillColorAction extends ColorAction {
+        private ColorMap cmap = new ColorMap( ColorLib.getInterpolatedPalette( 10, ColorLib.rgb( 190, 190, 255 ),
+                ColorLib.rgb( 0, 0, 0 ) ), 0, 9 );
+
+        public FillColorAction( String group ) {
+            super( group, VisualItem.FILLCOLOR );
+        }
+
+        @Override
+        public int getColor( VisualItem item ) {
+            if ( item instanceof NodeItem ) {
+                NodeItem nitem = ( NodeItem ) item;
+                if ( nitem.getString( NODEATTR ).contains( SelectedGoTerm ) ) {
+                    return ColorLib.rgb( 191, 99, 130 );
+
+                }
+                return cmap.getColor( 1 );
+            }
+            return cmap.getColor( 0 );
+        }
+
+    } // end of inner class TreeMapColorAction
+
+    public static class LabelLayout extends Layout {
+        public LabelLayout( String group ) {
+            super( group );
+        }
+
+        @Override
+        public void run( double frac ) {
+            Iterator<DecoratorItem> iter = m_vis.items( m_group );
+            while ( iter.hasNext() ) {
+                DecoratorItem item = iter.next();
+                VisualItem node = item.getDecoratedItem();
+                Rectangle2D bounds = node.getBounds();
+                setX( item, null, bounds.getCenterX() );
+                setY( item, null, bounds.getCenterY() );
+            }
+        }
+    } // end of inner class LabelLayout
+
     private static String SelectedGoTerm = "";
 
-    private Visualization vis = new Visualization();
-    private Display display = null;
-    private JFrame frame = null;
-    private int currentGraphIndex = 0;
-    private JPanel dynamicPanel = null;
-    private JFormattedTextField clusterIndex;
     private static boolean WINDOW_CLOSED = false;
-
-    private JButton forceLayout, restart, circleLayout, radiaTreeLayout, previous, next;
-
-    private ObjectArrayList clusterRootNodes = null;
-    private ObjectArrayList treeNodes = null;
-
     /** Node table schema used for generated Graphs */
     public static final String NODENAME = "name";
     public static final String NODETYPE = "nodetype";
@@ -125,18 +152,57 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
         NODE_SCHEMA.addColumn( NODETYPE, String.class, "" );
         NODE_SCHEMA.addColumn( NODEATTR, String.class, "" );
     }
-
     public static final Schema EDGE_SCHEMA = new Schema();
+
     public static final String EDGENAME = "name";
+
     static {
         EDGE_SCHEMA.addColumn( EDGENAME, String.class );
     }
     private static final Schema DECORATOR_SCHEMA = PrefuseLib.getVisualItemSchema();
+
     static {
         DECORATOR_SCHEMA.setDefault( VisualItem.INTERACTIVE, false );
         DECORATOR_SCHEMA.setDefault( VisualItem.TEXTCOLOR, ColorLib.gray( 0 ) );
         DECORATOR_SCHEMA.setDefault( VisualItem.FONT, FontLib.getFont( "Tahoma", 10 ) );
     }
+
+    public static Graph getGrid( int m, int n ) {
+        Graph g = new Graph();
+        g.getNodeTable().addColumns( NODE_SCHEMA );
+        g.getEdgeTable().addColumns( EDGE_SCHEMA );
+
+        Node[] nodes = new Node[m * n];
+        for ( int i = 0; i < m * n; ++i ) {
+            nodes[i] = g.addNode();
+            nodes[i].setString( NODENAME, String.valueOf( i ) );
+            if ( i > m * n / 2 )
+                nodes[i].setString( NODEATTR, "First" );
+            else
+                nodes[i].setString( NODEATTR, "Second" );
+            Edge edge = null;
+            if ( i >= n ) edge = g.addEdge( nodes[i - n], nodes[i] );
+            if ( i % n != 0 ) edge = g.addEdge( nodes[i - 1], nodes[i] );
+            if ( edge != null ) edge.setString( EDGENAME, "test" );
+        }
+        return g;
+    }
+
+    private JFileChooser ed = null;
+    private Map<OntologyTerm, Integer> goTermsCounter = null;
+    private Visualization vis = new Visualization();
+
+    private Display display = null;
+    private JFrame frame = null;
+    private int currentGraphIndex = 0;
+    private JPanel dynamicPanel = null;
+    private JFormattedTextField clusterIndex;
+
+    private JButton forceLayout, restart, circleLayout, radiaTreeLayout, previous, next;
+
+    private ObjectArrayList clusterRootNodes = null;
+
+    private ObjectArrayList treeNodes = null;
 
     private LinkMatrix linkMatrix = null;
 
@@ -153,6 +219,271 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
             this.treeNodes = nodes;
         this.linkMatrix = linkMatrix;
         init_view();
+    }
+
+    @Override
+    public void actionPerformed( ActionEvent e ) {
+        Object source = e.getSource();
+        if ( source == forceLayout ) {
+            boolean pause = vis.getAction( "layoutForce" ).isRunning();
+            if ( pause ) {
+                forceLayout.setText( "Force Layout" );
+                vis.cancel( "layoutForce" );
+            } else {
+                forceLayout.setText( "Pause" );
+                vis.run( "layoutForce" );
+            }
+            forceLayout.invalidate();
+            forceLayout.repaint();
+            // this.frame.invalidate();
+            // this.frame.repaint();
+        }
+        if ( source == restart ) {
+            forceLayout.setText( "Pause" );
+            restart( currentGraphIndex );
+        }
+        if ( source == circleLayout ) {
+            ActionList c = new ActionList();
+            c.add( new CircleLayout( "graph.nodes" ) );
+            boolean pause = vis.getAction( "layoutForce" ).isRunning();
+            if ( pause ) vis.cancel( "layoutForce" );
+            forceLayout.setText( "Force Layout" );
+            vis.putAction( "circleLayout", c );
+            vis.run( "circleLayout" );
+            vis.invalidateAll();
+            vis.repaint();
+        }
+        if ( source == radiaTreeLayout ) {
+            ActionList layout = new ActionList();
+            layout.add( new RadialTreeLayout( "graph" ) );
+            boolean pause = vis.getAction( "layoutForce" ).isRunning();
+            if ( pause ) vis.cancel( "layoutForce" );
+            forceLayout.setText( "Force Layout" );
+            vis.putAction( "radialLayout", layout );
+            vis.run( "radialLayout" );
+            vis.invalidateAll();
+            vis.repaint();
+        }
+        if ( source == next ) {
+            if ( currentGraphIndex < clusterRootNodes.size() - 1 ) {
+                currentGraphIndex++;
+                forceLayout.setText( "Pause" );
+                clusterIndex.setValue( new Integer( currentGraphIndex + 1 ) );
+            }
+        }
+        if ( source == previous ) {
+            if ( currentGraphIndex > 0 ) {
+                forceLayout.setText( "Pause" );
+                currentGraphIndex--;
+                clusterIndex.setValue( new Integer( currentGraphIndex + 1 ) );
+            }
+        }
+    }
+
+    @Override
+    public void propertyChange( PropertyChangeEvent e ) {
+        Object source = e.getSource();
+        if ( source == clusterIndex ) {
+            int index = ( ( Number ) clusterIndex.getValue() ).intValue();
+            if ( index <= 0 || index > clusterRootNodes.size() ) {
+                String message = "The Index must be between 0 and " + this.clusterRootNodes.size();
+                JOptionPane.showMessageDialog( null, "Error: " + message + "\n", "Error", JOptionPane.ERROR_MESSAGE );
+            } else {
+                currentGraphIndex = index - 1;
+                restart( currentGraphIndex );
+            }
+        }
+    }
+
+    /**
+     *
+     */
+    public void run() {
+        if ( this.clusterRootNodes == null && this.treeNodes == null ) {
+            System.err.println( "Display Demo Graph" );
+        }
+        Graph g = getGraph( this.currentGraphIndex );
+        initVisualization( g );
+        vis.run( "init" );
+        vis.run( "color" ); // assign the colors
+        vis.run( "layout" ); // start up the animated layout
+        // vis.run("layoutForce");
+        frame.pack(); // layout components in window
+        frame.setVisible( true ); // show the window
+        this.frame.validate();
+        this.frame.repaint();
+        while ( !WINDOW_CLOSED ) {
+            try {
+                Thread.sleep( 1000 );
+            } catch ( InterruptedException e ) {
+                e.printStackTrace();
+                return;
+            }
+        }
+        System.err.println( "Finished" );
+    }
+
+    @Override
+    public void windowActivated( WindowEvent e ) {
+    }
+
+    @Override
+    public void windowClosed( WindowEvent e ) {
+    }
+
+    @Override
+    public void windowClosing( WindowEvent e ) {
+        WINDOW_CLOSED = true;
+        System.err.println( "CLOSING" );
+    }
+
+    @Override
+    public void windowDeactivated( WindowEvent e ) {
+    }
+
+    @Override
+    public void windowDeiconified( WindowEvent e ) {
+    }
+
+    @Override
+    public void windowIconified( WindowEvent e ) {
+    }
+
+    @Override
+    public void windowOpened( WindowEvent e ) {
+    }
+
+    void initFilter( String dataDir, String title ) {
+        File defaultFile = new File( dataDir + title + ".jpg" );
+        System.out.println( "Default: " + defaultFile.toString() );
+        ed = new JFileChooser( defaultFile );
+        ed.setDialogTitle( "Save graph to file" );
+        ed.setAcceptAllFileFilterUsed( false );
+        SimpleFileFilter filter = new SimpleFileFilter( "bmp", "Bitmap file (*.bmp)" );
+        ed.addChoosableFileFilter( filter );
+        filter = new SimpleFileFilter( "png", "Portable Network Graphics (*.png)" );
+        ed.addChoosableFileFilter( filter );
+        filter = new SimpleFileFilter( "jpg", "JPEG file (*.jpg)" );
+        ed.addChoosableFileFilter( filter );
+
+        // add a button to export the display
+    }
+
+    /**
+     * @param currentIndex
+     * @return
+     */
+    private Graph getGraph( int currentIndex ) {
+        Graph g = null;
+        if ( this.clusterRootNodes == null && this.treeNodes == null ) {
+            if ( currentIndex % 2 == 0 )
+                g = getGrid( 10, 10 );
+            else
+                g = getGrid( 5, 5 );
+            return g;
+        }
+        ObjectArrayList leafNodes = null;
+        if ( this.treeNodes != null )
+            leafNodes = treeNodes;
+        else {
+            leafNodes = new ObjectArrayList();
+            TreeNode root = ( TreeNode ) clusterRootNodes.get( currentIndex );
+            LinkGraphClustering.collectTreeNodes( leafNodes, new ObjectArrayList(), root );
+        }
+        Collection<Long> treeIds = new HashSet<>();
+        for ( int i = 0; i < leafNodes.size(); i++ ) {
+            TreeNode treeNode = ( TreeNode ) leafNodes.get( i );
+            treeIds.add( treeNode.getId() );
+        }
+        goTermsCounter = linkMatrix.computeGOOverlap( treeIds, 20 );
+        for ( OntologyTerm ontologyTerm : goTermsCounter.keySet() ) {
+            int num = goTermsCounter.get( ontologyTerm );
+            System.err.println( "(" + num + ") " + ontologyTerm.getTerm() + ":" + ontologyTerm.getComment() );
+            if ( SelectedGoTerm.length() == 0 ) SelectedGoTerm = ontologyTerm.getTerm();
+        }
+        Map<Long, Node> gene2Node = new HashMap<>();
+        g = new Graph();
+        g.getNodeTable().addColumns( NODE_SCHEMA );
+        g.getEdgeTable().addColumns( EDGE_SCHEMA );
+        for ( int i = 0; i < leafNodes.size(); i++ ) {
+            Object obj = leafNodes.get( i );
+            Gene[] pairedGene = linkMatrix.getPairedGenes( ( ( TreeNode ) obj ).getId() );
+            assert pairedGene.length == 2;
+            for ( Gene gene : pairedGene ) {
+                if ( !gene2Node.containsKey( gene.getId() ) ) {
+                    Node node = g.addNode();
+                    node.setString( NODENAME, gene.getName() );
+                    if ( gene.getName().matches( "(RPL|RPS)(.*)" ) )
+                        node.setString( NODETYPE, "R" );
+                    else if ( gene.getNcbiGeneId() == null )
+                        node.setString( NODETYPE, "G" );
+                    else
+                        node.setString( NODETYPE, "N" );
+
+                    String goTerms = "";
+                    Collection<OntologyTerm> goEntries = linkMatrix.getGOTerms( gene );
+                    for ( OntologyTerm ontologyTerm : goEntries ) {
+                        goTerms = goTerms + ontologyTerm.getTerm() + ";";
+                    }
+                    node.setString( NODEATTR, new String( goTerms ) );
+                    gene2Node.put( gene.getId(), node );
+                }
+            }
+            Node node1 = gene2Node.get( pairedGene[0].getId() );
+            Node node2 = gene2Node.get( pairedGene[1].getId() );
+            Integer goOverlap = linkMatrix.computeGOOverlap( ( ( TreeNode ) obj ).getId() );
+            Edge edge = g.addEdge( node1, node2 );
+            // edge.setDouble(WEIGHT,goOverlaped);
+            edge.setString( EDGENAME, goOverlap.toString() );
+        }
+        return g;
+    }
+
+    private JButton getSaveButton() {
+        initFilter( ".", "img" );
+        JButton eb = new JButton( "Export to file" );
+        eb.setEnabled( true );
+        eb.addActionListener( new ActionListener() {
+            @Override
+            public void actionPerformed( ActionEvent x ) {
+                boolean pause = vis.getAction( "layoutForce" ).isRunning();
+                if ( pause ) vis.cancel( "layoutForce" );
+                int returnVal = ed.showSaveDialog( display );
+                if ( returnVal == JFileChooser.APPROVE_OPTION ) {
+                    System.out.println( "You chose to save this file: " + ed.getSelectedFile().getName() );
+                    File selectedFile = ed.getSelectedFile();
+                    String fType = IOLib.getExtension( selectedFile );
+
+                    if ( fType == null ) {
+                        fType = ( ( SimpleFileFilter ) ed.getFileFilter() ).getExtension();
+                        selectedFile = new File( selectedFile.toString() + "." + fType );
+                    }
+                    if ( selectedFile.exists() ) {
+                        JOptionPane.showConfirmDialog( display, "The file \"" + selectedFile.getName()
+                                + "\" already exists.\nDo you want to replace it?", "Confirm Save",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
+                        // if (response == JOptionPane.NO_OPTION){
+                        // if(pause)
+                        // vis.run("layoutforce");
+                        // return;}
+                    }
+
+                    try (OutputStream out = new BufferedOutputStream( new FileOutputStream( selectedFile ) );) {
+                        display.saveImage( out, fType, 1.0 );
+
+                    } catch ( IOException e ) {
+                        e.printStackTrace();
+                    }
+                    // if(pause)
+                    // vis.run("layoutForce");
+                    // } else{
+                    // if(pause)
+                    // vis.run("layoutForce");
+                    // return; //user canceled
+                }
+            }
+        } );
+        return eb;
     }
 
     /**
@@ -212,7 +543,7 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
     }
 
     /**
-     * 
+     *
      */
     private void init_view() {
         frame = new JFrame( "Graph Viewer" );
@@ -250,104 +581,6 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
 
         frame.add( mainSplitPanel );
         frame.addWindowListener( this );
-    }
-
-    /**
-     * 
-     */
-    public void run() {
-        if ( this.clusterRootNodes == null && this.treeNodes == null ) {
-            System.err.println( "Display Demo Graph" );
-        }
-        Graph g = getGraph( this.currentGraphIndex );
-        initVisualization( g );
-        vis.run( "init" );
-        vis.run( "color" ); // assign the colors
-        vis.run( "layout" ); // start up the animated layout
-        // vis.run("layoutForce");
-        frame.pack(); // layout components in window
-        frame.setVisible( true ); // show the window
-        this.frame.validate();
-        this.frame.repaint();
-        while ( !WINDOW_CLOSED ) {
-            try {
-                Thread.sleep( 1000 );
-            } catch ( InterruptedException e ) {
-                e.printStackTrace();
-                return;
-            }
-        }
-        System.err.println( "Finished" );
-    }
-
-    /**
-     * @param currentIndex
-     * @return
-     */
-    private Graph getGraph( int currentIndex ) {
-        Graph g = null;
-        if ( this.clusterRootNodes == null && this.treeNodes == null ) {
-            if ( currentIndex % 2 == 0 )
-                g = getGrid( 10, 10 );
-            else
-                g = getGrid( 5, 5 );
-            return g;
-        }
-        ObjectArrayList leafNodes = null;
-        if ( this.treeNodes != null )
-            leafNodes = treeNodes;
-        else {
-            leafNodes = new ObjectArrayList();
-            TreeNode root = ( TreeNode ) clusterRootNodes.get( currentIndex );
-            LinkGraphClustering.collectTreeNodes( leafNodes, new ObjectArrayList(), root );
-        }
-        Collection<Long> treeIds = new HashSet<Long>();
-        for ( int i = 0; i < leafNodes.size(); i++ ) {
-            TreeNode treeNode = ( TreeNode ) leafNodes.get( i );
-            treeIds.add( treeNode.getId() );
-        }
-        goTermsCounter = linkMatrix.computeGOOverlap( treeIds, 20 );
-        for ( OntologyTerm ontologyTerm : goTermsCounter.keySet() ) {
-            int num = goTermsCounter.get( ontologyTerm );
-            System.err.println( "(" + num + ") " + ontologyTerm.getTerm() + ":" + ontologyTerm.getComment() );
-            if ( SelectedGoTerm.length() == 0 ) SelectedGoTerm = ontologyTerm.getTerm();
-        }
-        Map<Long, Node> gene2Node = new HashMap<Long, Node>();
-        g = new Graph();
-        g.getNodeTable().addColumns( NODE_SCHEMA );
-        g.getEdgeTable().addColumns( EDGE_SCHEMA );
-        for ( int i = 0; i < leafNodes.size(); i++ ) {
-            Object obj = leafNodes.get( i );
-            Gene[] pairedGene = linkMatrix.getPairedGenes( ( ( TreeNode ) obj ).getId() );
-            assert pairedGene.length == 2;
-            for ( Gene gene : pairedGene ) {
-                if ( !gene2Node.containsKey( gene.getId() ) ) {
-                    Node node = g.addNode();
-                    node.setString( NODENAME, gene.getName() );
-                    if ( gene.getName().matches( "(RPL|RPS)(.*)" ) )
-                        node.setString( NODETYPE, "R" );
-                    else if ( gene.getNcbiGeneId() == null )
-                        node.setString( NODETYPE, "G" );
-                    else
-                        node.setString( NODETYPE, "N" );
-
-                    String goTerms = "";
-                    Collection<OntologyTerm> goEntries = linkMatrix.getGOTerms( gene );
-                    for ( OntologyTerm ontologyTerm : goEntries ) {
-                        goTerms = goTerms + ontologyTerm.getTerm() + ";";
-                    }
-                    node.setString( NODEATTR, new String( goTerms ) );
-                    gene2Node.put( gene.getId(), node );
-                }
-            }
-            Node node1 = gene2Node.get( pairedGene[0].getId() );
-            Node node2 = gene2Node.get( pairedGene[1].getId() );
-            Integer goOverlap = linkMatrix.computeGOOverlap( ( ( TreeNode ) obj ).getId() );
-            Edge edge = g.addEdge( node1, node2 );
-            // edge.setDouble(WEIGHT,goOverlaped);
-            edge.setString( EDGENAME, goOverlap.toString() );
-        }
-        return g;
     }
 
     /**
@@ -478,234 +711,5 @@ public class GraphViewer implements PropertyChangeListener, ActionListener, Wind
         vis.run( "color" ); // assign the colors
         vis.run( "layout" ); // start up the animated layout
         vis.run( "layoutForce" );
-    }
-
-    @Override
-    public void propertyChange( PropertyChangeEvent e ) {
-        Object source = e.getSource();
-        if ( source == clusterIndex ) {
-            int index = ( ( Number ) clusterIndex.getValue() ).intValue();
-            if ( index <= 0 || index > clusterRootNodes.size() ) {
-                String message = "The Index must be between 0 and " + this.clusterRootNodes.size();
-                JOptionPane.showMessageDialog( null, "Error: " + message + "\n", "Error", JOptionPane.ERROR_MESSAGE );
-            } else {
-                currentGraphIndex = index - 1;
-                restart( currentGraphIndex );
-            }
-        }
-    }
-
-    @Override
-    public void actionPerformed( ActionEvent e ) {
-        Object source = e.getSource();
-        if ( source == forceLayout ) {
-            boolean pause = vis.getAction( "layoutForce" ).isRunning();
-            if ( pause ) {
-                forceLayout.setText( "Force Layout" );
-                vis.cancel( "layoutForce" );
-            } else {
-                forceLayout.setText( "Pause" );
-                vis.run( "layoutForce" );
-            }
-            forceLayout.invalidate();
-            forceLayout.repaint();
-            // this.frame.invalidate();
-            // this.frame.repaint();
-        }
-        if ( source == restart ) {
-            forceLayout.setText( "Pause" );
-            restart( currentGraphIndex );
-        }
-        if ( source == circleLayout ) {
-            ActionList c = new ActionList();
-            c.add( new CircleLayout( "graph.nodes" ) );
-            boolean pause = vis.getAction( "layoutForce" ).isRunning();
-            if ( pause ) vis.cancel( "layoutForce" );
-            forceLayout.setText( "Force Layout" );
-            vis.putAction( "circleLayout", c );
-            vis.run( "circleLayout" );
-            vis.invalidateAll();
-            vis.repaint();
-        }
-        if ( source == radiaTreeLayout ) {
-            ActionList layout = new ActionList();
-            layout.add( new RadialTreeLayout( "graph" ) );
-            boolean pause = vis.getAction( "layoutForce" ).isRunning();
-            if ( pause ) vis.cancel( "layoutForce" );
-            forceLayout.setText( "Force Layout" );
-            vis.putAction( "radialLayout", layout );
-            vis.run( "radialLayout" );
-            vis.invalidateAll();
-            vis.repaint();
-        }
-        if ( source == next ) {
-            if ( currentGraphIndex < clusterRootNodes.size() - 1 ) {
-                currentGraphIndex++;
-                forceLayout.setText( "Pause" );
-                clusterIndex.setValue( new Integer( currentGraphIndex + 1 ) );
-            }
-        }
-        if ( source == previous ) {
-            if ( currentGraphIndex > 0 ) {
-                forceLayout.setText( "Pause" );
-                currentGraphIndex--;
-                clusterIndex.setValue( new Integer( currentGraphIndex + 1 ) );
-            }
-        }
-    }
-
-    private JButton getSaveButton() {
-        initFilter( ".", "img" );
-        JButton eb = new JButton( "Export to file" );
-        eb.setEnabled( true );
-        eb.addActionListener( new ActionListener() {
-            @Override
-            public void actionPerformed( ActionEvent x ) {
-                boolean pause = vis.getAction( "layoutForce" ).isRunning();
-                if ( pause ) vis.cancel( "layoutForce" );
-                int returnVal = ed.showSaveDialog( display );
-                if ( returnVal == JFileChooser.APPROVE_OPTION ) {
-                    System.out.println( "You chose to save this file: " + ed.getSelectedFile().getName() );
-                    File selectedFile = ed.getSelectedFile();
-                    String fType = IOLib.getExtension( selectedFile );
-
-                    if ( fType == null ) {
-                        fType = ( ( SimpleFileFilter ) ed.getFileFilter() ).getExtension();
-                        selectedFile = new File( selectedFile.toString() + "." + fType );
-                    }
-                    if ( selectedFile.exists() ) {
-                        JOptionPane.showConfirmDialog( display, "The file \"" + selectedFile.getName()
-                                + "\" already exists.\nDo you want to replace it?", "Confirm Save",
-                                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE );
-                        // if (response == JOptionPane.NO_OPTION){
-                        // if(pause)
-                        // vis.run("layoutforce");
-                        // return;}
-                    }
-
-                    try (OutputStream out = new BufferedOutputStream( new FileOutputStream( selectedFile ) );) {
-                        display.saveImage( out, fType, 1.0 );
-
-                    } catch ( IOException e ) {
-                        e.printStackTrace();
-                    }
-                    // if(pause)
-                    // vis.run("layoutForce");
-                    // } else{
-                    // if(pause)
-                    // vis.run("layoutForce");
-                    // return; //user canceled
-                }
-            }
-        } );
-        return eb;
-    }
-
-    void initFilter( String dataDir, String title ) {
-        File defaultFile = new File( dataDir + title + ".jpg" );
-        System.out.println( "Default: " + defaultFile.toString() );
-        ed = new JFileChooser( defaultFile );
-        ed.setDialogTitle( "Save graph to file" );
-        ed.setAcceptAllFileFilterUsed( false );
-        SimpleFileFilter filter = new SimpleFileFilter( "bmp", "Bitmap file (*.bmp)" );
-        ed.addChoosableFileFilter( filter );
-        filter = new SimpleFileFilter( "png", "Portable Network Graphics (*.png)" );
-        ed.addChoosableFileFilter( filter );
-        filter = new SimpleFileFilter( "jpg", "JPEG file (*.jpg)" );
-        ed.addChoosableFileFilter( filter );
-
-        // add a button to export the display
-    }
-
-    public static Graph getGrid( int m, int n ) {
-        Graph g = new Graph();
-        g.getNodeTable().addColumns( NODE_SCHEMA );
-        g.getEdgeTable().addColumns( EDGE_SCHEMA );
-
-        Node[] nodes = new Node[m * n];
-        for ( int i = 0; i < m * n; ++i ) {
-            nodes[i] = g.addNode();
-            nodes[i].setString( NODENAME, String.valueOf( i ) );
-            if ( i > m * n / 2 )
-                nodes[i].setString( NODEATTR, "First" );
-            else
-                nodes[i].setString( NODEATTR, "Second" );
-            Edge edge = null;
-            if ( i >= n ) edge = g.addEdge( nodes[i - n], nodes[i] );
-            if ( i % n != 0 ) edge = g.addEdge( nodes[i - 1], nodes[i] );
-            if ( edge != null ) edge.setString( EDGENAME, "test" );
-        }
-        return g;
-    }
-
-    public static class LabelLayout extends Layout {
-        public LabelLayout( String group ) {
-            super( group );
-        }
-
-        @Override
-        public void run( double frac ) {
-            Iterator<DecoratorItem> iter = m_vis.items( m_group );
-            while ( iter.hasNext() ) {
-                DecoratorItem item = iter.next();
-                VisualItem node = item.getDecoratedItem();
-                Rectangle2D bounds = node.getBounds();
-                setX( item, null, bounds.getCenterX() );
-                setY( item, null, bounds.getCenterY() );
-            }
-        }
-    } // end of inner class LabelLayout
-
-    public static class FillColorAction extends ColorAction {
-        private ColorMap cmap = new ColorMap( ColorLib.getInterpolatedPalette( 10, ColorLib.rgb( 190, 190, 255 ),
-                ColorLib.rgb( 0, 0, 0 ) ), 0, 9 );
-
-        public FillColorAction( String group ) {
-            super( group, VisualItem.FILLCOLOR );
-        }
-
-        @Override
-        public int getColor( VisualItem item ) {
-            if ( item instanceof NodeItem ) {
-                NodeItem nitem = ( NodeItem ) item;
-                if ( nitem.getString( NODEATTR ).contains( SelectedGoTerm ) ) {
-                    return ColorLib.rgb( 191, 99, 130 );
-
-                }
-                return cmap.getColor( 1 );
-            }
-            return cmap.getColor( 0 );
-        }
-
-    } // end of inner class TreeMapColorAction
-
-    @Override
-    public void windowActivated( WindowEvent e ) {
-    }
-
-    @Override
-    public void windowClosed( WindowEvent e ) {
-    }
-
-    @Override
-    public void windowClosing( WindowEvent e ) {
-        WINDOW_CLOSED = true;
-        System.err.println( "CLOSING" );
-    }
-
-    @Override
-    public void windowDeactivated( WindowEvent e ) {
-    }
-
-    @Override
-    public void windowDeiconified( WindowEvent e ) {
-    }
-
-    @Override
-    public void windowIconified( WindowEvent e ) {
-    }
-
-    @Override
-    public void windowOpened( WindowEvent e ) {
     }
 }

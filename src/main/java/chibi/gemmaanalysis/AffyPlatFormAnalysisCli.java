@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,29 +30,29 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
-import ubic.basecode.io.ByteArrayConverter;
-import ubic.basecode.math.DescriptiveWithMissing;
-import ubic.gemma.model.common.quantitationtype.QuantitationType;
-import ubic.gemma.model.common.quantitationtype.StandardQuantitationType;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.bioAssay.BioAssay;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
-import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.util.AbstractSpringAwareCLI;
 import cern.colt.list.DoubleArrayList;
 import cern.colt.list.ObjectArrayList;
 import cern.jet.stat.Descriptive;
+import ubic.basecode.io.ByteArrayConverter;
+import ubic.basecode.math.DescriptiveWithMissing;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
+import ubic.gemma.model.common.quantitationtype.QuantitationType;
+import ubic.gemma.model.common.quantitationtype.StandardQuantitationType;
+import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
+import ubic.gemma.model.expression.bioAssay.BioAssay;
+import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.genome.Gene;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 
 /**
  * @author xwan
- * @version $Id$
+ * @version $Id: AffyPlatFormAnalysisCli.java,v 1.14 2015/11/12 19:37:12 paul Exp $
  */
 public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
 
@@ -72,12 +72,12 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
             return median.compareTo( o.median );
         }
 
-        public Double getMax() {
-            return max;
-        }
-
         public CompositeSequence getDE() {
             return de;
+        }
+
+        public Double getMax() {
+            return max;
         }
 
         public Double getPresentAbsentCall() {
@@ -91,62 +91,82 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
     public static final int MEAN = 4;
     public static final int STD = 5;
 
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        AffyPlatFormAnalysisCli analysis = new AffyPlatFormAnalysisCli();
+        StopWatch watch = new StopWatch();
+        watch.start();
+        try {
+            Exception ex = analysis.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+            watch.stop();
+            log.info( "Elapsed time: " + watch.getTime() / 1000 + " seconds" );
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
     private String arrayDesignName = null;
     private String outFileName = null;
-    private Map<CompositeSequence, DoubleArrayList> rankData = new HashMap<CompositeSequence, DoubleArrayList>();
-    private Map<CompositeSequence, DoubleArrayList> presentAbsentData = new HashMap<CompositeSequence, DoubleArrayList>();
+    private Map<CompositeSequence, DoubleArrayList> rankData = new HashMap<>();
+    private Map<CompositeSequence, DoubleArrayList> presentAbsentData = new HashMap<>();
     private DesignElementDataVectorService devService = null;
     private ExpressionExperimentService eeService = null;
+
     private Map<CompositeSequence, Collection<Gene>> probeToGeneAssociation = null;
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( hasOption( 'a' ) ) {
-            this.arrayDesignName = getOptionValue( 'a' );
-        }
-        if ( hasOption( 'o' ) ) {
-            this.outFileName = getOptionValue( 'o' );
-        }
+    public String getCommandName() {
+        return null;
     }
 
-    @SuppressWarnings("static-access")
-    @Override
-    protected void buildOptions() {
-        Option ADOption = OptionBuilder.hasArg().isRequired().withArgName( "arrayDesign" )
-                .withDescription( "Array Design Short Name (GPLXXX) " ).withLongOpt( "arrayDesign" ).create( 'a' );
-        addOption( ADOption );
-        Option OutOption = OptionBuilder.hasArg().isRequired().withArgName( "outputFile" )
-                .withDescription( "The name of the file to save the output " ).withLongOpt( "outputFile" ).create( 'o' );
-        addOption( OutOption );
-    }
-
-    private QuantitationType getQuantitationType( ExpressionExperiment ee, StandardQuantitationType requiredQT,
-            boolean isPreferedQT ) {
-        QuantitationType qtf = null;
-        Collection<QuantitationType> eeQT = this.eeService.getQuantitationTypes( ee );
-        for ( QuantitationType qt : eeQT ) {
-            if ( isPreferedQT ) {
-                if ( qt.getIsPreferred() ) {
-                    qtf = qt;
-                    StandardQuantitationType tmpQT = qt.getType();
-                    if ( tmpQT != StandardQuantitationType.AMOUNT ) {
-                        log.warn( "Preferred Quantitation Type may not be correct." + ee.getShortName() + ":"
-                                + tmpQT.toString() );
-                    }
-                    break;
-                }
-            } else {
-                if ( qt.getType().equals( requiredQT ) ) {
-                    qtf = qt;
-                    break;
-                }
+    int getNumberofArraysinEE( ExpressionExperiment ee, ArrayDesign ad ) {
+        int numberofArrays = 0;
+        eeService.thawLite( ee );
+        Collection<BioAssay> bioAssays = ee.getBioAssays();
+        for ( BioAssay assay : bioAssays ) {
+            ArrayDesign design = assay.getArrayDesignUsed();
+            if ( ad.equals( design ) ) {
+                numberofArrays++;
             }
         }
-        if ( qtf == null ) {
-            log.info( "Expression Experiment " + ee.getShortName() + " doesn't have required QT " );
+        System.err.println( "Got " + numberofArrays );
+        return numberofArrays;
+    }
+
+    String processEE( ExpressionExperiment ee ) {
+        // eeService.thaw( ee );
+        QuantitationType qt = this.getQuantitationType( ee, null, true );
+        if ( qt == null ) return ( "No usable quantitation type in " + ee.getShortName() );
+        log.info( "Load Data for  " + ee.getShortName() );
+
+        Collection<ProcessedExpressionDataVector> dataVectors = eeService.getProcessedDataVectors( ee );
+        if ( dataVectors == null ) return ( "No data vector " + ee.getShortName() );
+        if ( this.probeToGeneAssociation == null ) {
+            this.probeToGeneAssociation = this.getDevToGeneAssociation( dataVectors );
         }
-        return qtf;
+
+        for ( ProcessedExpressionDataVector vector : dataVectors ) {
+            CompositeSequence de = vector.getDesignElement();
+            DoubleArrayList rankList = this.rankData.get( de );
+            if ( rankList == null ) {
+                return ( " EE data vectors don't match array design for probe " + de.getName() );
+            }
+            Double rank = vector.getRankByMean();
+            if ( rank != null ) {
+                rankList.add( rank.doubleValue() );
+            }
+        }
+        return null;
     }
 
     String processEEForPercentage( ExpressionExperiment ee ) {
@@ -180,84 +200,25 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         return null;
     }
 
-    private Map<CompositeSequence, Collection<Gene>> getDevToGeneAssociation(
-            Collection<ProcessedExpressionDataVector> datavectors ) {
-
-        Collection<CompositeSequence> cs = new HashSet<CompositeSequence>();
-        for ( ProcessedExpressionDataVector designElementDataVector : datavectors ) {
-            cs.add( designElementDataVector.getDesignElement() );
-        }
-        CompositeSequenceService css = this.getBean( CompositeSequenceService.class );
-        return css.getGenes( cs );
-    }
-
-    String processEE( ExpressionExperiment ee ) {
-        // eeService.thaw( ee );
-        QuantitationType qt = this.getQuantitationType( ee, null, true );
-        if ( qt == null ) return ( "No usable quantitation type in " + ee.getShortName() );
-        log.info( "Load Data for  " + ee.getShortName() );
-
-        Collection<ProcessedExpressionDataVector> dataVectors = eeService.getProcessedDataVectors( ee );
-        if ( dataVectors == null ) return ( "No data vector " + ee.getShortName() );
-        if ( this.probeToGeneAssociation == null ) {
-            this.probeToGeneAssociation = this.getDevToGeneAssociation( dataVectors );
-        }
-
-        for ( ProcessedExpressionDataVector vector : dataVectors ) {
-            CompositeSequence de = vector.getDesignElement();
-            DoubleArrayList rankList = this.rankData.get( de );
-            if ( rankList == null ) {
-                return ( " EE data vectors don't match array design for probe " + de.getName() );
-            }
-            Double rank = vector.getRankByMean();
-            if ( rank != null ) {
-                rankList.add( rank.doubleValue() );
-            }
-        }
-        return null;
-    }
-
-    private double getStatValue( DoubleArrayList valList, int method ) {
-        double value = 0.0;
-        switch ( method ) {
-            case MIN:
-                value = DescriptiveWithMissing.min( valList );
-                break;
-            case MAX:
-                value = DescriptiveWithMissing.max( valList );
-                break;
-            case MEAN:
-                value = DescriptiveWithMissing.mean( valList );
-                break;
-            case MEDIAN:
-                valList.sort();
-                value = DescriptiveWithMissing.median( valList );
-                break;
-            case STD:
-                int N = valList.size();
-                double sum = DescriptiveWithMissing.sum( valList );
-                double ss = DescriptiveWithMissing.sumOfSquares( valList );
-                value = Descriptive.standardDeviation( DescriptiveWithMissing.variance( N, sum, ss ) );
-                break;
-            default:
-                break;
-        }
-        if ( Double.isNaN( value ) ) value = 0.0;
-        return value;
-    }
-
-    int getNumberofArraysinEE( ExpressionExperiment ee, ArrayDesign ad ) {
-        int numberofArrays = 0;
-        eeService.thawLite( ee );
-        Collection<BioAssay> bioAssays = ee.getBioAssays();
-        for ( BioAssay assay : bioAssays ) {
-            ArrayDesign design = assay.getArrayDesignUsed();
-            if ( ad.equals( design ) ) {
-                numberofArrays++;
-            }
-        }
-        System.err.println( "Got " + numberofArrays );
-        return numberofArrays;
+    @SuppressWarnings("static-access")
+    @Override
+    protected void buildOptions() {
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "arrayDesign" );
+        OptionBuilder
+                .withDescription( "Array Design Short Name (GPLXXX) " );
+        OptionBuilder.withLongOpt( "arrayDesign" );
+        Option ADOption = OptionBuilder.create( 'a' );
+        addOption( ADOption );
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "outputFile" );
+        OptionBuilder
+                .withDescription( "The name of the file to save the output " );
+        OptionBuilder.withLongOpt( "outputFile" );
+        Option OutOption = OptionBuilder.create( 'o' );
+        addOption( OutOption );
     }
 
     @Override
@@ -332,33 +293,83 @@ public class AffyPlatFormAnalysisCli extends AbstractSpringAwareCLI {
         return null;
     }
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        AffyPlatFormAnalysisCli analysis = new AffyPlatFormAnalysisCli();
-        StopWatch watch = new StopWatch();
-        watch.start();
-        try {
-            Exception ex = analysis.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-            watch.stop();
-            log.info( "Elapsed time: " + watch.getTime() / 1000 + " seconds" );
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        if ( hasOption( 'a' ) ) {
+            this.arrayDesignName = getOptionValue( 'a' );
+        }
+        if ( hasOption( 'o' ) ) {
+            this.outFileName = getOptionValue( 'o' );
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
+    private Map<CompositeSequence, Collection<Gene>> getDevToGeneAssociation(
+            Collection<ProcessedExpressionDataVector> datavectors ) {
+
+        Collection<CompositeSequence> cs = new HashSet<>();
+        for ( ProcessedExpressionDataVector designElementDataVector : datavectors ) {
+            cs.add( designElementDataVector.getDesignElement() );
+        }
+        CompositeSequenceService css = this.getBean( CompositeSequenceService.class );
+        return css.getGenes( cs );
+    }
+
+    private QuantitationType getQuantitationType( ExpressionExperiment ee, StandardQuantitationType requiredQT,
+            boolean isPreferedQT ) {
+        QuantitationType qtf = null;
+        Collection<QuantitationType> eeQT = this.eeService.getQuantitationTypes( ee );
+        for ( QuantitationType qt : eeQT ) {
+            if ( isPreferedQT ) {
+                if ( qt.getIsPreferred() ) {
+                    qtf = qt;
+                    StandardQuantitationType tmpQT = qt.getType();
+                    if ( tmpQT != StandardQuantitationType.AMOUNT ) {
+                        log.warn( "Preferred Quantitation Type may not be correct." + ee.getShortName() + ":"
+                                + tmpQT.toString() );
+                    }
+                    break;
+                }
+            } else {
+                if ( qt.getType().equals( requiredQT ) ) {
+                    qtf = qt;
+                    break;
+                }
+            }
+        }
+        if ( qtf == null ) {
+            log.info( "Expression Experiment " + ee.getShortName() + " doesn't have required QT " );
+        }
+        return qtf;
+    }
+
+    private double getStatValue( DoubleArrayList valList, int method ) {
+        double value = 0.0;
+        switch ( method ) {
+            case MIN:
+                value = DescriptiveWithMissing.min( valList );
+                break;
+            case MAX:
+                value = DescriptiveWithMissing.max( valList );
+                break;
+            case MEAN:
+                value = DescriptiveWithMissing.mean( valList );
+                break;
+            case MEDIAN:
+                valList.sort();
+                value = DescriptiveWithMissing.median( valList );
+                break;
+            case STD:
+                int N = valList.size();
+                double sum = DescriptiveWithMissing.sum( valList );
+                double ss = DescriptiveWithMissing.sumOfSquares( valList );
+                value = Descriptive.standardDeviation( DescriptiveWithMissing.variance( N, sum, ss ) );
+                break;
+            default:
+                break;
+        }
+        if ( Double.isNaN( value ) ) value = 0.0;
+        return value;
     }
 
 }

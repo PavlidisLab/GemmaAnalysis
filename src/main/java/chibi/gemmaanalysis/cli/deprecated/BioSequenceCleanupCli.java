@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2006 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,22 +29,22 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.StringUtils;
 
-import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
+import ubic.gemma.core.apps.ArrayDesignSequenceManipulatingCli;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
-import ubic.gemma.model.genome.biosequence.BioSequenceService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
-import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResult;
-import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
+import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatAssociationService;
+import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatResultService;
 
 /**
  * Goes through the biosequences for array designs in the database and removes duplicates.
- * 
+ *
  * @author pavlidis
- * @version $Id$
+ * @version $Id: BioSequenceCleanupCli.java,v 1.11 2015/11/12 19:37:12 paul Exp $
  * @deprecated because we shouldn't really need this any more.
  */
 @Deprecated
@@ -71,16 +71,31 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     private String file = null;
     private boolean justTesting = false;
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option justTestingOption = OptionBuilder.withDescription( "Set to run without any database modifications" )
+        OptionBuilder.withDescription( "Set to run without any database modifications" );
+        Option justTestingOption = OptionBuilder
                 .create( "dryrun" );
         addOption( justTestingOption );
 
-        Option sequenceNameList = OptionBuilder.hasArg().withArgName( "file" )
-                .withDescription( "File with list of biosequence ids to check." ).create( 'b' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "file" );
+        OptionBuilder
+                .withDescription( "File with list of biosequence ids to check." );
+        Option sequenceNameList = OptionBuilder.create( 'b' );
         addOption( sequenceNameList );
     }
 
@@ -90,7 +105,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         Exception err = processCommandLine( args );
         if ( err != null ) return err;
 
-        Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
+        Collection<ArrayDesign> ads = new HashSet<>();
         if ( !this.arrayDesignsToProcess.isEmpty() ) {
             ads.addAll( this.arrayDesignsToProcess );
         } else if ( file != null ) {
@@ -98,7 +113,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                     BufferedReader br = new BufferedReader( new InputStreamReader( is ) );) {
 
                 String id = null;
-                Collection<Long> ids = new HashSet<Long>();
+                Collection<Long> ids = new HashSet<>();
                 while ( ( id = br.readLine() ) != null ) {
                     if ( StringUtils.isBlank( id ) ) {
                         continue;
@@ -121,7 +136,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
             log.info( design );
             design = unlazifyArrayDesign( design );
 
-            Collection<BioSequence> bioSequences = new HashSet<BioSequence>();
+            Collection<BioSequence> bioSequences = new HashSet<>();
 
             for ( CompositeSequence cs : design.getCompositeSequences() ) {
                 if ( cs == null ) continue;
@@ -162,7 +177,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                 if ( log.isDebugEnabled() )
                     log.debug( "Examining set of " + seqs.size() + " possible duplicates of " + anchorSeq );
 
-                Collection<BioSequence> notDuplicate = new HashSet<BioSequence>();
+                Collection<BioSequence> notDuplicate = new HashSet<>();
                 for ( BioSequence candidateForRemoval : seqs ) {
                     if ( log.isDebugEnabled() ) log.debug( "   Examining: " + candidateForRemoval );
                     assert !candidateForRemoval.equals( anchorSeq ) : candidateForRemoval + " equals " + anchorSeq;
@@ -211,7 +226,7 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
     /**
      * Test whether two sequences are effectively equal (ignore the ID)
-     * 
+     *
      * @param one
      * @param that
      * @return
@@ -224,7 +239,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         if ( one.getSequenceDatabaseEntry() != null
                 && that.getSequenceDatabaseEntry() != null
                 && !one.getSequenceDatabaseEntry().getAccession()
-                        .equals( that.getSequenceDatabaseEntry().getAccession() ) ) return false;
+                        .equals( that.getSequenceDatabaseEntry().getAccession() ) )
+            return false;
 
         if ( one.getTaxon() != null && that.getTaxon() != null && !one.getTaxon().equals( that.getTaxon() ) )
             return false;
@@ -338,15 +354,6 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
         if ( !justTesting ) {
             bss.remove( toRemove );
         }
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

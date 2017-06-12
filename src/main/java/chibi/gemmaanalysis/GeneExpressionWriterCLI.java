@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -24,7 +24,6 @@ import java.io.PrintWriter;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.cli.Option;
@@ -32,32 +31,27 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 import org.springframework.util.StringUtils;
 
-import ubic.gemma.analysis.service.ExpressionDataMatrixService;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.analysis.service.ExpressionDataMatrixService;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.biomaterial.BioMaterial;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 
 /**
  * Writes the expression level for a select group of genes for each sample.
- * 
+ *
  * @author ptan
- * @version $Id$
+ * @version $Id: GeneExpressionWriterCLI.java,v 1.4 2015/12/03 22:31:24 paul Exp $
  */
 public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI {
-
-    @Override
-    public String getShortDesc() {
-        return "Writes the expression level for a select group of genes for each sample";
-    }
 
     public static void main( String[] args ) {
         GeneExpressionWriterCLI cli = new GeneExpressionWriterCLI();
@@ -70,15 +64,20 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
     private ExpressionDataMatrixService expressionDataMatrixService;
 
     private String outFilePrefix;
-    private String[] queryGeneSymbols;
 
+    private String[] queryGeneSymbols;
     private String queryGeneFile;
 
     private CompositeSequenceService csService;
 
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#getCommandName()
      */
     @Override
@@ -86,34 +85,29 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         return "writeGeneData";
     }
 
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.ANALYSIS;
-    }
-
     /**
      * Get a gene to composite sequence map // FIXME This corresponds to an existing service method? Yes, it does -PP
-     * 
+     *
      * @param css
      * @return gene to composite sequences map
      */
     public Map<Gene, Collection<CompositeSequence>> getGene2CsMap( Collection<CompositeSequence> css ) {
         Map<CompositeSequence, Collection<Gene>> cs2gene = csService.getGenes( css );
         // filter for specific cs 2 gene
-//        for ( Iterator<Map.Entry<CompositeSequence, Collection<Gene>>> it = cs2gene.entrySet().iterator(); it.hasNext(); ) {
-//            Map.Entry<CompositeSequence, Collection<Gene>> entry = it.next();
-//            Collection<Gene> genes = entry.getValue();
-//            if ( genes.size() > 1 ) it.remove();
-//        }
+        //        for ( Iterator<Map.Entry<CompositeSequence, Collection<Gene>>> it = cs2gene.entrySet().iterator(); it.hasNext(); ) {
+        //            Map.Entry<CompositeSequence, Collection<Gene>> entry = it.next();
+        //            Collection<Gene> genes = entry.getValue();
+        //            if ( genes.size() > 1 ) it.remove();
+        //        }
 
-        Map<Gene, Collection<CompositeSequence>> gene2css = new HashMap<Gene, Collection<CompositeSequence>>();
+        Map<Gene, Collection<CompositeSequence>> gene2css = new HashMap<>();
         for ( Map.Entry<CompositeSequence, Collection<Gene>> entry : cs2gene.entrySet() ) {
             CompositeSequence cs = entry.getKey();
             Collection<Gene> genes = entry.getValue();
             for ( Gene gene : genes ) {
                 Collection<CompositeSequence> c = gene2css.get( gene );
                 if ( c == null ) {
-                    c = new HashSet<CompositeSequence>();
+                    c = new HashSet<>();
                     gene2css.put( gene, c );
                 }
                 c.add( cs );
@@ -123,7 +117,7 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
     }
 
     public Collection<Gene> getQueryGenes() throws IOException {
-        Collection<Gene> genes = new HashSet<Gene>();
+        Collection<Gene> genes = new HashSet<>();
         if ( queryGeneFile != null ) genes.addAll( readGeneListFile( queryGeneFile, taxon ) );
         if ( queryGeneSymbols != null ) {
             for ( int i = 0; i < queryGeneSymbols.length; i++ ) {
@@ -132,6 +126,11 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         }
 
         return genes;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return "Writes the expression level for a select group of genes for each sample";
     }
 
     @SuppressWarnings("static-access")
@@ -155,8 +154,13 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         Option queryGeneOption = OptionBuilder.create();
         addOption( queryGeneOption );
 
-        addOption( OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "Output filename prefix" )
-                .withLongOpt( "outfile" ).isRequired().create( 'o' ) );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "outfile" );
+        OptionBuilder.withDescription( "Output filename prefix" );
+        OptionBuilder
+                .withLongOpt( "outfile" );
+        OptionBuilder.isRequired();
+        addOption( OptionBuilder.create( 'o' ) );
 
     }
 
@@ -200,7 +204,7 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
         for ( BioAssaySet bas : this.expressionExperiments ) {
             ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
-            Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
+            Collection<CompositeSequence> css = new HashSet<>();
             for ( ArrayDesign ad : ads ) {
                 css.addAll( adService.getCompositeSequences( ad ) );
             }
@@ -293,7 +297,7 @@ public class GeneExpressionWriterCLI extends ExpressionExperimentManipulatingCLI
     }
 
     protected Map<String, String> getGeneIdPair2NameMap( Collection<Gene> queryGenes, Collection<Gene> targetGenes ) {
-        Map<String, String> map = new HashMap<String, String>();
+        Map<String, String> map = new HashMap<>();
         for ( Gene qGene : queryGenes ) {
             String qName = ( qGene.getOfficialSymbol() != null ) ? qGene.getOfficialSymbol() : qGene.getId().toString();
             for ( Gene tGene : targetGenes ) {

@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,51 +26,70 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.StringUtils;
 
 import ubic.basecode.io.ByteArrayConverter;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.datastructure.matrix.VectorMarshall;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.datastructure.matrix.VectorMarshall;
 import ubic.gemma.model.common.quantitationtype.PrimitiveType;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
-import ubic.gemma.model.common.quantitationtype.QuantitationTypeService;
 import ubic.gemma.model.expression.bioAssayData.DesignElementDataVector;
-import ubic.gemma.model.expression.bioAssayData.DesignElementDataVectorService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.persistence.service.common.quantitationtype.QuantitationTypeService;
+import ubic.gemma.persistence.service.expression.bioAssayData.DesignElementDataVectorService;
 
 /**
  * Remove tabs from strings stored in the database. Can also check all vectors for correct sizes (a useful database
  * check, but slow). This is more or less a one-off, it was used to clean up errors that shouldn't happen any more (!)
- * 
+ *
  * @author pavlidis
- * @version $Id$
+ * @version $Id: StringVectorCleanup.java,v 1.8 2015/11/12 19:37:12 paul Exp $
  */
 @Deprecated
 public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
+
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        StringVectorCleanup c = new StringVectorCleanup();
+        Exception e = c.doWork( args );
+        if ( e != null ) {
+            log.fatal( e, e );
+        }
+
+    }
+
+    DesignElementDataVectorService dedvs;
+
+    QuantitationTypeService qts;
+
+    private boolean fullCheck = false;
+
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.DEPRECATED;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
 
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        this.addOption( OptionBuilder.withDescription(
+        OptionBuilder.withDescription(
                 "Examine ALL vectors for correct sizes, "
-                        + "not just string types. Slow but useful check of the integrity of the system" ).create( 'f' ) );
+                        + "not just string types. Slow but useful check of the integrity of the system" );
+        this.addOption( OptionBuilder
+                .create( 'f' ) );
     }
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.DEPRECATED;
-    }
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( 'f' ) ) {
-            this.fullCheck = true;
-            log.info( "A full check of all vectors will be done" );
-        }
-    }
-
-    DesignElementDataVectorService dedvs;
-    QuantitationTypeService qts;
-    private boolean fullCheck = false;
 
     @Override
     protected Exception doWork( String[] args ) {
@@ -88,6 +107,15 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
         summarizeProcessing();
         return null;
 
+    }
+
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        if ( this.hasOption( 'f' ) ) {
+            this.fullCheck = true;
+            log.info( "A full check of all vectors will be done" );
+        }
     }
 
     /**
@@ -117,7 +145,7 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
 
                     int numBioAssays = vector.getBioAssayDimension().getBioAssays().size();
                     String[] rawStrings = converter.byteArrayToStrings( dat );
-                    List<String> updated = new ArrayList<String>();
+                    List<String> updated = new ArrayList<>();
                     for ( String string : rawStrings ) {
                         if ( string.equals( "\t" ) ) {
                             changed = true;
@@ -164,27 +192,5 @@ public class StringVectorCleanup extends ExpressionExperimentManipulatingCLI {
             }
 
         }
-    }
-
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        StringVectorCleanup c = new StringVectorCleanup();
-        Exception e = c.doWork( args );
-        if ( e != null ) {
-            log.fatal( e, e );
-        }
-
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
     }
 }

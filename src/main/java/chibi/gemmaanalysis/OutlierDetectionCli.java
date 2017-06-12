@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2011 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,19 +27,19 @@ import java.util.Collection;
 import java.util.Date;
 
 import ubic.basecode.util.DateUtil;
-import ubic.gemma.analysis.preprocess.OutlierDetails;
-import ubic.gemma.analysis.preprocess.OutlierDetectionService;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.analysis.preprocess.OutlierDetails;
+import ubic.gemma.core.analysis.preprocess.OutlierDetectionService;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
  * Checks experiments for outliers
- * 
+ *
  * @author paul
- * @version $Id$
+ * @version $Id: OutlierDetectionCli.java,v 1.8 2015/11/12 19:37:11 paul Exp $
  */
 public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
 
@@ -53,10 +53,7 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
         c.doWork( args );
 
     }
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.ANALYSIS;
-    }
+
     OutlierDetectionService outlierDetectionService;
 
     Writer summaryFile;
@@ -67,19 +64,19 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
 
     int quantile = 15;
 
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
      */
-    private Writer initOutputFile( String fileName ) throws IOException {
-        File f = new File( fileName );
-        if ( f.exists() ) {
-            f.delete();
-        }
-        f.createNewFile();
-        log.info( "New file: " + f.getAbsolutePath() );
-        return new FileWriter( f );
+    @Override
+    public String getCommandName() {
+        return "outlierDetect";
     }
 
     @Override
@@ -98,7 +95,7 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -176,14 +173,19 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+    /**
+     * @param fileName
+     * @return
+     * @throws IOException
      */
-    @Override
-    public String getCommandName() {
-        return "outlierDetect";
+    private Writer initOutputFile( String fileName ) throws IOException {
+        File f = new File( fileName );
+        if ( f.exists() ) {
+            f.delete();
+        }
+        f.createNewFile();
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
     }
 
 }

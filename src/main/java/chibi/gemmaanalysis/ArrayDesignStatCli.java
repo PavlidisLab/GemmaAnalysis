@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,89 +30,70 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.time.StopWatch;
 
-import ubic.gemma.apps.ArrayDesignSequenceManipulatingCli;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.genome.taxon.service.TaxonService;
-import ubic.gemma.model.common.auditAndSecurity.Status;
-import ubic.gemma.model.common.auditAndSecurity.StatusService;
+import cern.colt.Arrays;
+import ubic.gemma.core.apps.ArrayDesignSequenceManipulatingCli;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.genome.taxon.service.TaxonService;
+import ubic.gemma.model.common.auditAndSecurity.curation.CurationDetails;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import cern.colt.Arrays;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 
 /**
  * CLI for ArrayDesignMapSummaryService
- * 
+ *
  * @author xwan
- * @version $Id$
+ * @version $Id: ArrayDesignStatCli.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
 public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
 
-    private ArrayDesignService adService;
-    private GeneService geneService;
     private final static int MAXIMUM_COUNT = 10;
-    private Collection<Long> geneIds = new HashSet<Long>();
-    private CompositeSequenceService compositeSequenceService;
-    private TaxonService taxonService;
     private final static String DEFAULT_OUT_FILE = "arraydesignsummary.txt";
-    private String outFile;
-    private Taxon taxon;
-    private StatusService statusService;
+    //private StatusService statusService;
     private final static String NA = "NA";
 
-    @Override
-    @SuppressWarnings("static-access")
-    protected void buildOptions() {
-        super.buildOptions();
-
-        Option expOption = OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "TSV output filename" )
-                .withLongOpt( "outfile" ).create( 'o' );
-        addOption( expOption );
-
-        Option taxonOption = OptionBuilder.hasArg().withDescription( "taxon name" )
-                .withDescription( "Taxon of the expression experiments and genes" ).withLongOpt( "taxon" ).create( 't' );
-        addOption( taxonOption );
+    public static void main( String[] args ) {
+        ArrayDesignStatCli s = new ArrayDesignStatCli();
+        try {
+            Exception ex = s.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
     }
 
+    private ArrayDesignService adService;
+    private GeneService geneService;
+    private Collection<Long> geneIds = new HashSet<>();
+    private CompositeSequenceService compositeSequenceService;
+    private TaxonService taxonService;
+    private String outFile;
+
+    private Taxon taxon;
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        // FIXME: add HTML output option.
-
-        this.adService = this.getBean( ArrayDesignService.class );
-        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
-        this.geneService = this.getBean( GeneService.class );
-        this.taxonService = this.getBean( TaxonService.class );
-        this.statusService = this.getBean( StatusService.class );
-
-        if ( hasOption( 'o' ) ) {
-            this.outFile = getOptionValue( 'o' );
-            log.info( "Output will be written to " + outFile );
-        } else {
-            this.outFile = DEFAULT_OUT_FILE;
-        }
-
-        if ( hasOption( 't' ) ) {
-            String taxonName = getOptionValue( 't' );
-            this.taxon = taxonService.findByCommonName( taxonName );
-            if ( this.taxon == null ) {
-                log.error( "ERROR: Cannot find taxon " + taxonName );
-            }
-        }
-
+    public String getCommandName() {
+        return "platformStats";
     }
 
     Map<Long, Collection<Long>> getGeneId2CSIdsMap( Map<Long, Collection<Long>> csId2geneIds ) {
-        Map<Long, Collection<Long>> geneId2csIds = new HashMap<Long, Collection<Long>>();
+        Map<Long, Collection<Long>> geneId2csIds = new HashMap<>();
         for ( Long csId : csId2geneIds.keySet() ) {
             Collection<Long> gids = csId2geneIds.get( csId );
             for ( Long geneId : gids ) {
                 Collection<Long> csIds = geneId2csIds.get( geneId );
                 if ( csIds == null ) {
-                    csIds = new HashSet<Long>();
+                    csIds = new HashSet<>();
                     geneId2csIds.put( geneId, csIds );
                 }
                 csIds.add( csId );
@@ -142,22 +123,31 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         return res;
     }
 
-    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
-        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
-                .loadMultiple( csIds ) );
-        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
-        for ( CompositeSequence cs : genes.keySet() ) {
-            result.put( cs.getId(), new HashSet<Long>() );
-            for ( Gene g : genes.get( cs ) ) {
-                result.get( cs.getId() ).add( g.getId() );
-            }
-        }
-        return result;
+    @Override
+    @SuppressWarnings("static-access")
+    protected void buildOptions() {
+        super.buildOptions();
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "outfile" );
+        OptionBuilder.withDescription( "TSV output filename" );
+        OptionBuilder
+                .withLongOpt( "outfile" );
+        Option expOption = OptionBuilder.create( 'o' );
+        addOption( expOption );
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withDescription( "taxon name" );
+        OptionBuilder
+                .withDescription( "Taxon of the expression experiments and genes" );
+        OptionBuilder.withLongOpt( "taxon" );
+        Option taxonOption = OptionBuilder.create( 't' );
+        addOption( taxonOption );
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -168,8 +158,8 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         if ( arrayDesignsToProcess == null || arrayDesignsToProcess.size() == 0 ) {
             this.arrayDesignsToProcess = adService.loadAll();
         }
-        Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<Taxon, Collection<ArrayDesign>>();
-        Collection<Long> adIds = new HashSet<Long>();
+        Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<>();
+        Collection<Long> adIds = new HashSet<>();
         for ( ArrayDesign ad : this.arrayDesignsToProcess ) {
 
             Taxon taxon = ad.getPrimaryTaxon();
@@ -196,7 +186,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
             Collection<ArrayDesign> ads = null;
             ads = taxon2arraydesign.get( taxon );
             if ( ads == null ) {
-                ads = new HashSet<ArrayDesign>();
+                ads = new HashSet<>();
                 taxon2arraydesign.put( taxon, ads );
             }
             ads.add( ad );
@@ -215,9 +205,9 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 out.write( "\tG2P_" + i );
             out.write( "\n" );
             System.err.print( header + "\n" );
-            for ( Taxon taxon : taxon2arraydesign.keySet() ) {
-                Collection<ArrayDesign> ads = taxon2arraydesign.get( taxon );
-                Collection<Gene> allGenes = geneService.getGenesByTaxon( taxon );
+            for ( Taxon t : taxon2arraydesign.keySet() ) {
+                Collection<ArrayDesign> ads = taxon2arraydesign.get( t );
+                Collection<Gene> allGenes = geneService.getGenesByTaxon( t );
                 for ( Gene gene : allGenes ) {
                     geneIds.add( gene.getId() );
 
@@ -225,7 +215,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                 for ( ArrayDesign ad : ads ) {
 
                     try {
-                        Status status = statusService.getStatus( ad );
+                        CurationDetails status = ad.getCurationDetails();
                         String isTroubled = status != null ? Boolean.toString( status.getTroubled().booleanValue() )
                                 : NA;
                         ad = arrayDesignService.thawLite( ad );
@@ -244,7 +234,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                         long numCsGenes = getArrayDesignService().numCompositeSequenceWithGenes( ad );
                         long numGenes = getArrayDesignService().numGenes( ad );
                         Collection<CompositeSequence> allCSs = getArrayDesignService().getCompositeSequences( ad );
-                        Collection<Long> csIds = new HashSet<Long>();
+                        Collection<Long> csIds = new HashSet<>();
                         for ( CompositeSequence cs : allCSs )
                             csIds.add( cs.getId() );
                         // FIXME this used to provide only known genes.
@@ -286,26 +276,44 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         return null;
     }
 
-    public static void main( String[] args ) {
-        ArrayDesignStatCli s = new ArrayDesignStatCli();
-        try {
-            Exception ex = s.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        // FIXME: add HTML output option.
+
+        this.adService = this.getBean( ArrayDesignService.class );
+        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
+        this.geneService = this.getBean( GeneService.class );
+        this.taxonService = this.getBean( TaxonService.class );
+
+        if ( hasOption( 'o' ) ) {
+            this.outFile = getOptionValue( 'o' );
+            log.info( "Output will be written to " + outFile );
+        } else {
+            this.outFile = DEFAULT_OUT_FILE;
         }
+
+        if ( hasOption( 't' ) ) {
+            String taxonName = getOptionValue( 't' );
+            this.taxon = taxonService.findByCommonName( taxonName );
+            if ( this.taxon == null ) {
+                log.error( "ERROR: Cannot find taxon " + taxonName );
+            }
+        }
+
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return "platformStats";
+    private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
+        Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
+                .loadMultiple( csIds ) );
+        Map<Long, Collection<Long>> result = new HashMap<>();
+        for ( CompositeSequence cs : genes.keySet() ) {
+            result.put( cs.getId(), new HashSet<Long>() );
+            for ( Gene g : genes.get( cs ) ) {
+                result.get( cs.getId() ).add( g.getId() );
+            }
+        }
+        return result;
     }
 
 }

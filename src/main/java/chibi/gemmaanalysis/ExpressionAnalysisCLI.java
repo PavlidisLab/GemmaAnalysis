@@ -1,5 +1,5 @@
 /**
- * 
+ *
  */
 package chibi.gemmaanalysis;
 
@@ -24,24 +24,26 @@ import org.apache.commons.lang3.time.StopWatch;
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 
 /**
  * Create a relative expression level (dedv rank) matrix for a list of genes
- * 
+ *
  * @author raymond
  */
 public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingCLI {
+    public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
+
     /**
      * @param args
      */
@@ -61,21 +63,34 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     private ArrayDesignService adService;
 
-    public static final double DEFAULT_FILTER_THRESHOLD = 0.8;
-
     ProcessedExpressionDataVectorService processedExpressionDataVectorService;
-    /* (non-Javadoc)
+
+    CompositeSequenceService compositeSequenceService;
+
+    /*
+     * (non-Javadoc)
+     *
      * @see ubic.gemma.util.AbstractCLIContextCLI#getCommandGroup()
      */
     @Override
     public CommandGroup getCommandGroup() {
         return CommandGroup.ANALYSIS;
     }
-    CompositeSequenceService compositeSequenceService;
 
     /*
      * (non-Javadoc)
-     * 
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see ubic.gemma.util.AbstractCLI#buildOptions()
      */
     @Override
@@ -91,7 +106,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -134,7 +149,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         formatter.applyPattern( "0.0000" );
         formatter.getDecimalFormatSymbols().setNaN( "NaN" );
         try {
-            MatrixWriter<Gene, ExpressionExperiment> out = new MatrixWriter<Gene, ExpressionExperiment>( outFilePrefix
+            MatrixWriter<Gene, ExpressionExperiment> out = new MatrixWriter<>( outFilePrefix
                     + ".txt", formatter );
             out.writeMatrix( rankMatrix, false );
         } catch ( IOException exc ) {
@@ -145,7 +160,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     }
 
     /**
-     * 
+     *
      */
     protected void initBeans() {
         eeService = getBean( ExpressionExperimentService.class );
@@ -166,7 +181,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
     private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
         Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
                 .loadMultiple( csIds ) );
-        Map<Long, Collection<Long>> result = new HashMap<Long, Collection<Long>>();
+        Map<Long, Collection<Long>> result = new HashMap<>();
         for ( CompositeSequence cs : genes.keySet() ) {
             result.put( cs.getId(), new HashSet<Long>() );
             for ( Gene g : genes.get( cs ) ) {
@@ -183,7 +198,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
      */
     private DenseDoubleMatrix<Gene, ExpressionExperiment> getRankMatrix( Collection<Gene> genes,
             Collection<BioAssaySet> ees ) {
-        DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<Gene, ExpressionExperiment>(
+        DenseDoubleMatrix<Gene, ExpressionExperiment> matrix = new DenseDoubleMatrix<>(
                 genes.size(), ees.size() );
         for ( int i = 0; i < matrix.rows(); i++ ) {
             for ( int j = 0; j < matrix.columns(); j++ ) {
@@ -205,7 +220,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             int col = matrix.getColIndexByName( ee );
             log.info( "Processing " + ee.getShortName() + " (" + eeCount++ + " of " + ees.size() + ")" );
             Collection<ArrayDesign> ads = eeService.getArrayDesignsUsed( ee );
-            Collection<CompositeSequence> css = new HashSet<CompositeSequence>();
+            Collection<CompositeSequence> css = new HashSet<>();
             for ( ArrayDesign ad : ads ) {
                 css.addAll( adService.getCompositeSequences( ad ) );
             }
@@ -215,7 +230,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
             // get cs2gene map
             Collection<ArrayDesign> ADs = eeService.getArrayDesignsUsed( ee );
-            Collection<Long> csIds = new HashSet<Long>();
+            Collection<Long> csIds = new HashSet<>();
             for ( ArrayDesign AD : ADs ) {
                 Collection<CompositeSequence> CSs = adService.getCompositeSequences( AD );
                 for ( CompositeSequence CS : CSs ) {
@@ -226,13 +241,13 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             Map<Long, Collection<Long>> cs2geneMap = getCs2GeneMap( csIds );
 
             // invert dedv2geneMap
-            Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<Long, Collection<ProcessedExpressionDataVector>>();
+            Map<Long, Collection<ProcessedExpressionDataVector>> gene2dedvMap = new HashMap<>();
             for ( ProcessedExpressionDataVector dedv : dedvs ) {
                 Collection<Long> c = cs2geneMap.get( dedv.getDesignElement().getId() );
                 for ( Long gene : c ) {
                     Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene );
                     if ( vs == null ) {
-                        vs = new HashSet<ProcessedExpressionDataVector>();
+                        vs = new HashSet<>();
                         gene2dedvMap.put( gene, vs );
                     }
                     vs.add( dedv );
@@ -246,7 +261,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
             for ( Gene gene : genes ) {
                 int row = matrix.getRowIndexByName( gene );
                 Double rank;
-                List<Double> ranks = new ArrayList<Double>();
+                List<Double> ranks = new ArrayList<>();
                 Collection<ProcessedExpressionDataVector> vs = gene2dedvMap.get( gene.getId() );
                 if ( vs == null ) continue;
                 for ( ProcessedExpressionDataVector dedv : vs ) {
@@ -265,15 +280,6 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
         }
 
         return matrix;
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

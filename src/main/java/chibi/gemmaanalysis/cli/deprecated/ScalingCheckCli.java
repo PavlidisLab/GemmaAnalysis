@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2011 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,31 +27,21 @@ import java.util.Collection;
 
 import cern.colt.list.DoubleArrayList;
 import ubic.basecode.math.DescriptiveWithMissing;
-import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
+import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.model.common.quantitationtype.QuantitationTypeValueObject;
 import ubic.gemma.model.common.quantitationtype.ScaleType;
 import ubic.gemma.model.expression.bioAssayData.DoubleVectorValueObject;
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 
 /**
  * One-off to check scale od ata
- * 
+ *
  * @author paul
- * @version $Id$
+ * @version $Id: ScalingCheckCli.java,v 1.1 2016/01/08 21:56:18 paul Exp $
  */
 public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
-
-    @Override
-    public String getCommandName() {
-        return null;
-    }
-
-    @Override
-    public String getShortDesc() {
-        return null;
-    }
 
     /**
      * @param args
@@ -66,24 +56,19 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
 
     Writer summaryFile;
 
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
-     */
-    private Writer initOutputFile( String fileName ) throws IOException {
-        File f = new File( fileName );
-        if ( f.exists() ) {
-            f.delete();
-        }
-        f.createNewFile();
-        log.info( "New file: " + f.getAbsolutePath() );
-        return new FileWriter( f );
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return null;
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -111,6 +96,38 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
         }
 
         return null;
+    }
+
+    protected void processExperiment( ExpressionExperiment ee ) {
+        try {
+
+            /*
+             * Extract data
+             */
+            Collection<DoubleVectorValueObject> vectos = processedExpressionDataVectorService.getProcessedDataArrays(
+                    ee, 100 );
+
+            onLogScale( vectos );
+
+        } catch ( Exception e ) {
+            log.error( e, e );
+        } finally {
+        }
+    }
+
+    /**
+     * @param fileName
+     * @return
+     * @throws IOException
+     */
+    private Writer initOutputFile( String fileName ) throws IOException {
+        File f = new File( fileName );
+        if ( f.exists() ) {
+            f.delete();
+        }
+        f.createNewFile();
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
     }
 
     private boolean onLogScale( Collection<DoubleVectorValueObject> vectos ) throws IOException {
@@ -181,29 +198,5 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
         summaryFile.write( "POSSIBLY LOG SCALED\t" + id + "\t" + shortName + m + "\n" );
         return true;
 
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @seeubic.gemma.apps.DifferentialExpressionAnalysisCli#processExperiment(ubic.gemma.model.expression.experiment.
-     * ExpressionExperiment)
-     */
-    @Override
-    protected void processExperiment( ExpressionExperiment ee ) {
-        try {
-
-            /*
-             * Extract data
-             */
-            Collection<DoubleVectorValueObject> vectos = processedExpressionDataVectorService.getProcessedDataArrays(
-                    ee, 100 );
-
-            onLogScale( vectos );
-
-        } catch ( Exception e ) {
-            log.error( e, e );
-        } finally {
-        }
     }
 }

@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 Columbia University
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,15 +34,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import cern.colt.list.ObjectArrayList;
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.basecode.ontology.model.OntologyTerm;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.genome.gene.service.GeneService;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.ontology.providers.GeneOntologyService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.ontology.providers.GeneOntologyService;
-import cern.colt.list.ObjectArrayList;
 
 /**
  * WARNING probably broken. Creates an efficient matrix holding information about gene links, and can answer some basic
@@ -51,9 +51,9 @@ import cern.colt.list.ObjectArrayList;
  * <p>
  * FIXME this class mixes data structure and data access, along with 'utility' methods in a way that's a bit unclean
  * (this used be called LinkMatrixUtil).
- * 
+ *
  * @author xwan
- * @version $Id$
+ * @version $Id: LinkMatrix.java,v 1.13 2013/09/26 22:13:26 paul Exp $
  * @see FrequentLinkSetFinder
  */
 public class LinkMatrix {
@@ -157,7 +157,7 @@ public class LinkMatrix {
 
     /**
      * Create from a matrix stored in a file.
-     * 
+     *
      * @param matrixFile
      * @param eeMapFile
      * @param eeService
@@ -171,7 +171,7 @@ public class LinkMatrix {
             String row = null;
             int i;
             boolean hasConfig = false, hasRowNames = false, hasColNames = false;
-            Collection<Long> geneIds = new HashSet<Long>();
+            Collection<Long> geneIds = new HashSet<>();
             while ( ( row = in.readLine() ) != null ) {
                 row = row.trim();
                 if ( StringUtils.isBlank( row ) ) continue;
@@ -190,7 +190,7 @@ public class LinkMatrix {
                         log.info( mesg );
                         throw new IOException( mesg );
                     }
-                    linkCountMatrix = new CompressedBitMatrix<Long, Long>( Integer.valueOf( subItems[0] ),
+                    linkCountMatrix = new CompressedBitMatrix<>( Integer.valueOf( subItems[0] ),
                             Integer.valueOf( subItems[1] ), Integer.valueOf( subItems[2] ) );
                     hasConfig = true;
                 } else if ( !hasRowNames ) {
@@ -231,7 +231,7 @@ public class LinkMatrix {
             }
             if ( eeMapFile != null ) {
                 try (BufferedReader in2 = new BufferedReader( new FileReader( new File( eeMapFile ) ) );) {
-                    this.eeIndexMap = new HashMap<Long, Integer>();
+                    this.eeIndexMap = new HashMap<>();
                     int vectorSize = 0;
                     while ( ( row = in2.readLine() ) != null ) {
                         row = row.trim();
@@ -250,7 +250,7 @@ public class LinkMatrix {
                         if ( Integer.valueOf( subItems[1].trim() ).intValue() > vectorSize )
                             vectorSize = Integer.valueOf( subItems[1].trim() ).intValue();
                     }
-                    eeMap = new HashMap<Integer, ExpressionExperiment>();
+                    eeMap = new HashMap<>();
                     for ( Long iter : this.eeIndexMap.keySet() ) {
                         ExpressionExperiment ee = eeService.load( iter );
                         eeMap.put( this.eeIndexMap.get( iter ), ee );
@@ -265,7 +265,7 @@ public class LinkMatrix {
 
     /**
      * Initialize with all genes for the given taxon.
-     * 
+     *
      * @param taxon
      */
     public LinkMatrix( Taxon taxon ) {
@@ -293,14 +293,14 @@ public class LinkMatrix {
      * @return
      */
     public Map<OntologyTerm, Integer> computeGOOverlap( Collection<Long> treeIds, int rank ) {
-        Collection<Gene> genes = new HashSet<Gene>();
+        Collection<Gene> genes = new HashSet<>();
         for ( Long treeId : treeIds ) {
             int row = ( int ) ( treeId / this.shift );
             int col = ( int ) ( treeId % this.shift );
             genes.add( getRowGene( row ) );
             genes.add( getColGene( col ) );
         }
-        Map<OntologyTerm, Integer> res = new HashMap<OntologyTerm, Integer>();
+        Map<OntologyTerm, Integer> res = new HashMap<>();
         ObjectArrayList counter = new ObjectArrayList( rank );
         for ( int i = 0; i < counter.size(); i++ )
             counter.add( new Integer( 0 ) );
@@ -324,7 +324,7 @@ public class LinkMatrix {
         }
         counter.sort();
         Integer threshold = ( Integer ) counter.get( counter.size() - rank );
-        Collection<OntologyTerm> removed = new HashSet<OntologyTerm>();
+        Collection<OntologyTerm> removed = new HashSet<>();
         for ( OntologyTerm ontologyTerm : res.keySet() ) {
             Integer goNum = res.get( ontologyTerm );
             if ( goNum < threshold ) removed.add( ontologyTerm );
@@ -393,7 +393,7 @@ public class LinkMatrix {
      * @return
      */
     public Collection<String> getEENames( long[] mask ) {
-        Set<String> returnedSet = new HashSet<String>();
+        Set<String> returnedSet = new HashSet<>();
         for ( int i = 0; i < mask.length; i++ ) {
             for ( int j = 0; j < CompressedBitMatrix.BITS_PER_ELEMENT; j++ )
                 if ( ( mask[i] & ( CompressedBitMatrix.BIT1 << j ) ) != 0 ) {
@@ -455,7 +455,7 @@ public class LinkMatrix {
      * @param coExpressedGenes
      */
     public void init( Collection<ExpressionExperiment> ees, Collection<Gene> t, Collection<Gene> coExpressedGenes ) {
-        CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<Long, Long>( targetGenes.size(),
+        CompressedBitMatrix<Long, Long> linkCount = new CompressedBitMatrix<>( targetGenes.size(),
                 coExpressedGenes.size(), ees.size() );
         for ( Gene geneIter : targetGenes ) {
             linkCount.addRowName( geneIter.getId() );
@@ -463,15 +463,15 @@ public class LinkMatrix {
         for ( Gene geneIter : coExpressedGenes ) {
             linkCount.addColumnName( geneIter.getId() );
         }
-        eeIndexMap = new HashMap<Long, Integer>();
-        eeMap = new HashMap<Integer, ExpressionExperiment>();
+        eeIndexMap = new HashMap<>();
+        eeMap = new HashMap<>();
         int index = 0;
         for ( ExpressionExperiment eeIter : ees ) {
             eeIndexMap.put( eeIter.getId(), new Integer( index ) );
             eeMap.put( new Integer( index ), eeIter );
             index++;
         }
-        geneMap = new HashMap<Long, Gene>();
+        geneMap = new HashMap<>();
         for ( Gene gene : targetGenes ) {
             geneMap.put( gene.getId(), gene );
         }
@@ -485,7 +485,7 @@ public class LinkMatrix {
 
     /**
      * Output the gene
-     * 
+     *
      * @param gene
      * @param num
      */
@@ -524,11 +524,11 @@ public class LinkMatrix {
     }
 
     /**
-     * 
+     *
      */
     public void outputStat() {
         int maxNum = 50;
-        Vector<Integer> count = new Vector<Integer>( maxNum );
+        Vector<Integer> count = new Vector<>( maxNum );
         for ( int i = 0; i < maxNum; i++ )
             count.add( 0 );
         for ( int i = 0; i < this.linkCountMatrix.rows(); i++ ) {
@@ -553,7 +553,7 @@ public class LinkMatrix {
     /**
      * Output is a file with the row and column indices and support for each link in the matrix (subject to the
      * stringency)
-     * 
+     *
      * @param outFile path to file to save to
      */
     public void saveLinkMatrix( String outFile ) {
@@ -615,7 +615,7 @@ public class LinkMatrix {
 
     /**
      * For test purposes only.
-     * 
+     *
      * @param i
      * @param j
      * @return

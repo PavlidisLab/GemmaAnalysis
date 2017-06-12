@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2010 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,21 +21,33 @@ package chibi.gemmaanalysis.cli.deprecated;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
-import ubic.gemma.model.genome.PhysicalLocationService;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.genome.taxon.service.TaxonService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.taxon.service.TaxonService;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.util.AbstractSpringAwareCLI;
+import ubic.gemma.persistence.service.genome.PhysicalLocationService;
 
 /**
  * Collect statistics about how far PARs are from known genes.
- * 
+ *
  * @author paul
- * @version $Id$
+ * @version $Id: PARMapper.java,v 1.6 2015/11/12 19:37:13 paul Exp $
  * @deprecated
  */
 @Deprecated
 public class PARMapper extends AbstractSpringAwareCLI {
+
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        PARMapper p = new PARMapper();
+        Exception e = p.doWork( args );
+        if ( e != null ) {
+            throw new RuntimeException( e );
+        }
+
+    }
 
     GeneService parService;
 
@@ -47,12 +59,27 @@ public class PARMapper extends AbstractSpringAwareCLI {
 
     PhysicalLocationService physicalLocationservice;
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
 
-        Option taxonOption = OptionBuilder.hasArg().isRequired().withDescription( "taxon name" )
-                .withDescription( "taxon to use" ).withLongOpt( "taxon" ).create( 't' );
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withDescription( "taxon name" );
+        OptionBuilder
+                .withDescription( "taxon to use" );
+        OptionBuilder.withLongOpt( "taxon" );
+        Option taxonOption = OptionBuilder.create( 't' );
         addOption( taxonOption );
 
         Option useStrandOption = OptionBuilder.create( "useStrand" );
@@ -111,28 +138,6 @@ public class PARMapper extends AbstractSpringAwareCLI {
         // + nearest.isOnSameStrand() );
         // }
         // }
-        return null;
-    }
-
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        PARMapper p = new PARMapper();
-        Exception e = p.doWork( args );
-        if ( e != null ) {
-            throw new RuntimeException( e );
-        }
-
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
         return null;
     }
 

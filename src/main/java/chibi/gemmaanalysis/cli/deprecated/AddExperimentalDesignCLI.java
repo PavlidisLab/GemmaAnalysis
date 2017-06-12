@@ -1,9 +1,9 @@
 /*
  /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,16 +23,16 @@ import java.util.HashSet;
 
 import org.apache.commons.lang3.time.StopWatch;
 
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.common.description.Characteristic;
 import ubic.gemma.model.expression.experiment.ExperimentalDesign;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.util.AbstractSpringAwareCLI;
 
 /**
  * @author klc
- * @version $Id$
+ * @version $Id: AddExperimentalDesignCLI.java,v 1.6 2015/11/12 19:37:12 paul Exp $
  */
 @Deprecated
 public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
@@ -45,29 +45,6 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
     // 673, 675 };
 
     private static final long[] EEwithNoED = {};
-
-    ExpressionExperimentService eeService;
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#buildOptions()
-     */
-    @Override
-    protected void buildOptions() {
-
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractSpringAwareCLI#processOptions()
-     */
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        this.eeService = getBean( ExpressionExperimentService.class );
-    }
 
     /**
      * @param args
@@ -88,9 +65,31 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
         }
     }
 
+    ExpressionExperimentService eeService;
+
     /*
      * (non-Javadoc)
-     * 
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#buildOptions()
+     */
+    @Override
+    protected void buildOptions() {
+
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -113,6 +112,17 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
         return null;
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractSpringAwareCLI#processOptions()
+     */
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+        this.eeService = getBean( ExpressionExperimentService.class );
+    }
+
     private void addEd2EE( Long eeID ) {
 
         ExpressionExperiment ee = eeService.load( eeID );
@@ -128,16 +138,6 @@ public class AddExperimentalDesignCLI extends AbstractSpringAwareCLI {
         ee.setExperimentalDesign( ed );
         eeService.update( ee );
 
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
     }
 
 }

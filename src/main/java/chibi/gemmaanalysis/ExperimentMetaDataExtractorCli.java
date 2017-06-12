@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2014 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,8 +18,6 @@
  */
 
 package chibi.gemmaanalysis;
-
-import gemma.gsec.SecurityService;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -41,41 +39,39 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.time.StopWatch;
 
+import gemma.gsec.SecurityService;
 import ubic.basecode.dataStructure.CountingMap;
-import ubic.gemma.analysis.preprocess.OutlierDetails;
-import ubic.gemma.analysis.preprocess.OutlierDetectionService;
-import ubic.gemma.analysis.preprocess.batcheffects.BatchEffectDetails;
-import ubic.gemma.analysis.preprocess.batcheffects.BatchInfoPopulationServiceImpl;
-import ubic.gemma.analysis.preprocess.filter.FilterConfig;
-import ubic.gemma.analysis.preprocess.svd.SVDService;
-import ubic.gemma.analysis.preprocess.svd.SVDValueObject;
-import ubic.gemma.analysis.service.ExpressionDataMatrixService;
-import ubic.gemma.analysis.util.ExperimentalDesignUtils;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.expression.experiment.service.ExperimentalDesignService;
-import ubic.gemma.model.common.auditAndSecurity.AuditTrailService;
-import ubic.gemma.model.common.auditAndSecurity.Status;
-import ubic.gemma.model.common.auditAndSecurity.StatusService;
+import ubic.gemma.core.analysis.preprocess.OutlierDetails;
+import ubic.gemma.core.analysis.preprocess.OutlierDetectionService;
+import ubic.gemma.core.analysis.preprocess.batcheffects.BatchEffectDetails;
+import ubic.gemma.core.analysis.preprocess.batcheffects.BatchInfoPopulationServiceImpl;
+import ubic.gemma.core.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.core.analysis.preprocess.svd.SVDService;
+import ubic.gemma.core.analysis.preprocess.svd.SVDValueObject;
+import ubic.gemma.core.analysis.service.ExpressionDataMatrixService;
+import ubic.gemma.core.analysis.util.ExperimentalDesignUtils;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.description.BibliographicReference;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssay.BioAssay;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
-import ubic.gemma.model.expression.experiment.ExperimentalDesign;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentSubSet;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
-import ubic.gemma.util.FactorValueVector;
-import ubic.gemma.util.Settings;
+import ubic.gemma.persistence.service.common.auditAndSecurity.AuditTrailService;
+import ubic.gemma.persistence.util.FactorValueVector;
+import ubic.gemma.persistence.util.Settings;
 
 /**
  * Extracts expression experiment meta data such as experimental design, array design, outlier count, and publication
  * into a .txt.gz TSV file. See Bug 3968.
- * 
+ *
  * @author paul
- * @version $Id$
+ * @version $Id: ExperimentMetaDataExtractorCli.java,v 1.16 2015/11/12 19:37:12 paul Exp $
  */
 public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipulatingCLI {
 
@@ -84,120 +80,31 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
     public static final String DEFAULT_VIEW_FILE = Settings.getString( "gemma.appdata.home" ) + File.separatorChar
             + "dataFiles" + File.separatorChar + EXPERIMENT_META_DATA_BASENAME + VIEW_FILE_SUFFIX;
     private static final String NA = "";
+
+    public static void main( String[] args ) {
+        ExperimentMetaDataExtractorCli s = new ExperimentMetaDataExtractorCli();
+        try {
+            Exception ex = s.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+
+            System.exit( 0 );
+        } catch ( Exception e ) {
+            // throw new RuntimeException( e );
+            log.error( e.getMessage(), e );
+            System.exit( 1 );
+        }
+    }
+
     private OutlierDetectionService outlierDetectionService;
-    private StatusService statusService;
+    //   private StatusService statusService;
     private ExperimentalDesignService edService;
     private SecurityService securityService;
     private String viewFile = DEFAULT_VIEW_FILE;
     private SVDService svdService;
+
     private ExpressionDataMatrixService expressionDataMatrixService;
-
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.METADATA;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
-    @Override
-    protected Exception doWork( String[] args ) {
-        super.processCommandLine( args );
-        auditTrailService = getBean( AuditTrailService.class );
-        outlierDetectionService = getBean( OutlierDetectionService.class );
-        statusService = getBean( StatusService.class );
-        edService = getBean( ExperimentalDesignService.class );
-        securityService = getBean( SecurityService.class );
-        svdService = getBean( SVDService.class );
-        expressionDataMatrixService = getBean( ExpressionDataMatrixService.class );
-
-        process( super.expressionExperiments );
-
-        return null;
-    }
-
-    @Override
-    @SuppressWarnings("static-access")
-    protected void buildOptions() {
-        super.buildOptions();
-
-        Option expOption = OptionBuilder.hasArg().withArgName( "outfile" ).withDescription( "GZipped output filename" )
-                .withLongOpt( "outfile" ).create( 'o' );
-
-        addOption( expOption );
-
-        // to keep troubled experiments
-        this.addForceOption();
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-
-        if ( hasOption( 'o' ) ) {
-            this.viewFile = getOptionValue( 'o' );
-            log.info( "GZipped txt output will be written to " + viewFile );
-        } else {
-            this.viewFile = DEFAULT_VIEW_FILE;
-        }
-
-    }
-
-    /**
-     * @param bas
-     */
-    private void process( Collection<BioAssaySet> expressionExperiments ) {
-        try {
-            generateExperimentMetaData( expressionExperiments );
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public File getOutputFile( String filename ) {
-        String fullFilePath = filename;
-        File f = new File( fullFilePath );
-
-        if ( f.exists() ) {
-            return f;
-        }
-
-        File parentDir = f.getParentFile();
-        if ( !parentDir.exists() ) parentDir.mkdirs();
-        return f;
-    }
-
-    public Collection<BatchEffectDetails> getBatchEffect( ExpressionExperiment ee, int maxcomp ) {
-        Collection<BatchEffectDetails> ret = new ArrayList<>();
-
-        for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
-            if ( BatchInfoPopulationServiceImpl.isBatchFactor( ef ) ) {
-                SVDValueObject svd = svdService.getSvdFactorAnalysis( ee.getId() );
-                if ( svd == null ) break;
-
-                for ( Integer component : svd.getFactorPvals().keySet() ) {
-                    if ( component.intValue() >= maxcomp ) {
-                        break;
-                    }
-                    Map<Long, Double> cmpEffects = svd.getFactorPvals().get( component );
-
-                    Double pval = cmpEffects.get( ef.getId() );
-                    if ( pval != null ) {
-                        BatchEffectDetails details = new BatchEffectDetails();
-                        details.setPvalue( pval.doubleValue() );
-                        details.setComponent( new Integer( component.intValue() + 1 ) );
-                        details.setComponentVarianceProportion( svd.getVariances()[component.intValue()].doubleValue() );
-                        details.setHasBatchInformation( true );
-                        ret.add( details );
-                    }
-
-                }
-            }
-        }
-        return ret;
-    }
 
     public void generateExperimentMetaData( Collection<BioAssaySet> expressionExperiments ) throws IOException {
 
@@ -235,8 +142,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     log.info( "Processing (" + ++i + "/" + expressionExperiments.size() + ") : " + ee );
 
                     BibliographicReference primaryPublication = ee.getPrimaryPublication();
-                    Status pubStatus = primaryPublication != null ? statusService.getStatus( primaryPublication )
-                            : null;
+
                     Collection<ArrayDesign> arrayDesignsUsed = eeService.getArrayDesignsUsed( ee );
 
                     Collection<String> arrayDesignIsExon = new ArrayList<>();
@@ -265,7 +171,7 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                         }
                     }
 
-                    ExperimentalDesign experimentalDesign = edService.load( vo.getExperimentalDesign() );
+                    //  ExperimentalDesign experimentalDesign = edService.load( vo.getExperimentalDesign() );
 
                     // Batch PCs
                     int maxcomp = 3;
@@ -300,10 +206,9 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     // Collection<OutlierDetails> possibleOutliers = null;
 
                     // samples per condition
-                    boolean removeBatchFactor = false;
+                    //      boolean removeBatchFactor = false;
                     Collection<String> samplesPerConditionCount = new ArrayList<>();
-                    CountingMap<FactorValueVector> assayCount = ExperimentalDesignUtils.getDesignMatrix( ee,
-                            removeBatchFactor );
+                    CountingMap<FactorValueVector> assayCount = ExperimentalDesignUtils.getDesignMatrix( ee );
                     List<FactorValueVector> keys = assayCount.sortedKeyList( true );
                     for ( FactorValueVector key : keys ) {
                         samplesPerConditionCount.add( Integer.toString( assayCount.get( key ).intValue() ) );
@@ -335,13 +240,17 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                     String val[] = {
                             vo.getShortName(),
                             vo.getTaxon(),
-                            DateFormat.getDateInstance( DateFormat.MEDIUM ).format( vo.getDateCreated() ),
-                            vo != null ? Boolean.toString( vo.getIsPublic() ) : NA,
+
+                            // FIXME this property is no longer in the VOs
+                            //    DateFormat.getDateInstance( DateFormat.MEDIUM ).format( vo.getDateCreated() ),
+                            null,
+
+                            Boolean.toString( vo.getIsPublic() ),
                             Integer.toString( arrayDesignsUsed.size() ),
                             StringUtils.join( arrayDesignShortNames, ',' ),
                             StringUtils.join( arrayDesignTechTypes, ',' ), // arrayDesign.getTechnologyType().getValue(),
-                                                                           // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
-                                                                           // GSE37646), DUAL-MODE (one or two color)
+                            // ONE-COLOR, TWO-COLOR, NONE (RNA-seq
+                            // GSE37646), DUAL-MODE (one or two color)
                             StringUtils.join( arrayDesignIsExon, ',' ), // exon GSE28383
                             qt != null ? Boolean.toString( qt.getIsRatio().booleanValue() ) : NA,
                             qt != null ? Boolean.toString( qt.getIsNormalized().booleanValue() ) : NA,
@@ -354,7 +263,6 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             possibleOutliers != null ? Integer.toString( possibleOutliers.size() ) : NA,
                             Integer.toString( manualOutlierCount ),
                             Boolean.toString( vo.getTroubled() ),
-                            pubStatus != null ? Boolean.toString( pubStatus.getTroubled().booleanValue() ) : NA,
                             primaryPublication != null ? DateFormat.getDateInstance( DateFormat.MEDIUM ).format(
                                     primaryPublication.getPublicationDate() ) : NA,
                             primaryPublication != null ? primaryPublication.getPublication() : NA,
@@ -371,10 +279,10 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                             batchEffectPC3 != null ? Double.toString( batchEffectPC3.getPvalue() ) : NA,
 
                             // factors
-                            factors != null ? Integer.toString( factors.size() ) : NA, // NumFactors
-                            factorNames != null ? StringUtils.join( factorNames, "," ) : NA,
-                            factorCategories != null ? StringUtils.join( factorCategories, "," ) : NA,
-                            factorValues != null ? StringUtils.join( factorValues, "," ) : NA,
+                            Integer.toString( factors.size() ),
+                            StringUtils.join( factorNames, "," ),
+                            StringUtils.join( factorCategories, "," ),
+                            StringUtils.join( factorValues, "," ),
 
                     };
 
@@ -402,31 +310,126 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
         }
     }
 
-    public static void main( String[] args ) {
-        ExperimentMetaDataExtractorCli s = new ExperimentMetaDataExtractorCli();
-        try {
-            Exception ex = s.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
+    public Collection<BatchEffectDetails> getBatchEffect( ExpressionExperiment ee, int maxcomp ) {
+        Collection<BatchEffectDetails> ret = new ArrayList<>();
 
-            System.exit( 0 );
-        } catch ( Exception e ) {
-            // throw new RuntimeException( e );
-            log.error( e.getMessage(), e );
-            System.exit( 1 );
+        for ( ExperimentalFactor ef : ee.getExperimentalDesign().getExperimentalFactors() ) {
+            if ( BatchInfoPopulationServiceImpl.isBatchFactor( ef ) ) {
+                SVDValueObject svd = svdService.getSvdFactorAnalysis( ee.getId() );
+                if ( svd == null ) break;
+
+                for ( Integer component : svd.getFactorPvals().keySet() ) {
+                    if ( component.intValue() >= maxcomp ) {
+                        break;
+                    }
+                    Map<Long, Double> cmpEffects = svd.getFactorPvals().get( component );
+
+                    Double pval = cmpEffects.get( ef.getId() );
+                    if ( pval != null ) {
+                        BatchEffectDetails details = new BatchEffectDetails();
+                        details.setPvalue( pval.doubleValue() );
+                        details.setComponent( new Integer( component.intValue() + 1 ) );
+                        details.setComponentVarianceProportion( svd.getVariances()[component.intValue()].doubleValue() );
+                        details.setHasBatchInformation( true );
+                        ret.add( details );
+                    }
+
+                }
+            }
         }
+        return ret;
+    }
+
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.METADATA;
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#getCommandName()
      */
     @Override
     public String getCommandName() {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    public File getOutputFile( String filename ) {
+        String fullFilePath = filename;
+        File f = new File( fullFilePath );
+
+        if ( f.exists() ) {
+            return f;
+        }
+
+        File parentDir = f.getParentFile();
+        if ( !parentDir.exists() ) parentDir.mkdirs();
+        return f;
+    }
+
+    @Override
+    @SuppressWarnings("static-access")
+    protected void buildOptions() {
+        super.buildOptions();
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "outfile" );
+        OptionBuilder.withDescription( "GZipped output filename" );
+        OptionBuilder
+                .withLongOpt( "outfile" );
+        Option expOption = OptionBuilder.create( 'o' );
+
+        addOption( expOption );
+
+        // to keep troubled experiments
+        this.addForceOption();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
+     */
+    @Override
+    protected Exception doWork( String[] args ) {
+        super.processCommandLine( args );
+        auditTrailService = getBean( AuditTrailService.class );
+        outlierDetectionService = getBean( OutlierDetectionService.class );
+        //  statusService = getBean( StatusService.class );
+        edService = getBean( ExperimentalDesignService.class );
+        securityService = getBean( SecurityService.class );
+        svdService = getBean( SVDService.class );
+        expressionDataMatrixService = getBean( ExpressionDataMatrixService.class );
+
+        process( super.expressionExperiments );
+
+        return null;
+    }
+
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+
+        if ( hasOption( 'o' ) ) {
+            this.viewFile = getOptionValue( 'o' );
+            log.info( "GZipped txt output will be written to " + viewFile );
+        } else {
+            this.viewFile = DEFAULT_VIEW_FILE;
+        }
+
+    }
+
+    /**
+     * @param bas
+     */
+    private void process( Collection<BioAssaySet> expressionExperiments ) {
+        try {
+            generateExperimentMetaData( expressionExperiments );
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
     }
 
 }

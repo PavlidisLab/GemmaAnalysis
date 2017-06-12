@@ -12,15 +12,11 @@ import java.util.Random;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.Gene;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.util.AbstractSpringAwareCLI;
 
 public class RandomGenesCli extends AbstractSpringAwareCLI {
-
-    private GeneService geneService;
-    private Integer listSize;
-    private String fileName;
 
     /**
      * @param args
@@ -40,17 +36,40 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
 
     }
 
+    private GeneService geneService;
+    private Integer listSize;
+
+    private String fileName;
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
 
-        Option geneFileOption = OptionBuilder.hasArg().withArgName( "Gene List File Name" )
-                .withDescription( "A text file that contains a list of gene IDs, with one gene ID on each line" )
-                .withLongOpt( "geneFile" ).create( 'g' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Gene List File Name" );
+        OptionBuilder
+                .withDescription( "A text file that contains a list of gene IDs, with one gene ID on each line" );
+        OptionBuilder
+                .withLongOpt( "geneFile" );
+        Option geneFileOption = OptionBuilder.create( 'g' );
         addOption( geneFileOption );
 
-        Option numberOption = OptionBuilder.hasArg().withArgName( "NumberOfGenes" )
-                .withDescription( "The number of genes to use." ).withLongOpt( "number" ).create( 'n' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "NumberOfGenes" );
+        OptionBuilder
+                .withDescription( "The number of genes to use." );
+        OptionBuilder.withLongOpt( "number" );
+        Option numberOption = OptionBuilder.create( 'n' );
         addOption( numberOption );
 
     }
@@ -118,7 +137,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
 
     /**
      * Read in a list of genes; calls helper method, <code>readGeneListFile()</code>
-     * 
+     *
      * @param inFile - file name to read
      * @param taxon
      * @return collection of genes
@@ -126,7 +145,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
      */
     private Collection<String> readGeneListFile( String inFile ) throws IOException {
         log.info( "Reading " + inFile );
-        Collection<String> lines = new ArrayList<String>();
+        Collection<String> lines = new ArrayList<>();
         BufferedReader in = new BufferedReader( new FileReader( inFile ) );
         String line;
         while ( ( line = in.readLine() ) != null ) {
@@ -136,16 +155,6 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
         }
         in.close();
         return lines;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
     }
 
 }

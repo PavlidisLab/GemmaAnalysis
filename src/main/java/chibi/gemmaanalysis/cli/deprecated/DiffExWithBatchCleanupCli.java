@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2011 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,26 +17,26 @@
  *
  */
 
-package chibi.gemmaanalysis;
+package chibi.gemmaanalysis.cli.deprecated;
 
 import java.util.Collection;
 
-import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalyzerService;
-import ubic.gemma.analysis.report.ExpressionExperimentReportService;
-import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
+import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalyzerService;
+import ubic.gemma.core.analysis.report.ExpressionExperimentReportService;
+import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
-import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisService;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
-import ubic.gemma.model.expression.experiment.ExperimentalFactorService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.persistence.service.analysis.expression.diff.DifferentialExpressionAnalysisService;
+import ubic.gemma.persistence.service.expression.experiment.ExperimentalFactorService;
 
 /**
  * One-off; dDelete analyses which include 'batch' as a factor.
- * 
+ *
  * @author paul
- * @version $Id$
+ * @version $Id: DiffExWithBatchCleanupCli.java,v 1.15 2015/11/12 19:37:11 paul Exp $
  */
 public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingCLI {
 
@@ -47,7 +47,18 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
 
     /*
      * (non-Javadoc)
-     * 
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -104,15 +115,6 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
             }
         }
         super.summarizeProcessing();
-        return null;
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
         return null;
     }
 

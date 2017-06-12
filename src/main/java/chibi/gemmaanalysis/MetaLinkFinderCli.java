@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -27,26 +27,45 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.genome.taxon.service.TaxonService;
+import cern.colt.list.ObjectArrayList;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.genome.taxon.service.TaxonService;
+import ubic.gemma.core.ontology.providers.GeneOntologyService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.ontology.providers.GeneOntologyService;
-import ubic.gemma.util.AbstractSpringAwareCLI;
-import cern.colt.list.ObjectArrayList;
 
 /**
  * Run frequent itemset analysis. WARNING probably broken.
- * 
+ *
  * @author xwan
- * @version $Id$
+ * @version $Id: MetaLinkFinderCli.java,v 1.10 2015/11/12 19:37:12 paul Exp $
  */
 public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
 
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        MetaLinkFinderCli linkFinderCli = new MetaLinkFinderCli();
+        StopWatch watch = new StopWatch();
+        watch.start();
+        try {
+            Exception ex = linkFinderCli.doWork( args );
+            if ( ex != null ) {
+                ex.printStackTrace();
+            }
+            watch.stop();
+            log.info( watch.getTime() );
+        } catch ( Exception e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#buildOptions()
      */
     private GeneService geneService = null;
@@ -56,72 +75,22 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
     private boolean writeLinkMatrix = false;
     private String matrixFile = null, eeMapFile = null, treeFile = null, taxonName = null;
     private Taxon taxon = null;
+
     private LinkMatrix linkMatrix = null;
 
-    @SuppressWarnings("static-access")
-    @Override
-    protected void buildOptions() {
-        Option writeLinkMatrixo = OptionBuilder
-                .withDescription(
-                        "Giving this option will generate the new link matrix, Otherwise reading the link matrix from file" )
-                .withLongOpt( "linkMatrix" ).create( 'l' );
-        addOption( writeLinkMatrixo );
-        Option writeTree = OptionBuilder
-                .withDescription(
-                        "Giving this option will generate the new clustering tree, Otherwise reading the tree from file" )
-                .withLongOpt( "clusteringTree" ).create( 'c' );
-        addOption( writeTree );
-        Option matrixFileo = OptionBuilder.hasArg().withArgName( "Bit Matrixfile" ).isRequired()
-                .withDescription( "The file for saving bit matrix" ).withLongOpt( "matrixfile" ).create( 'm' );
-        addOption( matrixFileo );
-
-        Option mapFile = OptionBuilder.hasArg().withArgName( "Expression Experiment Map File" ).isRequired()
-                .withDescription( "The File for Saving the Expression Experiment Mapping" ).withLongOpt( "mapfile" )
-                .create( 'e' );
-        addOption( mapFile );
-
-        Option treeFileo = OptionBuilder.hasArg().withArgName( "Clustering Tree File" ).isRequired()
-                .withDescription( "The file for saving clustering tree" ).withLongOpt( "treefile" ).create( 't' );
-        addOption( treeFileo );
-
-        Option specieso = OptionBuilder.hasArg().withArgName( "The name of the species" ).isRequired()
-                .withDescription( "The name of the species" ).withLongOpt( "species" ).create( 's' );
-        addOption( specieso );
-
-    }
-
-    /**
-     * 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
      */
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( hasOption( 'l' ) ) {
-            this.writeLinkMatrix = true;
-        }
-
-        if ( hasOption( 'c' ) ) {
-            this.writeClusteringTree = true;
-        }
-
-        if ( hasOption( 'm' ) ) {
-            this.matrixFile = getOptionValue( 'm' );
-        }
-
-        if ( hasOption( 'e' ) ) {
-            this.eeMapFile = getOptionValue( 'e' );
-        }
-
-        if ( hasOption( 't' ) ) {
-            this.treeFile = getOptionValue( 't' );
-        }
-        if ( hasOption( 's' ) ) {
-            this.taxonName = getOptionValue( 's' );
-        }
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     /**
-     * 
+     *
      */
     void interactiveQuery() {
         BufferedReader bfr = new BufferedReader( new InputStreamReader( System.in ) );
@@ -152,9 +121,65 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
         }
     }
 
+    @SuppressWarnings("static-access")
+    @Override
+    protected void buildOptions() {
+        OptionBuilder
+                .withDescription(
+                        "Giving this option will generate the new link matrix, Otherwise reading the link matrix from file" );
+        OptionBuilder
+                .withLongOpt( "linkMatrix" );
+        Option writeLinkMatrixo = OptionBuilder.create( 'l' );
+        addOption( writeLinkMatrixo );
+        OptionBuilder
+                .withDescription(
+                        "Giving this option will generate the new clustering tree, Otherwise reading the tree from file" );
+        OptionBuilder
+                .withLongOpt( "clusteringTree" );
+        Option writeTree = OptionBuilder.create( 'c' );
+        addOption( writeTree );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Bit Matrixfile" );
+        OptionBuilder.isRequired();
+        OptionBuilder
+                .withDescription( "The file for saving bit matrix" );
+        OptionBuilder.withLongOpt( "matrixfile" );
+        Option matrixFileo = OptionBuilder.create( 'm' );
+        addOption( matrixFileo );
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Expression Experiment Map File" );
+        OptionBuilder.isRequired();
+        OptionBuilder
+                .withDescription( "The File for Saving the Expression Experiment Mapping" );
+        OptionBuilder.withLongOpt( "mapfile" );
+        Option mapFile = OptionBuilder
+                .create( 'e' );
+        addOption( mapFile );
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Clustering Tree File" );
+        OptionBuilder.isRequired();
+        OptionBuilder
+                .withDescription( "The file for saving clustering tree" );
+        OptionBuilder.withLongOpt( "treefile" );
+        Option treeFileo = OptionBuilder.create( 't' );
+        addOption( treeFileo );
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "The name of the species" );
+        OptionBuilder.isRequired();
+        OptionBuilder
+                .withDescription( "The name of the species" );
+        OptionBuilder.withLongOpt( "species" );
+        Option specieso = OptionBuilder.create( 's' );
+        addOption( specieso );
+
+    }
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -258,31 +283,33 @@ public class MetaLinkFinderCli extends AbstractSpringAwareCLI {
     }
 
     /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        MetaLinkFinderCli linkFinderCli = new MetaLinkFinderCli();
-        StopWatch watch = new StopWatch();
-        watch.start();
-        try {
-            Exception ex = linkFinderCli.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-            watch.stop();
-            log.info( watch.getTime() );
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     *
      */
     @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+    protected void processOptions() {
+        super.processOptions();
+        if ( hasOption( 'l' ) ) {
+            this.writeLinkMatrix = true;
+        }
+
+        if ( hasOption( 'c' ) ) {
+            this.writeClusteringTree = true;
+        }
+
+        if ( hasOption( 'm' ) ) {
+            this.matrixFile = getOptionValue( 'm' );
+        }
+
+        if ( hasOption( 'e' ) ) {
+            this.eeMapFile = getOptionValue( 'e' );
+        }
+
+        if ( hasOption( 't' ) ) {
+            this.treeFile = getOptionValue( 't' );
+        }
+        if ( hasOption( 's' ) ) {
+            this.taxonName = getOptionValue( 's' );
+        }
     }
 
 }

@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2006 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,6 +23,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -34,18 +35,18 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
 /**
  * @author xiangwan
- * @version $Id$
+ * @version $Id: ExpressionDataLoader.java,v 1.7 2013/09/24 01:55:58 paul Exp $
  */
 public class ExpressionDataLoader {
 
+    protected static final Log log = LogFactory.getLog( ExpressionDataLoader.class );
     final String actualExperimentsPath = "C:/TestData/";
+
     final String analysisResultsPath = "C:/Results/";
 
     protected ExpressionExperiment experiment = null;
 
     protected String experimentName = null;
-
-    protected static final Log log = LogFactory.getLog( ExpressionDataLoader.class );
 
     protected int uniqueItems = 0;
 
@@ -58,10 +59,6 @@ public class ExpressionDataLoader {
             this.experimentName = this.experiment.getName();
         }
 
-    }
-
-    private void getValidDesignmentDataVector() {
-        this.designElementDataVectors = this.experiment.getProcessedExpressionDataVectors();
     }
 
     public void writeExpressionDataToFile( String paraFileName ) {
@@ -90,5 +87,9 @@ public class ExpressionDataLoader {
         } catch ( IOException e ) {
             log.error( "Error in write data into file" );
         }
+    }
+
+    private void getValidDesignmentDataVector() {
+        this.designElementDataVectors = this.experiment.getProcessedExpressionDataVectors();
     }
 }

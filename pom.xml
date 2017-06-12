@@ -43,12 +43,9 @@
 		<dependency>
 			<groupId>gemma</groupId>
 			<artifactId>gemma-core</artifactId>
-			<version>1.9-SNAPSHOT</version>
+			<version>1.12-SNAPSHOT</version>
 			<exclusions>
-				<!--exclusion>
-					<artifactId>commons-lang</artifactId>
-					<groupId>commons-lang</groupId>
-				</exclusion-->
+				<!--exclusion> <artifactId>commons-lang</artifactId> <groupId>commons-lang</groupId> </exclusion -->
 			</exclusions>
 		</dependency>
 	</dependencies>

@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2006 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -50,15 +50,38 @@ import ubic.gemma.model.genome.sequenceAnalysis.ThreePrimeDistanceMethod;
 
 /**
  * @author pavlidis
- * @version $Id$
+ * @version $Id: ProbeMapperGui.java,v 1.9 2014/01/21 01:03:25 paul Exp $
  */
 @Deprecated
 public class ProbeMapperGui extends JFrame {
     /**
-     * 
+     *
      */
     private static final long serialVersionUID = -7060936185884039602L;
     private static Log log = LogFactory.getLog( ProbeMapperGui.class.getName() );
+
+    /**
+     * @param args
+     */
+    public static void main( String[] args ) {
+        try {
+            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
+        } catch ( ClassNotFoundException e ) {
+            e.printStackTrace();
+        } catch ( InstantiationException e ) {
+            e.printStackTrace();
+        } catch ( IllegalAccessException e ) {
+            e.printStackTrace();
+        } catch ( UnsupportedLookAndFeelException e ) {
+            e.printStackTrace();
+        }
+        ProbeMapperGui pgmg = new ProbeMapperGui();
+
+        pgmg.pack();
+        pgmg.setVisible( true );
+
+    }
+
     private javax.swing.JPanel jContentPane = null;
     private JPanel topButtonPanel = null;
     private JPanel fileNamesPanel = null;
@@ -73,86 +96,30 @@ public class ProbeMapperGui extends JFrame {
     private JButton outputFileBrowseButton = null;
     private JPanel locationMethodPanel = null;
     private JLabel locationMethodLabel = null;
-    JComboBox<String> locationMethodComboBox = null;
 
+    JComboBox<String> locationMethodComboBox = null;
     ThreePrimeDistanceMethod method = ThreePrimeDistanceMethod.RIGHT;
     protected File inputFile;
+
     protected File outputFile;
 
     /**
-     * This method initializes jPanel
-     * 
-     * @return javax.swing.JPanel
+     * This is the default constructor
      */
-    private JPanel getTopButtonPanel() {
-        if ( topButtonPanel == null ) {
-            topButtonPanel = new JPanel();
-            topButtonPanel.setLayout( null );
-            topButtonPanel.add( getLocationMethodPanel(), null );
-        }
-        return topButtonPanel;
+    public ProbeMapperGui() {
+        super();
+        initialize();
     }
 
     /**
-     * This method initializes jPanel
-     * 
-     * @return javax.swing.JPanel
+     *
      */
-    private JPanel getFileNamesPanel() {
-        if ( fileNamesPanel == null ) {
-            fileNamesPanel = new JPanel();
-            fileNamesPanel.setLayout( null );
-            fileNamesPanel.add( getInputFileNamePanel(), null );
-            fileNamesPanel.add( getOutputFileNamePanel(), null );
-        }
-        return fileNamesPanel;
+    protected void exit() {
+        System.exit( 0 );
     }
 
     /**
-     * This method initializes jPanel1
-     * 
-     * @return javax.swing.JPanel
-     */
-    private JPanel getBottomPanel() {
-        if ( bottomPanel == null ) {
-            bottomPanel = new JPanel();
-            bottomPanel.setLayout( null );
-            bottomPanel.add( getOkButton(), null );
-            bottomPanel.add( getCancelButton(), null );
-        }
-        return bottomPanel;
-    }
-
-    /**
-     * This method initializes jButton
-     * 
-     * @return javax.swing.JButton
-     */
-    private JButton getOkButton() {
-        if ( okButton == null ) {
-            okButton = new JButton();
-            okButton.setText( "OK" );
-            okButton.setBounds( 200, 13, 51, 26 );
-            okButton.addActionListener( new ActionListener() {
-                @Override
-                @SuppressWarnings({ "synthetic-access" })
-                public void actionPerformed( ActionEvent e ) {
-                    inputFile = new File( inputFileNameTextField.getText() );
-                    outputFile = new File( outputFileNameTextField.getText() );
-                    if ( inputFile != null || outputFile != null ) {
-                        run();
-                    } else {
-                        log.error( "Must provide file names" );
-                    }
-
-                }
-            } );
-        }
-        return okButton;
-    }
-
-    /**
-     * 
+     *
      */
     @SuppressWarnings("resource")
     protected void run() {
@@ -175,8 +142,23 @@ public class ProbeMapperGui extends JFrame {
     }
 
     /**
+     * This method initializes jPanel1
+     *
+     * @return javax.swing.JPanel
+     */
+    private JPanel getBottomPanel() {
+        if ( bottomPanel == null ) {
+            bottomPanel = new JPanel();
+            bottomPanel.setLayout( null );
+            bottomPanel.add( getOkButton(), null );
+            bottomPanel.add( getCancelButton(), null );
+        }
+        return bottomPanel;
+    }
+
+    /**
      * This method initializes jButton1
-     * 
+     *
      * @return javax.swing.JButton
      */
     private JButton getCancelButton() {
@@ -195,63 +177,23 @@ public class ProbeMapperGui extends JFrame {
     }
 
     /**
-     * 
-     */
-    protected void exit() {
-        System.exit( 0 );
-    }
-
-    /**
-     * This method initializes jPanel1
-     * 
+     * This method initializes jPanel
+     *
      * @return javax.swing.JPanel
      */
-    private JPanel getInputFileNamePanel() {
-        if ( inputFileNamePanel == null ) {
-            inputFileNamePanel = new JPanel();
-            inputFileNamePanel.setLayout( null );
-            inputFileNamePanel.setBounds( 16, 22, 544, 41 );
-            inputFileNamePanel.add( getInputFileNameTextField(), null );
-            inputFileNamePanel.add( getInputFileBrowseButton(), null );
+    private JPanel getFileNamesPanel() {
+        if ( fileNamesPanel == null ) {
+            fileNamesPanel = new JPanel();
+            fileNamesPanel.setLayout( null );
+            fileNamesPanel.add( getInputFileNamePanel(), null );
+            fileNamesPanel.add( getOutputFileNamePanel(), null );
         }
-        return inputFileNamePanel;
-    }
-
-    /**
-     * This method initializes jPanel2
-     * 
-     * @return javax.swing.JPanel
-     */
-    private JPanel getOutputFileNamePanel() {
-        if ( outputFileNamePanel == null ) {
-            outputFileNamePanel = new JPanel();
-            outputFileNamePanel.setLayout( null );
-            outputFileNamePanel.setBounds( 15, 71, 548, 35 );
-            outputFileNamePanel.add( getOutputFileNameTextField(), null );
-            outputFileNamePanel.add( getOutputFileBrowseButton(), null );
-        }
-        return outputFileNamePanel;
-    }
-
-    /**
-     * This method initializes getInputFileNameTextField
-     * 
-     * @return javax.swing.JTextField
-     */
-    private JTextField getInputFileNameTextField() {
-        if ( inputFileNameTextField == null ) {
-            inputFileNameTextField = new JTextField();
-            inputFileNameTextField.setPreferredSize( new java.awt.Dimension( 200, 20 ) );
-            inputFileNameTextField.setLocation( 5, 12 );
-            inputFileNameTextField.setSize( 440, 20 );
-            inputFileNameTextField.setText( "Input File" );
-        }
-        return inputFileNameTextField;
+        return fileNamesPanel;
     }
 
     /**
      * This method initializes InputFileBrowseButton
-     * 
+     *
      * @return javax.swing.JButton
      */
     private JButton getInputFileBrowseButton() {
@@ -285,18 +227,146 @@ public class ProbeMapperGui extends JFrame {
     }
 
     /**
-     * This method initializes OutputFileNameTextField
-     * 
+     * This method initializes jPanel1
+     *
+     * @return javax.swing.JPanel
+     */
+    private JPanel getInputFileNamePanel() {
+        if ( inputFileNamePanel == null ) {
+            inputFileNamePanel = new JPanel();
+            inputFileNamePanel.setLayout( null );
+            inputFileNamePanel.setBounds( 16, 22, 544, 41 );
+            inputFileNamePanel.add( getInputFileNameTextField(), null );
+            inputFileNamePanel.add( getInputFileBrowseButton(), null );
+        }
+        return inputFileNamePanel;
+    }
+
+    /**
+     * This method initializes getInputFileNameTextField
+     *
      * @return javax.swing.JTextField
      */
-    private JTextField getOutputFileNameTextField() {
-        if ( outputFileNameTextField == null ) {
-            outputFileNameTextField = new JTextField();
-            outputFileNameTextField.setPreferredSize( new java.awt.Dimension( 200, 20 ) );
-            outputFileNameTextField.setText( "Output file" );
-            outputFileNameTextField.setBounds( 6, 8, 440, 20 );
+    private JTextField getInputFileNameTextField() {
+        if ( inputFileNameTextField == null ) {
+            inputFileNameTextField = new JTextField();
+            inputFileNameTextField.setPreferredSize( new java.awt.Dimension( 200, 20 ) );
+            inputFileNameTextField.setLocation( 5, 12 );
+            inputFileNameTextField.setSize( 440, 20 );
+            inputFileNameTextField.setText( "Input File" );
         }
-        return outputFileNameTextField;
+        return inputFileNameTextField;
+    }
+
+    /**
+     * This method initializes jContentPane
+     *
+     * @return javax.swing.JPanel
+     */
+    private javax.swing.JPanel getJContentPane() {
+        if ( jContentPane == null ) {
+            GridBagConstraints gridBagConstraints5 = new GridBagConstraints();
+            GridBagConstraints gridBagConstraints4 = new GridBagConstraints();
+            GridBagConstraints gridBagConstraints3 = new GridBagConstraints();
+            jContentPane = new javax.swing.JPanel();
+            jContentPane.setLayout( new GridBagLayout() );
+            gridBagConstraints3.insets = new java.awt.Insets( 0, 0, 18, 0 );
+            gridBagConstraints3.gridx = 0;
+            gridBagConstraints3.gridy = 0;
+            gridBagConstraints3.ipadx = 593;
+            gridBagConstraints3.ipady = 219;
+            gridBagConstraints4.insets = new java.awt.Insets( 19, 0, 4, 0 );
+            gridBagConstraints4.gridx = 0;
+            gridBagConstraints4.gridy = 1;
+            gridBagConstraints4.ipadx = 593;
+            gridBagConstraints4.ipady = 124;
+            gridBagConstraints5.insets = new java.awt.Insets( 5, 37, 1, 31 );
+            gridBagConstraints5.gridx = 0;
+            gridBagConstraints5.gridy = 2;
+            gridBagConstraints5.ipadx = 525;
+            gridBagConstraints5.ipady = 50;
+            jContentPane.add( getTopButtonPanel(), gridBagConstraints3 );
+            jContentPane.add( getFileNamesPanel(), gridBagConstraints4 );
+            jContentPane.add( getBottomPanel(), gridBagConstraints5 );
+        }
+        return jContentPane;
+    }
+
+    /**
+     * This method initializes jComboBox
+     *
+     * @return javax.swing.JComboBox
+     */
+    private JComboBox<String> getLocationMethodComboBox() {
+        if ( locationMethodComboBox == null ) {
+            locationMethodComboBox = new JComboBox<>();
+            locationMethodComboBox.setBounds( 209, 17, 234, 20 );
+            locationMethodComboBox.addItem( "Center" );
+            locationMethodComboBox.addItem( "3' end" );
+            locationMethodComboBox.addActionListener( new java.awt.event.ActionListener() {
+
+                @Override
+                public void actionPerformed( java.awt.event.ActionEvent e ) {
+                    if ( ( ( String ) locationMethodComboBox.getSelectedItem() )
+                            .equals( ThreePrimeDistanceMethod.MIDDLE ) ) {
+                        method = ThreePrimeDistanceMethod.MIDDLE;
+                    } else if ( ( ( String ) locationMethodComboBox.getSelectedItem() )
+                            .equals( ThreePrimeDistanceMethod.RIGHT ) ) {
+                        method = ThreePrimeDistanceMethod.RIGHT;
+                    }
+                }
+            } );
+
+        }
+        return locationMethodComboBox;
+    }
+
+    /**
+     * This method initializes jPanel3
+     *
+     * @return javax.swing.JPanel
+     */
+    private JPanel getLocationMethodPanel() {
+        if ( locationMethodPanel == null ) {
+            locationMethodLabel = new JLabel();
+            locationMethodPanel = new JPanel();
+            locationMethodPanel.setLayout( null );
+            locationMethodLabel.setText( "Location Method" );
+            locationMethodLabel.setBounds( 81, 19, 123, 16 );
+            locationMethodLabel.setFont( new java.awt.Font( "Dialog", java.awt.Font.PLAIN, 12 ) );
+            locationMethodPanel.setBounds( 0, 0, 594, 46 );
+            locationMethodPanel.add( locationMethodLabel, null );
+            locationMethodPanel.add( getLocationMethodComboBox(), null );
+        }
+        return locationMethodPanel;
+    }
+
+    /**
+     * This method initializes jButton
+     *
+     * @return javax.swing.JButton
+     */
+    private JButton getOkButton() {
+        if ( okButton == null ) {
+            okButton = new JButton();
+            okButton.setText( "OK" );
+            okButton.setBounds( 200, 13, 51, 26 );
+            okButton.addActionListener( new ActionListener() {
+                @Override
+                @SuppressWarnings({ "synthetic-access" })
+                public void actionPerformed( ActionEvent e ) {
+                    inputFile = new File( inputFileNameTextField.getText() );
+                    outputFile = new File( outputFileNameTextField.getText() );
+                    if ( inputFile != null || outputFile != null ) {
+                        run();
+                    } else {
+                        log.error( "Must provide file names" );
+                    }
+
+                }
+            } );
+        }
+        return okButton;
     }
 
     /**
@@ -330,87 +400,53 @@ public class ProbeMapperGui extends JFrame {
     }
 
     /**
-     * This method initializes jPanel3
-     * 
+     * This method initializes jPanel2
+     *
      * @return javax.swing.JPanel
      */
-    private JPanel getLocationMethodPanel() {
-        if ( locationMethodPanel == null ) {
-            locationMethodLabel = new JLabel();
-            locationMethodPanel = new JPanel();
-            locationMethodPanel.setLayout( null );
-            locationMethodLabel.setText( "Location Method" );
-            locationMethodLabel.setBounds( 81, 19, 123, 16 );
-            locationMethodLabel.setFont( new java.awt.Font( "Dialog", java.awt.Font.PLAIN, 12 ) );
-            locationMethodPanel.setBounds( 0, 0, 594, 46 );
-            locationMethodPanel.add( locationMethodLabel, null );
-            locationMethodPanel.add( getLocationMethodComboBox(), null );
+    private JPanel getOutputFileNamePanel() {
+        if ( outputFileNamePanel == null ) {
+            outputFileNamePanel = new JPanel();
+            outputFileNamePanel.setLayout( null );
+            outputFileNamePanel.setBounds( 15, 71, 548, 35 );
+            outputFileNamePanel.add( getOutputFileNameTextField(), null );
+            outputFileNamePanel.add( getOutputFileBrowseButton(), null );
         }
-        return locationMethodPanel;
+        return outputFileNamePanel;
     }
 
     /**
-     * This method initializes jComboBox
-     * 
-     * @return javax.swing.JComboBox
+     * This method initializes OutputFileNameTextField
+     *
+     * @return javax.swing.JTextField
      */
-    private JComboBox<String> getLocationMethodComboBox() {
-        if ( locationMethodComboBox == null ) {
-            locationMethodComboBox = new JComboBox<String>();
-            locationMethodComboBox.setBounds( 209, 17, 234, 20 );
-            locationMethodComboBox.addItem( "Center" );
-            locationMethodComboBox.addItem( "3' end" );
-            locationMethodComboBox.addActionListener( new java.awt.event.ActionListener() {
-
-                @Override
-                public void actionPerformed( java.awt.event.ActionEvent e ) {
-                    if ( ( ( String ) locationMethodComboBox.getSelectedItem() )
-                            .equals( ThreePrimeDistanceMethod.MIDDLE ) ) {
-                        method = ThreePrimeDistanceMethod.MIDDLE;
-                    } else if ( ( ( String ) locationMethodComboBox.getSelectedItem() )
-                            .equals( ThreePrimeDistanceMethod.RIGHT ) ) {
-                        method = ThreePrimeDistanceMethod.RIGHT;
-                    }
-                }
-            } );
-
+    private JTextField getOutputFileNameTextField() {
+        if ( outputFileNameTextField == null ) {
+            outputFileNameTextField = new JTextField();
+            outputFileNameTextField.setPreferredSize( new java.awt.Dimension( 200, 20 ) );
+            outputFileNameTextField.setText( "Output file" );
+            outputFileNameTextField.setBounds( 6, 8, 440, 20 );
         }
-        return locationMethodComboBox;
+        return outputFileNameTextField;
     }
 
     /**
-     * @param args
+     * This method initializes jPanel
+     *
+     * @return javax.swing.JPanel
      */
-    public static void main( String[] args ) {
-        try {
-            UIManager.setLookAndFeel( UIManager.getSystemLookAndFeelClassName() );
-        } catch ( ClassNotFoundException e ) {
-            e.printStackTrace();
-        } catch ( InstantiationException e ) {
-            e.printStackTrace();
-        } catch ( IllegalAccessException e ) {
-            e.printStackTrace();
-        } catch ( UnsupportedLookAndFeelException e ) {
-            e.printStackTrace();
+    private JPanel getTopButtonPanel() {
+        if ( topButtonPanel == null ) {
+            topButtonPanel = new JPanel();
+            topButtonPanel.setLayout( null );
+            topButtonPanel.add( getLocationMethodPanel(), null );
         }
-        ProbeMapperGui pgmg = new ProbeMapperGui();
-
-        pgmg.pack();
-        pgmg.setVisible( true );
-
-    }
-
-    /**
-     * This is the default constructor
-     */
-    public ProbeMapperGui() {
-        super();
-        initialize();
+        return topButtonPanel;
     }
 
     /**
      * This method initializes this
-     * 
+     *
      * @return void
      */
     private void initialize() {
@@ -418,40 +454,6 @@ public class ProbeMapperGui extends JFrame {
         this.setSize( 602, 472 );
         this.setContentPane( getJContentPane() );
         this.setTitle( "ProbeMapper" );
-    }
-
-    /**
-     * This method initializes jContentPane
-     * 
-     * @return javax.swing.JPanel
-     */
-    private javax.swing.JPanel getJContentPane() {
-        if ( jContentPane == null ) {
-            GridBagConstraints gridBagConstraints5 = new GridBagConstraints();
-            GridBagConstraints gridBagConstraints4 = new GridBagConstraints();
-            GridBagConstraints gridBagConstraints3 = new GridBagConstraints();
-            jContentPane = new javax.swing.JPanel();
-            jContentPane.setLayout( new GridBagLayout() );
-            gridBagConstraints3.insets = new java.awt.Insets( 0, 0, 18, 0 );
-            gridBagConstraints3.gridx = 0;
-            gridBagConstraints3.gridy = 0;
-            gridBagConstraints3.ipadx = 593;
-            gridBagConstraints3.ipady = 219;
-            gridBagConstraints4.insets = new java.awt.Insets( 19, 0, 4, 0 );
-            gridBagConstraints4.gridx = 0;
-            gridBagConstraints4.gridy = 1;
-            gridBagConstraints4.ipadx = 593;
-            gridBagConstraints4.ipady = 124;
-            gridBagConstraints5.insets = new java.awt.Insets( 5, 37, 1, 31 );
-            gridBagConstraints5.gridx = 0;
-            gridBagConstraints5.gridy = 2;
-            gridBagConstraints5.ipadx = 525;
-            gridBagConstraints5.ipady = 50;
-            jContentPane.add( getTopButtonPanel(), gridBagConstraints3 );
-            jContentPane.add( getFileNamesPanel(), gridBagConstraints4 );
-            jContentPane.add( getBottomPanel(), gridBagConstraints5 );
-        }
-        return jContentPane;
     }
 
 } // @jve:decl-index=0:visual-constraint="10,10"

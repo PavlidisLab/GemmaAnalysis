@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,41 +19,61 @@
 
 package chibi.gemmaanalysis;
 
-import cern.colt.list.DoubleArrayList;
-import cern.jet.stat.Descriptive;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.Serializable;
+import java.io.Writer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
 
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.StopWatch;
 
+import cern.colt.list.DoubleArrayList;
+import cern.jet.stat.Descriptive;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.dataStructure.matrix.SparseRaggedDoubleMatrix;
 import ubic.basecode.math.RandomChooser;
 import ubic.basecode.ontology.model.OntologyTerm;
-import ubic.gemma.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.genome.taxon.service.TaxonService;
+import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.genome.taxon.service.TaxonService;
+import ubic.gemma.core.ontology.GoMetric;
+import ubic.gemma.core.ontology.GoMetric.Metric;
+import ubic.gemma.core.ontology.providers.GeneOntologyService;
+import ubic.gemma.core.ontology.providers.GeneOntologyServiceImpl;
+import ubic.gemma.core.ontology.providers.GeneOntologyServiceImpl.GOAspect;
+import ubic.gemma.core.util.AbstractCLIContextCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.ontology.GoMetric;
-import ubic.gemma.ontology.GoMetric.Metric;
-import ubic.gemma.ontology.providers.GeneOntologyService;
-import ubic.gemma.ontology.providers.GeneOntologyServiceImpl;
-import ubic.gemma.ontology.providers.GeneOntologyServiceImpl.GOAspect;
-import ubic.gemma.util.AbstractCLIContextCLI;
-import ubic.gemma.util.Settings;
-
-import java.io.*;
-import java.util.*;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.util.Settings;
 
 /**
  * @author meeta
- * @version $Id$
+ * @version $Id: LinkEvalCli.java,v 1.2 2015/11/12 19:37:11 paul Exp $
  */
 public class LinkEvalCli extends AbstractCLIContextCLI {
 
@@ -73,14 +93,11 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         }
 
     }
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.ANALYSIS;
-    }
+
     private static class GenePair extends ArrayList<List<Gene>> implements Comparable<GenePair> {
 
         /**
-         * 
+         *
          */
         private static final long serialVersionUID = 1L;
 
@@ -112,7 +129,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see java.lang.Comparable#compareTo(java.lang.Object)
          */
         @Override
@@ -123,7 +140,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see java.lang.Object#equals(java.lang.Object)
          */
         @Override
@@ -205,7 +222,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @see java.lang.Object#hashCode()
          */
         @Override
@@ -295,11 +312,11 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         }
     }
 
-    private DoubleMatrix<Long, String> geneVectorMatrix = new SparseRaggedDoubleMatrix<Long, String>();
+    private DoubleMatrix<Long, String> geneVectorMatrix = new SparseRaggedDoubleMatrix<>();
 
-    private Map<String, Integer> GOcountMap = new HashMap<String, Integer>();
+    private Map<String, Integer> GOcountMap = new HashMap<>();
 
-    private Map<String, Double> GOProbMap = new HashMap<String, Double>();
+    private Map<String, Double> GOProbMap = new HashMap<>();
 
     private String adShortName = "";// holds inputted string indicating array design short name
 
@@ -325,9 +342,9 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     private String function = "http://purl.org/obo/owl/GO#GO_0003674";
 
-    private Map<String, Gene> geneCache = new HashMap<String, Gene>();
+    private Map<String, Gene> geneCache = new HashMap<>();
 
-    private Map<Long, Collection<String>> geneGoMap = new HashMap<Long, Collection<String>>();
+    private Map<Long, Collection<String>> geneGoMap = new HashMap<>();
 
     // A list of service beans
     private GeneService geneService;
@@ -363,16 +380,16 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     private String process = "http://purl.org/obo/owl/GO#GO_0008150";
 
-    // inputted
-
     private boolean randomFromArray = false;// true when selecting random pairs from array design is desired
+
+    // inputted
 
     private boolean randomFromSubset = false;// true when selecting random probe pairs from a given file is desired
 
     private boolean randomFromTaxon = false;// true when selecting random gene pairs from a particular genome(human,
     // mouse, rat) is desired
 
-    private Map<String, Integer> rootMap = new HashMap<String, Integer>();
+    private Map<String, Integer> rootMap = new HashMap<>();
 
     private int secondProbeColumn = 1;
 
@@ -415,6 +432,22 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         }
     }
 
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.ANALYSIS;
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
     /**
      * @param toSave
      * @param filename
@@ -439,87 +472,140 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     @Override
     @SuppressWarnings("static-access")
     protected void buildOptions() {
-        Option goMetricOption = OptionBuilder.hasArg().withArgName( "Choice of GO Metric" )
-                .withDescription( "resnik, lin, jiang, percent, cosine, kappa; default = simple" )
-                .withLongOpt( "metric" ).create( 'm' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Choice of GO Metric" );
+        OptionBuilder
+                .withDescription( "resnik, lin, jiang, percent, cosine, kappa; default = simple" );
+        OptionBuilder
+                .withLongOpt( "metric" );
+        Option goMetricOption = OptionBuilder.create( 'm' );
         addOption( goMetricOption );
 
-        Option maxOption = OptionBuilder.hasArg().withArgName( "Choice of using MAX calculation" )
-                .withDescription( "MAX" ).withLongOpt( "max" ).create( 'x' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Choice of using MAX calculation" );
+        OptionBuilder
+                .withDescription( "MAX" );
+        OptionBuilder.withLongOpt( "max" );
+        Option maxOption = OptionBuilder.create( 'x' );
         addOption( maxOption );
 
-        Option weightedOption = OptionBuilder.hasArg().withArgName( "Choice of using weighted matrix" )
-                .withDescription( "weight" ).withLongOpt( "weight" ).create( 'w' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Choice of using weighted matrix" );
+        OptionBuilder
+                .withDescription( "weight" );
+        OptionBuilder.withLongOpt( "weight" );
+        Option weightedOption = OptionBuilder.create( 'w' );
         addOption( weightedOption );
 
-        Option dataOption = OptionBuilder.hasArg()
-                .withArgName( "Choice of generating random gene pairs OR Input data file" )
-                .withDescription( "dataType" ).isRequired().create( 'd' );
+        OptionBuilder.hasArg();
+        OptionBuilder
+                .withArgName( "Choice of generating random gene pairs OR Input data file" );
+        OptionBuilder
+                .withDescription( "dataType" );
+        OptionBuilder.isRequired();
+        Option dataOption = OptionBuilder.create( 'd' );
         addOption( dataOption );
 
-        Option taxonOption = OptionBuilder.hasArg().withArgName( "Choice of taxon" )
-                .withDescription( "human, rat, mouse" ).isRequired().create( 't' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Choice of taxon" );
+        OptionBuilder
+                .withDescription( "human, rat, mouse" );
+        OptionBuilder.isRequired();
+        Option taxonOption = OptionBuilder.create( 't' );
         addOption( taxonOption );
 
-        Option firstGeneOption = OptionBuilder.hasArg().withArgName( "colindex" )
-                .withDescription( "Column index with gene1 (starting from 0; default=0)" ).create( "g1col" );
-        Option secondGeneOption = OptionBuilder.hasArg().withArgName( "colindex" )
-                .withDescription( "Column index with gene2 (starting from 0; default=1)" ).create( "g2col" );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "colindex" );
+        OptionBuilder
+                .withDescription( "Column index with gene1 (starting from 0; default=0)" );
+        Option firstGeneOption = OptionBuilder.create( "g1col" );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "colindex" );
+        OptionBuilder
+                .withDescription( "Column index with gene2 (starting from 0; default=1)" );
+        Option secondGeneOption = OptionBuilder.create( "g2col" );
         addOption( firstGeneOption );
         addOption( secondGeneOption );
 
-        Option arrayDesignOption = OptionBuilder.hasArg().isRequired().withArgName( "Array Design" )
-                .withDescription( "Short Name of Platform" ).create( "array" );
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "Array Design" );
+        OptionBuilder
+                .withDescription( "Short Name of Platform" );
+        Option arrayDesignOption = OptionBuilder.create( "array" );
         addOption( arrayDesignOption );
 
-        Option numberOfRandomRunsOption = OptionBuilder
-                .hasArg()
-                .withArgName( "Number of Random Runs" )
+        OptionBuilder
+                .hasArg();
+        OptionBuilder
+                .withArgName( "Number of Random Runs" );
+        OptionBuilder
                 .withDescription(
-                        "Number of runs for random gene pair selection from array design (starting from 1; default = 1)" )
+                        "Number of runs for random gene pair selection from array design (starting from 1; default = 1)" );
+        Option numberOfRandomRunsOption = OptionBuilder
                 .create( "runs" );
         addOption( numberOfRandomRunsOption );
 
-        Option outFileOption = OptionBuilder.hasArg().isRequired().withArgName( "outFile" )
-                .withDescription( "Write output to this file" ).create( 'o' );
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "outFile" );
+        OptionBuilder
+                .withDescription( "Write output to this file" );
+        Option outFileOption = OptionBuilder.create( 'o' );
         addOption( outFileOption );
 
-        Option noZeroGo = OptionBuilder.withDescription( "Exclude genes with no GO terms" ).create( "noZeroGo" );
+        OptionBuilder.withDescription( "Exclude genes with no GO terms" );
+        Option noZeroGo = OptionBuilder.create( "noZeroGo" );
         addOption( noZeroGo );
 
-        Option print = OptionBuilder.hasArg().withArgName( "Output file for random links" )
-                .withDescription( "Print out randomly chosen probe pairs in a separate output file" ).create( "print" );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "Output file for random links" );
+        OptionBuilder
+                .withDescription( "Print out randomly chosen probe pairs in a separate output file" );
+        Option print = OptionBuilder.create( "print" );
         addOption( print );
 
-        Option probenames = OptionBuilder
-                .hasArg()
-                .withArgName( "File containing subset of probe names" )
+        OptionBuilder
+                .hasArg();
+        OptionBuilder
+                .withArgName( "File containing subset of probe names" );
+        OptionBuilder
                 .withDescription(
-                        "File containing subset of probe names associated with selected array design from which to choose random pairs" )
+                        "File containing subset of probe names associated with selected array design from which to choose random pairs" );
+        Option probenames = OptionBuilder
                 .create( "probenames" );
         addOption( probenames );
 
-        Option subsetOption = OptionBuilder
-                .hasArg()
-                .withArgName( "Approximate number of probe pairs desired to score from full set" )
+        OptionBuilder
+                .hasArg();
+        OptionBuilder
+                .withArgName( "Approximate number of probe pairs desired to score from full set" );
+        OptionBuilder
                 .withDescription(
-                        "Take random subset of probe pairs approximated to given argument from input file to score" )
+                        "Take random subset of probe pairs approximated to given argument from input file to score" );
+        Option subsetOption = OptionBuilder
                 .create( "subset" );
         addOption( subsetOption );
 
-        Option aspectOption = OptionBuilder.hasArg().withArgName( "aspect" )
-                .withDescription( "Limit to mf, bp or cc. Default=use all three" ).create( "aspect" );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "aspect" );
+        OptionBuilder
+                .withDescription( "Limit to mf, bp or cc. Default=use all three" );
+        Option aspectOption = OptionBuilder.create( "aspect" );
         addOption( aspectOption );
 
-        Option outputGoAnnots = OptionBuilder.hasArg().withArgName( "path" )
-                .withDescription( "Also rint out the Gene-GO relationships in a tabbed format" ).create( "termsout" );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "path" );
+        OptionBuilder
+                .withDescription( "Also rint out the Gene-GO relationships in a tabbed format" );
+        Option outputGoAnnots = OptionBuilder.create( "termsout" );
         addOption( outputGoAnnots );
 
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -619,7 +705,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     /**
      * Opens a file for writing and adds the header for histogram data for selecting random gene pairs from an array
      * design
-     * 
+     *
      * @param fileName if Null, output will be written to standard output.
      * @throws IOException
      */
@@ -657,7 +743,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     /**
      * Opens a file for writing anda adds the header.
-     * 
+     *
      * @param fileName if Null, output will be written to standard output.
      * @throws IOException
      */
@@ -694,7 +780,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     /**
      * Opens a file for writing scores for the randomly selected probe pairs
-     * 
+     *
      * @param fileName if Null, output will be written to standard output.
      * @throws IOException
      */
@@ -925,7 +1011,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     /**
      * Assumes using TO
-     * 
+     *
      * @param currentRunIndex
      * @param results
      * @param scoreMap
@@ -975,7 +1061,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * 
+     *
      */
     @SuppressWarnings("unchecked")
     private void computeTermProbabilities() {
@@ -1028,7 +1114,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      * @return
      */
     private Collection<GenePair> getLinks() {
-        Collection<GenePair> genePairs = new HashSet<GenePair>();
+        Collection<GenePair> genePairs = new HashSet<>();
 
         if ( randomFromTaxon ) {
             genePairs = loadRandomPairs();
@@ -1055,7 +1141,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      */
     private Collection<OntologyTerm> getMergedTermOverlap( Set<String> merged1, Set<String> merged2 ) {
 
-        Collection<OntologyTerm> overlapTerms = new HashSet<OntologyTerm>();
+        Collection<OntologyTerm> overlapTerms = new HashSet<>();
 
         if ( ( merged2 == null ) || merged2.isEmpty() ) return null;
 
@@ -1063,11 +1149,13 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         for ( String goTerm1 : merged1 ) {
             if ( goTerm1.equalsIgnoreCase( process ) || goTerm1.equalsIgnoreCase( function )
-                    || goTerm1.equalsIgnoreCase( component ) ) continue;
+                    || goTerm1.equalsIgnoreCase( component ) )
+                continue;
             for ( String goTerm2 : merged2 ) {
 
                 if ( goTerm2.equalsIgnoreCase( process ) || goTerm2.equalsIgnoreCase( function )
-                        || goTerm2.equalsIgnoreCase( component ) ) continue;
+                        || goTerm2.equalsIgnoreCase( component ) )
+                    continue;
 
                 if ( goTerm1.equalsIgnoreCase( goTerm2 ) )
                     overlapTerms.add( GeneOntologyServiceImpl.getTermForURI( goTerm1 ) );
@@ -1084,7 +1172,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     private Collection<CompositeSequence> getProbesFromSubset( File f ) throws IOException {
 
         try (BufferedReader in = new BufferedReader( new FileReader( f ) );) {
-            Collection<CompositeSequence> probeSubset = new HashSet<CompositeSequence>();
+            Collection<CompositeSequence> probeSubset = new HashSet<>();
 
             String line;
             log.info( "Loading probes from " + f );
@@ -1111,11 +1199,11 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     @SuppressWarnings("unused")
     private Collection<GenePair> getRandomPairs( int size, Collection<Gene> genes ) {
 
-        Collection<GenePair> subsetPairs = new HashSet<GenePair>();
+        Collection<GenePair> subsetPairs = new HashSet<>();
         int i = 0;
 
         while ( i < size ) {
-            List<Gene> twoGenes = new ArrayList<Gene>( RandomChooser.chooseRandomSubset( 2, genes ) );
+            List<Gene> twoGenes = new ArrayList<>( RandomChooser.chooseRandomSubset( 2, genes ) );
 
             if ( twoGenes.size() != 2 ) {
                 log.warn( "A pair consists of two objects. More than two is unacceptable. Fix it!!" );
@@ -1158,16 +1246,16 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      */
     private Collection<GenePair> getRandomPairsFromProbes( int size ) {
 
-        Collection<GenePair> subsetPairs = new HashSet<GenePair>();
+        Collection<GenePair> subsetPairs = new HashSet<>();
 
-        firstProbes = new ArrayList<CompositeSequence>();
-        secondProbes = new ArrayList<CompositeSequence>();
-        List<CompositeSequence> probes = new ArrayList<CompositeSequence>( probemap.keySet() );
+        firstProbes = new ArrayList<>();
+        secondProbes = new ArrayList<>();
+        List<CompositeSequence> probes = new ArrayList<>( probemap.keySet() );
         Collections.sort( probes, new ProbeComparator() );
 
         while ( subsetPairs.size() < size ) {
 
-            List<CompositeSequence> twoProbes = new ArrayList<CompositeSequence>( RandomChooser.chooseRandomSubset( 2,
+            List<CompositeSequence> twoProbes = new ArrayList<>( RandomChooser.chooseRandomSubset( 2,
                     probes ) );
 
             if ( twoProbes.size() != 2 ) {
@@ -1206,7 +1294,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         Collection<String> masterGO = geneGoMap.get( g.getId() );
         Collection<String> coExpGO = geneGoMap.get( coexpG.getId() );
-        Collection<OntologyTerm> overlapTerms = new HashSet<OntologyTerm>();
+        Collection<OntologyTerm> overlapTerms = new HashSet<>();
 
         if ( ( coExpGO == null ) || coExpGO.isEmpty() ) return null;
 
@@ -1214,11 +1302,13 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         for ( String ontologyEntry : masterGO ) {
             if ( ontologyEntry.equalsIgnoreCase( process ) || ontologyEntry.equalsIgnoreCase( function )
-                    || ontologyEntry.equalsIgnoreCase( component ) ) continue;
+                    || ontologyEntry.equalsIgnoreCase( component ) )
+                continue;
             for ( String ontologyEntryC : coExpGO ) {
 
                 if ( ontologyEntryC.equalsIgnoreCase( process ) || ontologyEntryC.equalsIgnoreCase( function )
-                        || ontologyEntryC.equalsIgnoreCase( component ) ) continue;
+                        || ontologyEntryC.equalsIgnoreCase( component ) )
+                    continue;
 
                 if ( ontologyEntry.equalsIgnoreCase( ontologyEntryC ) )
                     overlapTerms.add( GeneOntologyServiceImpl.getTermForURI( ontologyEntry ) );
@@ -1229,7 +1319,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * 
+     *
      */
     private void initGO() {
         /*
@@ -1257,7 +1347,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         log.info( "Loading data from " + f );
         try (BufferedReader in = new BufferedReader( new FileReader( f ) );) {
 
-            Collection<GenePair> geneMap = new HashSet<GenePair>();
+            Collection<GenePair> geneMap = new HashSet<>();
             String line;
             Double printedLinks = -1.0;
             Random generator = new Random();
@@ -1431,7 +1521,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      */
     private void makeRootMap( Collection<String> terms ) {
 
-        Collection<String> remove = new HashSet<String>();
+        Collection<String> remove = new HashSet<>();
 
         for ( String t : terms ) {
             Collection<OntologyTerm> parents = goService.getAllParents( GeneOntologyServiceImpl.getTermForURI( t ),
@@ -1468,15 +1558,15 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     /**
      * Organizes a list of genes in to different bins, identified by gene name, with each bin containing duplicates
      * found of different genes with the same gene name.
-     * 
+     *
      * @param genes list of genes to be organized
      * @return a map of organized genes with the value being the collection of duplicate genes and the key being the
      *         common gene name among them
      */
     private Map<String, List<Gene>> organizeDuplicates( List<Gene> genes ) {
-        Map<String, List<Gene>> organizedGeneBins = new HashMap<String, List<Gene>>();
+        Map<String, List<Gene>> organizedGeneBins = new HashMap<>();
         String tempName = "";
-        Set<String> uniqueGeneNames = new HashSet<String>();
+        Set<String> uniqueGeneNames = new HashSet<>();
         for ( Gene tempGene : genes ) {
             tempName = tempGene.getName();
             if ( uniqueGeneNames.contains( tempName ) ) {// gene already encountered; duplicate
@@ -1485,7 +1575,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                 organizedGeneBins.put( tempName, tempGeneBin );
             } else {
                 uniqueGeneNames.add( tempName );
-                List<Gene> tempGeneBin = new ArrayList<Gene>();
+                List<Gene> tempGeneBin = new ArrayList<>();
                 tempGeneBin.add( tempGene );
                 organizedGeneBins.put( tempName, tempGeneBin );
             }
@@ -1522,7 +1612,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
             hadTerms++;
 
-            Collection<String> termString = new HashSet<String>();
+            Collection<String> termString = new HashSet<>();
             for ( OntologyTerm oe : GOTerms ) {
                 termString.add( oe.getUri() );
             }
@@ -1537,7 +1627,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * 
+     *
      */
     @SuppressWarnings("unchecked")
     private void populateGeneGoMapForTaxon() {
@@ -1575,7 +1665,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      * @return
      */
     private Map<GenePair, Double> scorePairs( Collection<GenePair> genePairs ) {
-        Map<GenePair, Double> scoreMap = new HashMap<GenePair, Double>();
+        Map<GenePair, Double> scoreMap = new HashMap<>();
         log.info( genePairs.size() + " pairs to score" );
 
         for ( GenePair pair : genePairs ) {
@@ -1583,7 +1673,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
             List<Gene> genes1 = pair.getFirstGenes();
             List<Gene> genes2 = pair.getSecondGenes();
 
-            List<Double> scores = new ArrayList<Double>();
+            List<Double> scores = new ArrayList<>();
 
             if ( metric.equals( GoMetric.Metric.simple ) ) {
                 Map<String, List<Gene>> orgGenes1 = organizeDuplicates( genes1 );
@@ -1677,7 +1767,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         try (Writer w = new FileWriter( new File( this.termsOutPath ) );) {
             w.write( "# Go terms for probes used in linkeval\n" );
             w.write( "ProbeId\tProbeName\tGene\tGoTermCount\tGoTerms\n" );
-            Set<String> seenProbes = new HashSet<String>();
+            Set<String> seenProbes = new HashSet<>();
             for ( CompositeSequence cs : this.probemap.keySet() ) {
 
                 if ( seenProbes.contains( cs.getName() ) ) {
@@ -1688,8 +1778,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
                 w.write( cs.getId() + "\t" + cs.getName() + "\t" );
                 Collection<Gene> genes = this.probemap.get( cs );
-                Set<String> goTerms = new HashSet<String>();
-                Set<String> geneSymbs = new HashSet<String>();
+                Set<String> goTerms = new HashSet<>();
+                Set<String> geneSymbs = new HashSet<>();
                 for ( Gene gene : genes ) {
                     if ( geneGoMap.containsKey( gene.getId() ) ) {
                         for ( String go : geneGoMap.get( gene.getId() ) ) {
@@ -1750,12 +1840,12 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                     Map<String, List<Gene>> orgGenes2 = organizeDuplicates( secondGenes );
 
                     GenePair uniquePair = new GenePair();
-                    List<Set<String>> mergedGoTerms1 = new ArrayList<Set<String>>();
-                    List<Set<String>> mergedGoTerms2 = new ArrayList<Set<String>>();
+                    List<Set<String>> mergedGoTerms1 = new ArrayList<>();
+                    List<Set<String>> mergedGoTerms2 = new ArrayList<>();
                     for ( String geneName1 : orgGenes1.keySet() ) {
                         List<Gene> tempGenes = orgGenes1.get( geneName1 );
                         uniquePair.addFirstGene( tempGenes.get( 0 ) );
-                        Set<String> uniqGoTerms = new HashSet<String>();
+                        Set<String> uniqGoTerms = new HashSet<>();
                         for ( Gene g1 : tempGenes ) {
                             if ( geneGoMap.containsKey( g1.getId() ) ) {
                                 uniqGoTerms.addAll( geneGoMap.get( g1.getId() ) );
@@ -1766,7 +1856,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                     for ( String geneName2 : orgGenes2.keySet() ) {
                         List<Gene> tempGenes = orgGenes2.get( geneName2 );
                         uniquePair.addSecondGene( tempGenes.get( 0 ) );
-                        Set<String> uniqGoTerms = new HashSet<String>();
+                        Set<String> uniqGoTerms = new HashSet<>();
                         for ( Gene g2 : tempGenes ) {
                             if ( geneGoMap.containsKey( g2.getId() ) ) {
                                 uniqGoTerms.addAll( geneGoMap.get( g2.getId() ) );
@@ -1792,15 +1882,6 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
             log.error( "Couldn't write to file: " + ioe );
 
         }
-    }
-
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
     }
 
 }

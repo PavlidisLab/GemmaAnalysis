@@ -11,82 +11,90 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.time.StopWatch;
 
+import chibi.gemmaanalysis.CoexpressionAnalysisService.CoexpressionMatrices;
 import ubic.basecode.dataStructure.matrix.DenseDouble3dMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
-import ubic.gemma.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.core.analysis.preprocess.filter.FilterConfig;
+import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.ontology.providers.GeneOntologyService;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.ontology.providers.GeneOntologyService;
-import chibi.gemmaanalysis.CoexpressionAnalysisService.CoexpressionMatrices;
 
 /**
  * Calculate the effect size
- * 
+ *
  * @author xwan
  * @author raymond
  */
 public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulatingCLI {
+    public static final int DEFAULT_STRINGENCY = 3;
+
+    public static void main( String[] args ) {
+        EffectSizeCalculationCli analysis = new EffectSizeCalculationCli();
+        StopWatch watch = new StopWatch();
+        watch.start();
+        log.info( "Starting Effect Size Analysis" );
+        Exception exc = analysis.doWork( args );
+        if ( exc != null ) {
+            log.error( exc.getMessage() );
+        }
+        log.info( "Finished analysis in " + watch.getTime() / 1000 + " seconds" );
+    }
+
     private String goTerm;
 
     private String outFilePrefix;
+
     private CoexpressionAnalysisService coexpressionAnalysisService;
 
     private GeneOntologyService goService;
 
-    public static final int DEFAULT_STRINGENCY = 3;
-
     public EffectSizeCalculationCli() {
         super();
+    }
+
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        // TODO Auto-generated method stub
+        return null;
     }
 
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
         super.buildOptions();
-        Option goOption = OptionBuilder.hasArg().withArgName( "GOTerm" ).withDescription( "Target GO term" )
-                .withLongOpt( "GOTerm" ).create( 'g' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "GOTerm" );
+        OptionBuilder.withDescription( "Target GO term" );
+        OptionBuilder
+                .withLongOpt( "GOTerm" );
+        Option goOption = OptionBuilder.create( 'g' );
         addOption( goOption );
-        Option outputFileOption = OptionBuilder.hasArg().isRequired().withArgName( "outFilePrefix" )
-                .withDescription( "File prefix for saving the correlation data" ).withLongOpt( "outFilePrefix" )
+        OptionBuilder.hasArg();
+        OptionBuilder.isRequired();
+        OptionBuilder.withArgName( "outFilePrefix" );
+        OptionBuilder
+                .withDescription( "File prefix for saving the correlation data" );
+        OptionBuilder.withLongOpt( "outFilePrefix" );
+        Option outputFileOption = OptionBuilder
                 .create( 'o' );
         addOption( outputFileOption );
-        Option stringencyOption = OptionBuilder.hasArg().withArgName( "stringency" )
-                .withDescription( "Vote count stringency for link selection" ).withLongOpt( "stringency" ).create( 'r' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "stringency" );
+        OptionBuilder
+                .withDescription( "Vote count stringency for link selection" );
+        OptionBuilder.withLongOpt( "stringency" );
+        Option stringencyOption = OptionBuilder.create( 'r' );
         addOption( stringencyOption );
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( hasOption( 'g' ) ) {
-            this.goTerm = getOptionValue( 'g' );
-        }
-        if ( hasOption( 'g' ) ) {
-            this.goTerm = getOptionValue( 'g' );
-        }
-        String taxonName = getOptionValue( 't' );
-        taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( taxonName );
-        taxon = taxonService.find( taxon );
-        if ( taxon == null ) {
-            log.info( "No Taxon found!" );
-        }
-        if ( hasOption( 'o' ) ) {
-            this.outFilePrefix = getOptionValue( 'o' );
-        }
-
-        initBeans();
-    }
-
-    protected void initBeans() {
-        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
-        eeService = this.getBean( ExpressionExperimentService.class );
-        geneService = this.getBean( GeneService.class );
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
@@ -164,24 +172,32 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
         return null;
     }
 
-    public static void main( String[] args ) {
-        EffectSizeCalculationCli analysis = new EffectSizeCalculationCli();
-        StopWatch watch = new StopWatch();
-        watch.start();
-        log.info( "Starting Effect Size Analysis" );
-        Exception exc = analysis.doWork( args );
-        if ( exc != null ) {
-            log.error( exc.getMessage() );
-        }
-        log.info( "Finished analysis in " + watch.getTime() / 1000 + " seconds" );
+    protected void initBeans() {
+        coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
+        eeService = this.getBean( ExpressionExperimentService.class );
+        geneService = this.getBean( GeneService.class );
     }
 
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
     @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+    protected void processOptions() {
+        super.processOptions();
+        if ( hasOption( 'g' ) ) {
+            this.goTerm = getOptionValue( 'g' );
+        }
+        if ( hasOption( 'g' ) ) {
+            this.goTerm = getOptionValue( 'g' );
+        }
+        String taxonName = getOptionValue( 't' );
+        taxon = Taxon.Factory.newInstance();
+        taxon.setCommonName( taxonName );
+        taxon = taxonService.find( taxon );
+        if ( taxon == null ) {
+            log.info( "No Taxon found!" );
+        }
+        if ( hasOption( 'o' ) ) {
+            this.outFilePrefix = getOptionValue( 'o' );
+        }
+
+        initBeans();
     }
 }

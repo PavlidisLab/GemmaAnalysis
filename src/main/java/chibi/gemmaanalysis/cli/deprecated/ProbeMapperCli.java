@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2006 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -34,49 +34,51 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
-import ubic.gemma.analysis.sequence.BlatAssociationScorer;
-import ubic.gemma.analysis.sequence.ProbeMapper;
-import ubic.gemma.analysis.sequence.ProbeMapperConfig;
-import ubic.gemma.apps.ArrayDesignProbeMapperCli;
-import ubic.gemma.externalDb.GoldenPathSequenceAnalysis;
-import ubic.gemma.loader.genome.BlatResultParser;
-import ubic.gemma.loader.genome.FastaParser;
-import ubic.gemma.loader.util.parser.TabDelimParser;
+import ubic.gemma.core.analysis.sequence.BlatAssociationScorer;
+import ubic.gemma.core.analysis.sequence.ProbeMapper;
+import ubic.gemma.core.analysis.sequence.ProbeMapperConfig;
+import ubic.gemma.core.apps.ArrayDesignProbeMapperCli;
+import ubic.gemma.core.externalDb.GoldenPathSequenceAnalysis;
+import ubic.gemma.core.genome.taxon.service.TaxonService;
+import ubic.gemma.core.loader.genome.BlatResultParser;
+import ubic.gemma.core.loader.genome.FastaParser;
+import ubic.gemma.core.loader.util.parser.TabDelimParser;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.taxon.service.TaxonService;
 import ubic.gemma.model.genome.biosequence.BioSequence;
-import ubic.gemma.model.genome.biosequence.BioSequenceService;
 import ubic.gemma.model.genome.gene.GeneProduct;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatResult;
-import ubic.gemma.model.genome.sequenceAnalysis.BlatResultService;
-import ubic.gemma.persistence.Persister;
-import ubic.gemma.persistence.PersisterHelper;
-import ubic.gemma.util.AbstractSpringAwareCLI;
+import ubic.gemma.persistence.persister.Persister;
+import ubic.gemma.persistence.persister.PersisterHelper;
+import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
+import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatResultService;
 
 /**
  * Given a blat result set for an array design, annotate and find the 3' locations for all the really good hits. This
  * CLI was written to take a file as input, and write results to a file or standard out, but has been modified to
  * process sequence ids from a file and load the results into the db.
  * <p>
- * 
+ *
  * @author pavlidis
- * @version $Id$
+ * @version $Id: ProbeMapperCli.java,v 1.2 2015/11/12 19:37:13 paul Exp $
  * @see ArrayDesignProbeMapperCli for the tool we use day-to-day
  * @deprecated beause ArrayDesignProbeMapperCli has most of the functionality.
  */
 @Deprecated
 public class ProbeMapperCli extends AbstractSpringAwareCLI {
 
-    @Override
-    public String getShortDesc() {
-        return "Not really used much any more; look at ArrayDesignProbeMapperCli";
-    }
-
-    ProbeMapper probeMapper;
-
     private static final String DEFAULT_DATABASE = "hg18";
+
+    public static void main( String[] args ) {
+        ProbeMapperCli p = new ProbeMapperCli();
+        Exception e = p.doWork( args );
+        if ( e != null ) {
+            System.err.println( e.getLocalizedMessage() );
+            log.error( e, e );
+        }
+    }
 
     /**
      * @param bestOutputFileName
@@ -96,14 +98,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         return w;
     }
 
-    public static void main( String[] args ) {
-        ProbeMapperCli p = new ProbeMapperCli();
-        Exception e = p.doWork( args );
-        if ( e != null ) {
-            System.err.println( e.getLocalizedMessage() );
-            log.error( e, e );
-        }
-    }
+    ProbeMapper probeMapper;
 
     private String databaseName = DEFAULT_DATABASE;
 
@@ -127,41 +122,246 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
         super();
     }
 
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
+    @Override
+    public String getCommandName() {
+        return null;
+    }
+
+    @Override
+    public String getShortDesc() {
+        return "Not really used much any more; look at ArrayDesignProbeMapperCli";
+    }
+
+    /**
+     * Trim the results down to a set of "best" results. The results are sent to a provided writer
+     *
+     * @throws IOException
+     * @param results
+     * @param writer
+     */
+    public void printBestResults( Map<String, Collection<BlatAssociation>> results, Writer writer ) throws IOException {
+        log.info( "Preparing 'best' matches" );
+
+        writeHeader( writer );
+
+        for ( String probe : results.keySet() ) {
+            BlatAssociation best = BlatAssociationScorer.scoreResults( results.get( probe ), config );
+            if ( best == null ) {
+                continue;
+            }
+            writeDesignElementBlatAssociation( writer, best );
+        }
+
+    }
+
+    /**
+     * @param blatResultInputStream
+     * @param output
+     * @return
+     * @throws IOException
+     * @throws SQLException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws ClassNotFoundException
+     */
+    public Map<String, Collection<BlatAssociation>> runOnBlatResults( InputStream blatResultInputStream, Writer output )
+            throws IOException, SQLException {
+
+        GoldenPathSequenceAnalysis goldenPathAnalysis = new GoldenPathSequenceAnalysis( this.databaseName );
+
+        BlatResultParser brp = new BlatResultParser();
+        brp.parse( blatResultInputStream );
+
+        writeHeader( output );
+
+        Collection<BlatResult> blatResults = brp.getResults();
+
+        // Fill in the taxon.
+        assert this.taxon != null;
+        for ( BlatResult blatResult : blatResults ) {
+            blatResult.getQuerySequence().setTaxon( taxon );
+            try {
+                FieldUtils.writeField( blatResult.getTargetChromosome(), "taxon", taxon, true );
+                FieldUtils.writeField( blatResult.getTargetAlignedRegion().getChromosome(), "taxon", taxon, true );
+            } catch ( IllegalAccessException e ) {
+                e.printStackTrace();
+            }
+        }
+
+        Map<String, Collection<BlatAssociation>> allRes = probeMapper.processBlatResults( goldenPathAnalysis,
+                blatResults, this.config );
+
+        printBlatAssociations( output, allRes );
+
+        blatResultInputStream.close();
+        output.close();
+        return allRes;
+    }
+
+    /**
+     * @param stream containing genbank accessions, one per line; configuration has no effect.
+     * @param writer
+     * @return
+     */
+    public Map<String, Collection<BlatAssociation>> runOnGbIds( InputStream stream, Writer writer ) throws IOException,
+            SQLException {
+        GoldenPathSequenceAnalysis goldenPathDb = new GoldenPathSequenceAnalysis( this.databaseName );
+
+        TabDelimParser parser = new TabDelimParser();
+        parser.parse( stream );
+
+        writeHeader( writer );
+
+        Collection<String[]> genbankIds = parser.getResults();
+
+        log.debug( "Parsed " + genbankIds.size() + " lines from the stream" );
+
+        Map<String, Collection<BlatAssociation>> allRes = probeMapper.processGbIds( goldenPathDb, genbankIds );
+
+        printBlatAssociations( writer, allRes );
+
+        stream.close();
+        writer.close();
+        return allRes;
+    }
+
+    /**
+     * @param stream
+     * @param output
+     * @return
+     */
+    public Map<String, Collection<BlatAssociation>> runOnSequences( InputStream stream, Writer output ) {
+
+        try {
+            GoldenPathSequenceAnalysis goldenPathDb = new GoldenPathSequenceAnalysis( this.databaseName );
+
+            FastaParser parser = new FastaParser();
+            parser.parse( stream );
+
+            writeHeader( output );
+            Collection<BioSequence> sequences = parser.getResults();
+
+            log.debug( "Parsed " + sequences.size() + " sequences from the stream" );
+
+            Map<String, Collection<BlatAssociation>> allRes = probeMapper.processSequences( goldenPathDb, sequences,
+                    this.config );
+
+            printBlatAssociations( output, allRes );
+            return allRes;
+
+        } catch ( SQLException e ) {
+            throw new RuntimeException( e );
+        } catch ( IOException e ) {
+            throw new RuntimeException( e );
+        }
+    }
+
+    /**
+     * @param output
+     * @param probeName
+     * @param arrayName
+     * @param ld
+     * @throws IOException
+     */
+    public void writeDesignElementBlatAssociation( Writer output, BlatAssociation association ) throws IOException {
+        BlatResult blatRes = association.getBlatResult();
+
+        String[] sa = splitBlatQueryName( blatRes );
+        String arrayName = "";
+        String probeName = null;
+        if ( sa.length == 2 ) {
+            arrayName = sa[0];
+            probeName = sa[1];
+        } else if ( sa.length == 1 ) {
+            probeName = sa[0];
+        } else {
+            throw new RuntimeException( "Query name was not in understood format" );
+        }
+
+        GeneProduct product = association.getGeneProduct();
+
+        Gene g = product.getGene();
+
+        output.write( probeName + "\t" + arrayName + "\t" + blatRes.getMatches() + "\t"
+                + blatRes.getQuerySequence().getLength() + "\t" + ( blatRes.getTargetEnd() - blatRes.getTargetStart() )
+                + "\t" + blatRes.score() + "\t" + g.getOfficialSymbol() + "\t" + product.getNcbiGi() + "\t"
+                + association.getThreePrimeDistance() + "\t" + association.getOverlap() + "\t"
+                + blatRes.getTargetChromosome().getName() + "\t" + blatRes.getTargetStart() + "\t"
+                + blatRes.getTargetEnd() + "\n" );
+
+    }
+
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions() {
-        Option blatResultOption = OptionBuilder.hasArg().withArgName( "PSL file" )
-                .withDescription( "Blat result file in PSL format" ).withLongOpt( "blatfile" ).create( 'b' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "PSL file" );
+        OptionBuilder
+                .withDescription( "Blat result file in PSL format" );
+        OptionBuilder.withLongOpt( "blatfile" );
+        Option blatResultOption = OptionBuilder.create( 'b' );
 
         addOption( blatResultOption );
 
-        Option databaseNameOption = OptionBuilder.hasArg().withArgName( "database" )
-                .withDescription( "GoldenPath database id (default=" + DEFAULT_DATABASE + ")" )
-                .withLongOpt( "database" ).create( 'd' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "database" );
+        OptionBuilder
+                .withDescription( "GoldenPath database id (default=" + DEFAULT_DATABASE + ")" );
+        OptionBuilder
+                .withLongOpt( "database" );
+        Option databaseNameOption = OptionBuilder.create( 'd' );
 
-        addOption( OptionBuilder
-                .hasArg()
-                .withArgName( "value" )
+        OptionBuilder
+                .hasArg();
+        OptionBuilder
+                .withArgName( "value" );
+        OptionBuilder
                 .withDescription(
-                        "Sequence identity threshold, default = " + ProbeMapperConfig.DEFAULT_IDENTITY_THRESHOLD )
-                .withLongOpt( "identityThreshold" ).create( 'i' ) );
+                        "Sequence identity threshold, default = " + ProbeMapperConfig.DEFAULT_IDENTITY_THRESHOLD );
+        OptionBuilder
+                .withLongOpt( "identityThreshold" );
+        addOption( OptionBuilder.create( 'i' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "value" )
-                .withDescription( "Blat score threshold, default = " + ProbeMapperConfig.DEFAULT_SCORE_THRESHOLD )
-                .withLongOpt( "scoreThreshold" ).create( 's' ) );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "value" );
+        OptionBuilder
+                .withDescription( "Blat score threshold, default = " + ProbeMapperConfig.DEFAULT_SCORE_THRESHOLD );
+        OptionBuilder
+                .withLongOpt( "scoreThreshold" );
+        addOption( OptionBuilder.create( 's' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" )
-                .withDescription( "File containing Genbank identifiers" ).withLongOpt( "gbfile" ).create( 'g' ) );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "file name" );
+        OptionBuilder
+                .withDescription( "File containing Genbank identifiers" );
+        OptionBuilder.withLongOpt( "gbfile" );
+        addOption( OptionBuilder.create( 'g' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" )
-                .withDescription( "File containing sequences in FASTA format" ).withLongOpt( "fastaFile" ).create( 'f' ) );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "file name" );
+        OptionBuilder
+                .withDescription( "File containing sequences in FASTA format" );
+        OptionBuilder.withLongOpt( "fastaFile" );
+        addOption( OptionBuilder.create( 'f' ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" )
-                .withDescription( "File containing BioSequence primary keys (results are saved to database)" )
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "file name" );
+        OptionBuilder
+                .withDescription( "File containing BioSequence primary keys (results are saved to database)" );
+        addOption( OptionBuilder
                 .create( "seqIds" ) );
 
-        addOption( OptionBuilder.hasArg().withArgName( "file name" ).withDescription( "Output file basename" )
-                .withLongOpt( "outputFile" ).create( 'o' ) );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "file name" );
+        OptionBuilder.withDescription( "Output file basename" );
+        OptionBuilder
+                .withLongOpt( "outputFile" );
+        addOption( OptionBuilder.create( 'o' ) );
 
         addOption( databaseNameOption );
 
@@ -217,7 +417,8 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 String[] moreArgs = getArgs();
                 if ( moreArgs.length == 0 ) {
                     System.out
-                            .println( "You must provide either a Blat result file, a FASTA file, a Genbank identifier file, or some Genbank identifiers" );
+                            .println(
+                                    "You must provide either a Blat result file, a FASTA file, a Genbank identifier file, or some Genbank identifiers" );
                     printHelp();
                     return new Exception( "Missing genbank identifiers" );
                 }
@@ -244,6 +445,76 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
             return new RuntimeException( e );
         }
         return null;
+    }
+
+    @Override
+    protected void processOptions() {
+        super.processOptions();
+
+        probeMapper = this.getBean( ProbeMapper.class );
+        taxonService = this.getBean( TaxonService.class );
+
+        this.config = new ProbeMapperConfig();
+        if ( hasOption( 's' ) ) {
+            config.setBlatScoreThreshold( getDoubleOptionValue( 's' ) );
+        }
+
+        if ( hasOption( 'i' ) ) {
+            config.setIdentityThreshold( getDoubleOptionValue( 'i' ) );
+        }
+
+        if ( hasOption( 'd' ) ) {
+            this.databaseName = getOptionValue( 'd' );
+        } else {
+            this.databaseName = DEFAULT_DATABASE;
+        }
+        guessTaxon();
+
+        if ( hasOption( 'f' ) ) {
+            this.fastaFileName = getOptionValue( 'f' );
+        }
+
+        if ( hasOption( 'b' ) ) {
+            this.blatFileName = getFileNameOptionValue( 'b' );
+        }
+
+        if ( hasOption( 'g' ) ) {
+            this.ncbiIdentifierFileName = getFileNameOptionValue( 'g' );
+        }
+
+        if ( hasOption( "seqIds" ) ) {
+            this.sequenceIdentifierFileName = getFileNameOptionValue( "seqIds" );
+        }
+
+        this.outputFileName = getOptionValue( 'o' );
+    }
+
+    private void guessTaxon() {
+        if ( this.databaseName.startsWith( "hg" ) ) {
+            this.taxon = taxonService.findByCommonName( "human" );
+        } else if ( this.databaseName.startsWith( "mm" ) ) {
+            this.taxon = taxonService.findByCommonName( "mouse" );
+        } else if ( this.databaseName.startsWith( "rn" ) ) {
+            this.taxon = taxonService.findByCommonName( "rat" );
+        } else {
+            throw new IllegalStateException( "Unknown taxon for database: " + this.databaseName );
+        }
+
+    }
+
+    /**
+     * @param output
+     * @param allRes
+     * @throws IOException
+     */
+    private void printBlatAssociations( Writer output, Map<String, Collection<BlatAssociation>> allRes )
+            throws IOException {
+        if ( output == null ) return;
+        for ( Collection<BlatAssociation> associations : allRes.values() ) {
+            for ( BlatAssociation blatAssociation : associations ) {
+                this.writeDesignElementBlatAssociation( output, blatAssociation );
+            }
+        }
     }
 
     /**
@@ -305,235 +576,6 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
     }
 
     /**
-     * Trim the results down to a set of "best" results. The results are sent to a provided writer
-     * 
-     * @throws IOException
-     * @param results
-     * @param writer
-     */
-    public void printBestResults( Map<String, Collection<BlatAssociation>> results, Writer writer ) throws IOException {
-        log.info( "Preparing 'best' matches" );
-
-        writeHeader( writer );
-
-        for ( String probe : results.keySet() ) {
-            BlatAssociation best = BlatAssociationScorer.scoreResults( results.get( probe ), config );
-            if ( best == null ) {
-                continue;
-            }
-            writeDesignElementBlatAssociation( writer, best );
-        }
-
-    }
-
-    /**
-     * @param stream
-     * @param output
-     * @return
-     */
-    public Map<String, Collection<BlatAssociation>> runOnSequences( InputStream stream, Writer output ) {
-
-        try {
-            GoldenPathSequenceAnalysis goldenPathDb = new GoldenPathSequenceAnalysis( this.databaseName );
-
-            FastaParser parser = new FastaParser();
-            parser.parse( stream );
-
-            writeHeader( output );
-            Collection<BioSequence> sequences = parser.getResults();
-
-            log.debug( "Parsed " + sequences.size() + " sequences from the stream" );
-
-            Map<String, Collection<BlatAssociation>> allRes = probeMapper.processSequences( goldenPathDb, sequences,
-                    this.config );
-
-            printBlatAssociations( output, allRes );
-            return allRes;
-
-        } catch ( SQLException e ) {
-            throw new RuntimeException( e );
-        } catch ( IOException e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-
-        probeMapper = this.getBean( ProbeMapper.class );
-        taxonService = this.getBean( TaxonService.class );
-
-        this.config = new ProbeMapperConfig();
-        if ( hasOption( 's' ) ) {
-            config.setBlatScoreThreshold( getDoubleOptionValue( 's' ) );
-        }
-
-        if ( hasOption( 'i' ) ) {
-            config.setIdentityThreshold( getDoubleOptionValue( 'i' ) );
-        }
-
-        if ( hasOption( 'd' ) ) {
-            this.databaseName = getOptionValue( 'd' );
-        } else {
-            this.databaseName = DEFAULT_DATABASE;
-        }
-        guessTaxon();
-
-        if ( hasOption( 'f' ) ) {
-            this.fastaFileName = getOptionValue( 'f' );
-        }
-
-        if ( hasOption( 'b' ) ) {
-            this.blatFileName = getFileNameOptionValue( 'b' );
-        }
-
-        if ( hasOption( 'g' ) ) {
-            this.ncbiIdentifierFileName = getFileNameOptionValue( 'g' );
-        }
-
-        if ( hasOption( "seqIds" ) ) {
-            this.sequenceIdentifierFileName = getFileNameOptionValue( "seqIds" );
-        }
-
-        this.outputFileName = getOptionValue( 'o' );
-    }
-
-    private void guessTaxon() {
-        if ( this.databaseName.startsWith( "hg" ) ) {
-            this.taxon = taxonService.findByCommonName( "human" );
-        } else if ( this.databaseName.startsWith( "mm" ) ) {
-            this.taxon = taxonService.findByCommonName( "mouse" );
-        } else if ( this.databaseName.startsWith( "rn" ) ) {
-            this.taxon = taxonService.findByCommonName( "rat" );
-        } else {
-            throw new IllegalStateException( "Unknown taxon for database: " + this.databaseName );
-        }
-
-    }
-
-    /**
-     * @param output
-     * @param probeName
-     * @param arrayName
-     * @param ld
-     * @throws IOException
-     */
-    public void writeDesignElementBlatAssociation( Writer output, BlatAssociation association ) throws IOException {
-        BlatResult blatRes = association.getBlatResult();
-
-        String[] sa = splitBlatQueryName( blatRes );
-        String arrayName = "";
-        String probeName = null;
-        if ( sa.length == 2 ) {
-            arrayName = sa[0];
-            probeName = sa[1];
-        } else if ( sa.length == 1 ) {
-            probeName = sa[0];
-        } else {
-            throw new RuntimeException( "Query name was not in understood format" );
-        }
-
-        GeneProduct product = association.getGeneProduct();
-
-        Gene g = product.getGene();
-
-        output.write( probeName + "\t" + arrayName + "\t" + blatRes.getMatches() + "\t"
-                + blatRes.getQuerySequence().getLength() + "\t" + ( blatRes.getTargetEnd() - blatRes.getTargetStart() )
-                + "\t" + blatRes.score() + "\t" + g.getOfficialSymbol() + "\t" + product.getNcbiGi() + "\t"
-                + association.getThreePrimeDistance() + "\t" + association.getOverlap() + "\t"
-                + blatRes.getTargetChromosome().getName() + "\t" + blatRes.getTargetStart() + "\t"
-                + blatRes.getTargetEnd() + "\n" );
-
-    }
-
-    /**
-     * @param blatResultInputStream
-     * @param output
-     * @return
-     * @throws IOException
-     * @throws SQLException
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     * @throws ClassNotFoundException
-     */
-    public Map<String, Collection<BlatAssociation>> runOnBlatResults( InputStream blatResultInputStream, Writer output )
-            throws IOException, SQLException {
-
-        GoldenPathSequenceAnalysis goldenPathAnalysis = new GoldenPathSequenceAnalysis( this.databaseName );
-
-        BlatResultParser brp = new BlatResultParser();
-        brp.parse( blatResultInputStream );
-
-        writeHeader( output );
-
-        Collection<BlatResult> blatResults = brp.getResults();
-
-        // Fill in the taxon.
-        assert this.taxon != null;
-        for ( BlatResult blatResult : blatResults ) {
-            blatResult.getQuerySequence().setTaxon( taxon );
-            try {
-                FieldUtils.writeField( blatResult.getTargetChromosome(), "taxon", taxon, true );
-                FieldUtils.writeField( blatResult.getTargetAlignedRegion().getChromosome(), "taxon", taxon, true );
-            } catch ( IllegalAccessException e ) {
-                e.printStackTrace();
-            }
-        }
-
-        Map<String, Collection<BlatAssociation>> allRes = probeMapper.processBlatResults( goldenPathAnalysis,
-                blatResults, this.config );
-
-        printBlatAssociations( output, allRes );
-
-        blatResultInputStream.close();
-        output.close();
-        return allRes;
-    }
-
-    /**
-     * @param output
-     * @param allRes
-     * @throws IOException
-     */
-    private void printBlatAssociations( Writer output, Map<String, Collection<BlatAssociation>> allRes )
-            throws IOException {
-        if ( output == null ) return;
-        for ( Collection<BlatAssociation> associations : allRes.values() ) {
-            for ( BlatAssociation blatAssociation : associations ) {
-                this.writeDesignElementBlatAssociation( output, blatAssociation );
-            }
-        }
-    }
-
-    /**
-     * @param stream containing genbank accessions, one per line; configuration has no effect.
-     * @param writer
-     * @return
-     */
-    public Map<String, Collection<BlatAssociation>> runOnGbIds( InputStream stream, Writer writer ) throws IOException,
-            SQLException {
-        GoldenPathSequenceAnalysis goldenPathDb = new GoldenPathSequenceAnalysis( this.databaseName );
-
-        TabDelimParser parser = new TabDelimParser();
-        parser.parse( stream );
-
-        writeHeader( writer );
-
-        Collection<String[]> genbankIds = parser.getResults();
-
-        log.debug( "Parsed " + genbankIds.size() + " lines from the stream" );
-
-        Map<String, Collection<BlatAssociation>> allRes = probeMapper.processGbIds( goldenPathDb, genbankIds );
-
-        printBlatAssociations( writer, allRes );
-
-        stream.close();
-        writer.close();
-        return allRes;
-    }
-
-    /**
      * @param blatRes
      * @return
      */
@@ -554,16 +596,6 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 + "Blat.targetAlignmentLength" + "\t" + "Blat.score" + "\t" + "Gene.symbol" + "\t" + "Gene.NCBIid"
                 + "\t" + "threePrime.distance" + "\t" + "exonOverlap" + "\t" + "Blat.Chromosome" + "\t"
                 + "Blat.targetStart" + "\t" + "Blat.targetEnd" + "\n" );
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        return null;
     }
 
 }
