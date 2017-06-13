@@ -167,7 +167,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 return;
             }
 
-            log.info( "Processing: " + ee );
+            log.info( "===== Processing: " + ee );
 
             /*
              * Extract data FIXME make this ONE STEP to getting the data matrix.
@@ -333,7 +333,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             }
         }
 
-        // FIXME: error conditions check for existence of keys.
+        boolean warned = false;
         for ( ExpressionAnalysisResultSet brs : eBayesResultSets ) {
             if ( brs.getExperimentalFactors().size() > 1 ) {
                 continue;
@@ -344,11 +344,26 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
                 Double pvalue2 = r.getPvalue();
                 CompositeSequence probe = r.getProbe();
+                assert apv.get( ef ) != null;
+                if ( apv.get( ef ).get( probe ) == null ) {
+                    // If it's missing from the nobayes analysis we put in NaN. Not sure why that happens.
+                    if ( !warned ) {
+                        log.warn( "No nobayes result for " + probe + ", further warnings suppressed" );
+                        warned = true;
+                    }
+                    apv.get( ef ).put( probe, new Double[2] );
+                    apv.get( ef ).get( probe )[0] = Double.NaN;
+                }
+
                 apv.get( ef ).get( probe )[1] = pvalue2;
 
                 for ( ContrastResult cr : r.getContrasts() ) {
                     FactorValue factorValue = cr.getFactorValue();
                     Double pvalue = cr.getPvalue();
+                    if ( cpv.get( factorValue ).get( probe ) == null ) {
+                        cpv.get( factorValue ).put( probe, new Double[2] );
+                        cpv.get( factorValue ).get( probe )[0] = Double.NaN;
+                    }
                     cpv.get( factorValue ).get( probe )[1] = pvalue;
 
                 }
