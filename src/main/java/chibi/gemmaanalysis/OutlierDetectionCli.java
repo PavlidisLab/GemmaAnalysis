@@ -118,8 +118,8 @@ public class OutlierDetectionCli extends ExpressionExperimentManipulatingCLI {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ee );
+                eeService.thawLite( ( ExpressionExperiment ) bas );
+                processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 

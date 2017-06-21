@@ -136,8 +136,8 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ee );
+                eeService.thawLite( ( ExpressionExperiment ) bas );
+                processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 
@@ -190,7 +190,6 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig config1 = new DifferentialExpressionAnalysisConfig();
-            config1.setQvalueThreshold( null );
             config1.setFactorsToInclude( factorsToAnalyze );
             config1.setModerateStatistics( false ); // <----
             DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, config1 ).iterator().next();
@@ -213,7 +212,6 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
              * Then do it with ebayes.
              */
             DifferentialExpressionAnalysisConfig config2 = new DifferentialExpressionAnalysisConfig();
-            config2.setQvalueThreshold( summaryQvalThreshold );
             config2.setModerateStatistics( true ); // <----
             config2.setFactorsToInclude( factorsToAnalyze );
 
@@ -413,7 +411,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
-            ad = this.arrayDesignService.thaw( ad );
+            this.arrayDesignService.thaw( ad );
             genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
             seenArrays.add( ad );
         }

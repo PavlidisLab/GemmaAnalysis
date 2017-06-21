@@ -137,8 +137,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ee );
+                eeService.thawLite( ( ExpressionExperiment ) bas );
+                processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 
@@ -230,7 +230,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig configWithoutBatch = new DifferentialExpressionAnalysisConfig();
-            configWithoutBatch.setQvalueThreshold( null );
             configWithoutBatch.setFactorsToInclude( factors2 );
             DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, configWithoutBatch ).iterator().next();
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<>();
@@ -255,7 +254,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             Collection<ExperimentalFactor> factors = experimentalFactors;
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
-            configIncludingBatch.setQvalueThreshold( summaryQvalThreshold );
 
             configIncludingBatch.setFactorsToInclude( factors );
 
@@ -423,7 +421,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
         Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
-            ad = this.arrayDesignService.thaw( ad );
+            this.arrayDesignService.thaw( ad );
             genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
             seenArrays.add( ad );
         }

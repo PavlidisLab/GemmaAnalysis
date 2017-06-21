@@ -125,7 +125,7 @@ public class RandomGenesCli extends AbstractSpringAwareCLI {
                     log.error( "ERROR: Cannot find genes for ID: " + line );
                     continue;
                 }
-                gene = geneService.thaw( gene );
+                geneService.thaw( gene );
 
                 out.write( gene.getOfficialSymbol() + "\n" );
 

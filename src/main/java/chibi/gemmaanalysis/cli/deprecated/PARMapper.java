@@ -22,10 +22,10 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
 import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.genome.taxon.service.TaxonService;
 import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.persistence.service.genome.PhysicalLocationService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 /**
  * Collect statistics about how far PARs are from known genes.

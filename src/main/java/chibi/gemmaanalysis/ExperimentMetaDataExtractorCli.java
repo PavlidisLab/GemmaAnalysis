@@ -52,7 +52,6 @@ import ubic.gemma.core.analysis.service.ExpressionDataMatrixService;
 import ubic.gemma.core.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.core.expression.experiment.service.ExperimentalDesignService;
 import ubic.gemma.model.common.description.BibliographicReference;
 import ubic.gemma.model.common.quantitationtype.QuantitationType;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -63,6 +62,7 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentSubSet;
 import ubic.gemma.model.expression.experiment.ExpressionExperimentValueObject;
 import ubic.gemma.persistence.service.common.auditAndSecurity.AuditTrailService;
+import ubic.gemma.persistence.service.expression.experiment.ExperimentalDesignService;
 import ubic.gemma.persistence.util.FactorValueVector;
 import ubic.gemma.persistence.util.Settings;
 
@@ -136,8 +136,8 @@ public class ExperimentMetaDataExtractorCli extends ExpressionExperimentManipula
                 try {
 
                     ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                    ee = eeService.thawLite( ee );
-                    ExpressionExperimentValueObject vo = eeService.loadValueObject( ee.getId() );
+                    eeService.thawLite( ee );
+                    ExpressionExperimentValueObject vo = eeService.loadValueObject( ee );
                     vo.setIsPublic( !securityService.isPrivate( ee ) );
                     log.info( "Processing (" + ++i + "/" + expressionExperiments.size() + ") : " + ee );
 

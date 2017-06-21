@@ -25,7 +25,6 @@ import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix;
 import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -35,6 +34,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
 
 /**
  * Create a relative expression level (dedv rank) matrix for a list of genes
@@ -180,7 +180,7 @@ public class ExpressionAnalysisCLI extends AbstractGeneCoexpressionManipulatingC
 
     private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
         Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
-                .loadMultiple( csIds ) );
+                .load( csIds ) );
         Map<Long, Collection<Long>> result = new HashMap<>();
         for ( CompositeSequence cs : genes.keySet() ) {
             result.put( cs.getId(), new HashSet<Long>() );

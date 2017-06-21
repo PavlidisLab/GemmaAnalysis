@@ -37,12 +37,12 @@ import org.apache.commons.logging.LogFactory;
 import cern.colt.list.ObjectArrayList;
 import ubic.basecode.dataStructure.matrix.CompressedBitMatrix;
 import ubic.basecode.ontology.model.OntologyTerm;
-import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.core.genome.gene.service.GeneService;
 import ubic.gemma.core.ontology.providers.GeneOntologyService;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
+import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
 
 /**
  * WARNING probably broken. Creates an efficient matrix holding information about gene links, and can answer some basic
@@ -225,7 +225,7 @@ public class LinkMatrix {
                 }
             }
 
-            Collection<Gene> allGenes = geneService.loadMultiple( geneIds );
+            Collection<Gene> allGenes = geneService.load( geneIds );
             for ( Gene gene : allGenes ) {
                 geneMap.put( gene.getId(), gene );
             }

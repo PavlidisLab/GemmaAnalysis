@@ -33,7 +33,6 @@ import org.apache.commons.lang.time.StopWatch;
 import cern.colt.Arrays;
 import ubic.gemma.core.apps.ArrayDesignSequenceManipulatingCli;
 import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.genome.taxon.service.TaxonService;
 import ubic.gemma.model.common.auditAndSecurity.curation.CurationDetails;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -41,6 +40,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 /**
  * CLI for ArrayDesignMapSummaryService
@@ -218,7 +218,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                         CurationDetails status = ad.getCurationDetails();
                         String isTroubled = status != null ? Boolean.toString( status.getTroubled().booleanValue() )
                                 : NA;
-                        ad = arrayDesignService.thawLite( ad );
+                        arrayDesignService.thawLite( ad );
                         long mergees = ad.getMergees().size();
                         long subsumes = ad.getSubsumedArrayDesigns().size();
                         String subsumedBy = ad.getSubsumingArrayDesign() != null ? ad.getSubsumingArrayDesign()
@@ -305,7 +305,7 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
 
     private Map<Long, Collection<Long>> getCs2GeneMap( Collection<Long> csIds ) {
         Map<CompositeSequence, Collection<Gene>> genes = compositeSequenceService.getGenes( compositeSequenceService
-                .loadMultiple( csIds ) );
+                .load( csIds ) );
         Map<Long, Collection<Long>> result = new HashMap<>();
         for ( CompositeSequence cs : genes.keySet() ) {
             result.put( cs.getId(), new HashSet<Long>() );

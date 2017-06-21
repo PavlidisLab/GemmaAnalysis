@@ -266,7 +266,7 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
-            ee = this.eeService.thawLite( ee );
+            this.eeService.thawLite( ee );
             System.out.println( "Writing results to file for " + ee.getShortName() );
             bw.write( ee.getShortName() );
             bw.write( "\t" + getPlatforms( ee ) );
@@ -303,7 +303,7 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
-            ee = this.eeService.thawLite( ee );
+            this.eeService.thawLite( ee );
             System.out.println( "Writing results to file for " + ee.getShortName() );
             bw.write( ee.getShortName() );
             bw.write( "\t" + getPlatforms( ee ) );
@@ -339,7 +339,7 @@ public class OutlierDetectionTestCli extends ExpressionExperimentManipulatingCLI
         nf.setMaximumFractionDigits( 4 );
         try {
             // Get information about the experiment:
-            ee = this.eeService.thawLite( ee );
+            this.eeService.thawLite( ee );
             System.out.println( "Writing results to file for " + ee.getShortName() );
             bw.write( ee.getShortName() );
             bw.write( "\t" + getPlatforms( ee ) );

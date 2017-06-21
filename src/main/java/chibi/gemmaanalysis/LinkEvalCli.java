@@ -56,7 +56,6 @@ import ubic.basecode.math.RandomChooser;
 import ubic.basecode.ontology.model.OntologyTerm;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.genome.taxon.service.TaxonService;
 import ubic.gemma.core.ontology.GoMetric;
 import ubic.gemma.core.ontology.GoMetric.Metric;
 import ubic.gemma.core.ontology.providers.GeneOntologyService;
@@ -69,6 +68,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 import ubic.gemma.persistence.util.Settings;
 
 /**
@@ -618,7 +618,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
         buf.append( "" );
 
         this.arrayDesign = arrayDesignService.findByShortName( adShortName );
-        this.arrayDesign = arrayDesignService.thawLite( this.arrayDesign );
+        arrayDesignService.thawLite( this.arrayDesign );
         if ( this.arrayDesign == null ) {
             System.out.println( "Array design " + adShortName + " not found" );
             System.exit( 0 );

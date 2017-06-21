@@ -31,9 +31,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
-import ubic.gemma.core.expression.experiment.service.ExpressionExperimentService;
 import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.genome.taxon.service.TaxonService;
 import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -43,6 +41,8 @@ import ubic.gemma.model.genome.Taxon;
 import ubic.gemma.model.genome.biosequence.BioSequence;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 /**
  * Computing different statistics about the database to assist in computing probabilities
@@ -244,7 +244,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         int count = 0;
         for ( ArrayDesign design : ads ) {
             log.info( design + " : " + ++count + " of " + ads.size() );
-            design = adService.thawLite( design );
+            adService.thawLite( design );
             Map<Integer, Integer> counts = new HashMap<>();
 
             int i = 0;

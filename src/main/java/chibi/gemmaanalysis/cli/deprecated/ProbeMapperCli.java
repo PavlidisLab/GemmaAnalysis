@@ -39,7 +39,6 @@ import ubic.gemma.core.analysis.sequence.ProbeMapper;
 import ubic.gemma.core.analysis.sequence.ProbeMapperConfig;
 import ubic.gemma.core.apps.ArrayDesignProbeMapperCli;
 import ubic.gemma.core.externalDb.GoldenPathSequenceAnalysis;
-import ubic.gemma.core.genome.taxon.service.TaxonService;
 import ubic.gemma.core.loader.genome.BlatResultParser;
 import ubic.gemma.core.loader.genome.FastaParser;
 import ubic.gemma.core.loader.util.parser.TabDelimParser;
@@ -54,6 +53,7 @@ import ubic.gemma.persistence.persister.Persister;
 import ubic.gemma.persistence.persister.PersisterHelper;
 import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatResultService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 /**
  * Given a blat result set for an array design, annotate and find the 3' locations for all the really good hits. This
@@ -545,7 +545,7 @@ public class ProbeMapperCli extends AbstractSpringAwareCLI {
                 String idString = strings[0];
                 Long id = Long.parseLong( idString );
                 BioSequence bs = bss.load( id );
-                bs = bss.thaw( bs );
+                bss.thaw( bs );
 
                 if ( bs == null ) continue;
 

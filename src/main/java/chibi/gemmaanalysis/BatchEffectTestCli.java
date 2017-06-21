@@ -85,7 +85,8 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
         for ( BioAssaySet bas : this.expressionExperiments ) {
             if ( bas instanceof ExpressionExperiment ) {
-                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
+                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
+                eeService.thawLite( ee );
                 log.info( "Processing: " + ee );
 
                 try {
