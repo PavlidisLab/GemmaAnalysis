@@ -57,7 +57,7 @@ import ubic.gemma.persistence.util.EntityUtils;
  * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
  * with including it; and repeating those, after batch correction
  *
- * @author paul
+ * @author  paul
  * @version $Id: BatchDiffExCli.java,v 1.33 2015/12/03 21:46:40 paul Exp $
  */
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
@@ -133,11 +133,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.expressionExperiments ) {
+            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                eeService.thawLite( ( ExpressionExperiment ) bas );
+                getEeService().thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
@@ -189,7 +189,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /* TODO use this, or skip it... we have this information elsewhere already */
             // expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
 
-            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee );
+            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee, false );
             if ( !correctable ) {
 
                 /*
@@ -288,10 +288,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * Correct for batch effects; covariates which are "unimportant" will be dropped.
              */
             log.info( "ComBat-ing" );
-            boolean parametric = true;
-            double importanceThreshold = 0.01;
-            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric,
-                    importanceThreshold );
+            //            boolean parametric = true;
+            //   double importanceThreshold = 0.01;
+            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat );
             assert comBat != null;
 
             /*
@@ -418,7 +417,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ee
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
             this.arrayDesignService.thaw( ad );
@@ -428,7 +427,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param fileName
+     * @param  fileName
      * @return
      * @throws IOException
      */
@@ -443,8 +442,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param mat
-     * @param filename
+     * @param  mat
+     * @param  filename
      * @throws IOException
      */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
@@ -455,11 +454,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param revisedResultDetails
-     * @param ef
-     * @param r
-     * @param c
-     * @return c
+     * @param  revisedResultDetails
+     * @param  ef
+     * @param  r
+     * @param  c
+     * @return                      c
      */
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {

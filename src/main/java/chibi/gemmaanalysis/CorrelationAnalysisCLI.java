@@ -44,7 +44,7 @@ import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
 
 /**
- * @author raymond
+ * @author  raymond
  * @version $Id: CorrelationAnalysisCLI.java,v 1.10 2015/11/12 19:37:11 paul Exp $
  */
 public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulatingCLI {
@@ -122,7 +122,7 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
 
         // calculate matrices
         CoexpressionMatrices matrices = coexpressionAnalysisService.calculateCoexpressionMatrices(
-                expressionExperiments, queryGenes, targetGenes, filterConfig, CorrelationMethod.SPEARMAN );
+                this.getExpressionExperiments(), queryGenes, targetGenes, filterConfig, CorrelationMethod.SPEARMAN );
         DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix = matrices.getCorrelationMatrix();
         // DenseDoubleMatrix3DNamed sampleSizeMatrix = matrices
         // .getSampleSizeMatrix();
@@ -190,7 +190,6 @@ public class CorrelationAnalysisCLI extends AbstractGeneCoexpressionManipulating
 
     protected void initBeans() {
         coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
-        eeService = this.getBean( ExpressionExperimentService.class );
     }
 
     @Override

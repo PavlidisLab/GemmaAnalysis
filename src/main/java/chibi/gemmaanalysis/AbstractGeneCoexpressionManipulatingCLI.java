@@ -18,7 +18,10 @@
  */
 package chibi.gemmaanalysis;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -30,11 +33,12 @@ import org.apache.commons.cli.OptionBuilder;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.genome.Gene;
+import ubic.gemma.model.genome.Taxon;
 
 /**
  * Class for CLIs that manipulate a list of genes
  *
- * @author Raymond
+ * @author  Raymond
  * @version $Id: AbstractGeneCoexpressionManipulatingCLI.java,v 1.3 2015/11/30 23:21:39 paul Exp $
  */
 public abstract class AbstractGeneCoexpressionManipulatingCLI extends ExpressionExperimentManipulatingCLI {
@@ -50,12 +54,40 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
         return CommandGroup.ANALYSIS;
     }
 
+    /**
+     * Read in a list of genes
+     *
+     * @param  inFile - file name to read
+     * @return        collection of genes
+     */
+    @SuppressWarnings("unused") // Possible external use
+    protected Collection<Gene> readGeneListFile( String inFile, Taxon t ) throws IOException {
+        log.info( "Reading " + inFile );
+
+        Collection<Gene> genes = new ArrayList<>();
+        try (BufferedReader in = new BufferedReader( new FileReader( inFile ) )) {
+            String line;
+            while ( ( line = in.readLine() ) != null ) {
+                if ( line.startsWith( "#" ) )
+                    continue;
+                String s = line.trim();
+                Gene gene = findGeneByOfficialSymbol( s, t );
+                if ( gene == null ) {
+                    log.error( "ERROR: Cannot find gene for " + s );
+                    continue;
+                }
+                genes.add( gene );
+            }
+            return genes;
+        }
+    }
+
     public Collection<Gene> getQueryGenes() throws IOException {
         Collection<Gene> genes = new HashSet<>();
-        if ( queryGeneFile != null ) genes.addAll( readGeneListFile( queryGeneFile, taxon ) );
+        if ( queryGeneFile != null ) genes.addAll( readGeneListFile( queryGeneFile, getTaxon() ) );
         if ( queryGeneSymbols != null ) {
             for ( int i = 0; i < queryGeneSymbols.length; i++ ) {
-                genes.add( findGeneByOfficialSymbol( queryGeneSymbols[i], taxon ) );
+                genes.add( findGeneByOfficialSymbol( queryGeneSymbols[i], getTaxon() ) );
             }
         }
 
@@ -64,10 +96,10 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
 
     public Collection<Gene> getTargetGenes() throws IOException {
         Collection<Gene> genes = new HashSet<>();
-        if ( targetGeneFile != null ) genes.addAll( readGeneListFile( targetGeneFile, taxon ) );
+        if ( targetGeneFile != null ) genes.addAll( readGeneListFile( targetGeneFile, getTaxon() ) );
         if ( targetGeneSymbols != null ) {
             for ( int i = 0; i < targetGeneSymbols.length; i++ ) {
-                genes.add( findGeneByOfficialSymbol( targetGeneSymbols[i], taxon ) );
+                genes.add( findGeneByOfficialSymbol( targetGeneSymbols[i], getTaxon() ) );
             }
         }
         return genes;
@@ -116,8 +148,9 @@ public abstract class AbstractGeneCoexpressionManipulatingCLI extends Expression
         for ( Gene qGene : queryGenes ) {
             String qName = ( qGene.getOfficialSymbol() != null ) ? qGene.getOfficialSymbol() : qGene.getId().toString();
             for ( Gene tGene : targetGenes ) {
-                String tName = ( tGene.getOfficialSymbol() != null ) ? tGene.getOfficialSymbol() : tGene.getId()
-                        .toString();
+                String tName = ( tGene.getOfficialSymbol() != null ) ? tGene.getOfficialSymbol()
+                        : tGene.getId()
+                                .toString();
                 map.put( qGene.getId() + ":" + tGene.getId(), qName + ":" + tName );
             }
         }

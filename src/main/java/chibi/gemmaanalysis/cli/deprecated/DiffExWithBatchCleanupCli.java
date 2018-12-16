@@ -74,7 +74,7 @@ public class DiffExWithBatchCleanupCli extends ExpressionExperimentManipulatingC
 
         ExpressionExperimentReportService expressionExperimentReportService = this
                 .getBean( ExpressionExperimentReportService.class );
-        for ( BioAssaySet ee : expressionExperiments ) {
+        for ( BioAssaySet ee : getExpressionExperiments() ) {
             if ( !( ee instanceof ExpressionExperiment ) ) {
                 continue;
             }

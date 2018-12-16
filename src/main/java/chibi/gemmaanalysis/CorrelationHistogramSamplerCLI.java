@@ -69,7 +69,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         Exception exc = processCommandLine( args );
         if ( exc != null ) return exc;
 
-        Collection<HistogramSampler> samplers = coexprAnalysisService.getHistogramSamplers( this.expressionExperiments );
+        Collection<HistogramSampler> samplers = coexprAnalysisService.getHistogramSamplers( this.getExpressionExperiments() );
 
         log.info( "Sampling " + samplers.size() + " expression experiments" );
         log.info( "Taking the n-" + kMax + " largest value " + numSamples + " times" );
@@ -77,7 +77,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         watch.start();
         double[] samples = new double[numSamples];
         for ( int i = 0; i < numSamples; i++ ) {
-            DoubleArrayList eeSamples = new DoubleArrayList( expressionExperiments.size() );
+            DoubleArrayList eeSamples = new DoubleArrayList( getExpressionExperiments().size() );
             for ( HistogramSampler sampler : samplers ) {
                 eeSamples.add( sampler.nextSample() );
             }
@@ -89,7 +89,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
         log.info( "Finished sampling in " + watch );
 
         String header = "# ";
-        for ( BioAssaySet bas : expressionExperiments ) {
+        for ( BioAssaySet bas : getExpressionExperiments() ) {
             ExpressionExperiment ee = ( ExpressionExperiment ) bas;
             header += ee.getShortName() + " ";
         }
@@ -110,10 +110,6 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
     @Override
     protected void processOptions() {
         super.processOptions();
-        String taxonName = getOptionValue( 't' );
-        taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( taxonName );
-        taxon = taxonService.find( taxon );
 
         if ( hasOption( 'n' ) ) {
             numSamples = getIntegerOptionValue( 'n' );

@@ -54,7 +54,7 @@ import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.persistence.service.expression.bioAssayData.DesignElementDataVectorService;
+import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.persistence.util.Settings;
@@ -65,7 +65,6 @@ import ubic.gemma.persistence.util.Settings;
  * TODO DOCUMENT ME
  *
  * @author Raymond
- * @version $Id: CoexpressionAnalysisService.java,v 1.12 2015/11/12 19:37:11 paul Exp $
  */
 public class CoexpressionAnalysisService {
     /**
@@ -195,7 +194,7 @@ public class CoexpressionAnalysisService {
 
     private ExpressionExperimentService eeService;
 
-    private DesignElementDataVectorService dedvService;
+    private ProcessedExpressionDataVectorService dedvService;
 
     private CorrelationEffectMetaAnalysis metaAnalysis;
 
@@ -213,11 +212,11 @@ public class CoexpressionAnalysisService {
     /**
      * Create and populate the coexpression matrices (correlation matrix, sample size matrix, expression level matrix)
      *
-     * @param ees
-     * @param queryGenes
-     * @param targetGenes
-     * @param filterConfig
-     * @param correlationMethod
+     * @param  ees
+     * @param  queryGenes
+     * @param  targetGenes
+     * @param  filterConfig
+     * @param  correlationMethod
      * @return
      */
     public CoexpressionMatrices calculateCoexpressionMatrices( Collection<BioAssaySet> ees,
@@ -277,8 +276,8 @@ public class CoexpressionAnalysisService {
     /**
      * Calculate an effect size matrix
      *
-     * @param correlationMatrix
-     * @param sampleSizeMatrix
+     * @param  correlationMatrix
+     * @param  sampleSizeMatrix
      * @return
      */
     public DoubleMatrix<Gene, Gene> calculateEffectSizeMatrix(
@@ -314,10 +313,10 @@ public class CoexpressionAnalysisService {
     /**
      * Calculate the p-values for a max correlation matrix using empirical distributions stored in the gemmaData dir
      *
-     * @param maxCorrelationMatrix
-     * @param n specifies which n'th maximum value of the sample to be taken
-     * @param ees expression experiments to sample from the gemmaData dir
-     * @return p-value matrix
+     * @param  maxCorrelationMatrix
+     * @param  n                    specifies which n'th maximum value of the sample to be taken
+     * @param  ees                  expression experiments to sample from the gemmaData dir
+     * @return                      p-value matrix
      */
     public DoubleMatrix<String, String> calculateMaxCorrelationPValueMatrix(
             DoubleMatrix<String, String> maxCorrelationMatrix, int n, Collection<BioAssaySet> ees ) {
@@ -372,7 +371,7 @@ public class CoexpressionAnalysisService {
     /**
      * Filter the specified matrix so columns (expression experiments) of missing data are removed
      *
-     * @param matrix
+     * @param  matrix
      * @return
      */
     public DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> filterCoexpressionMatrix(
@@ -417,9 +416,9 @@ public class CoexpressionAnalysisService {
     /**
      * Get expression data matrix for the specified expression experiment
      *
-     * @param ee
-     * @param filterConfig
-     * @return an expression data double matrix
+     * @param  ee
+     * @param  filterConfig
+     * @return              an expression data double matrix
      */
     public ExpressionDataDoubleMatrix getExpressionDataMatrix( ExpressionExperiment ee, FilterConfig filterConfig ) {
         StopWatch watch = new StopWatch();
@@ -427,7 +426,7 @@ public class CoexpressionAnalysisService {
         log.info( ee.getShortName() + ": Getting expression data matrix" );
 
         // get dedvs to build expression data matrix
-        Collection<ProcessedExpressionDataVector> dedvs = eeService.getProcessedDataVectors( ee );
+        Collection<ProcessedExpressionDataVector> dedvs = this.dedvService.getProcessedDataVectors( ee );
         dedvService.thaw( dedvs );
 
         // build and filter expression data matrix
@@ -448,8 +447,8 @@ public class CoexpressionAnalysisService {
     /**
      * Get a gene to composite sequence map // FIXME This corresponds to an existing service method?
      *
-     * @param css
-     * @return gene to composite sequences map
+     * @param  css
+     * @return     gene to composite sequences map
      */
     public Map<Gene, Collection<CompositeSequence>> getGene2CsMap( Collection<CompositeSequence> css ) {
         Map<CompositeSequence, Collection<Gene>> cs2gene = csService.getGenes( css );
@@ -479,8 +478,8 @@ public class CoexpressionAnalysisService {
     /**
      * Get the histogram samplers for the specified expression experiments
      *
-     * @param ees
-     * @return a collection of histogram samplers
+     * @param  ees
+     * @return     a collection of histogram samplers
      */
     public Collection<HistogramSampler> getHistogramSamplers( Collection<BioAssaySet> ees ) {
         Collection<HistogramSampler> histSamplers = new HashSet<>();
@@ -504,9 +503,9 @@ public class CoexpressionAnalysisService {
     /**
      * Fold the 3D correlation matrix to a 2D matrix with maximum correlations
      *
-     * @param matrix - correlation matrix
-     * @param n - the Nth largest correlation
-     * @return matrix with Nth largest correlations
+     * @param  matrix - correlation matrix
+     * @param  n      - the Nth largest correlation
+     * @return        matrix with Nth largest correlations
      */
     public DoubleMatrix<Gene, Gene> getMaxCorrelationMatrix(
             DenseDouble3dMatrix<Gene, Gene, ExpressionExperiment> matrix, int n ) {
@@ -536,32 +535,13 @@ public class CoexpressionAnalysisService {
         return maxMatrix;
     }
 
-    public void setAdService( ArrayDesignService adService ) {
-        this.adService = adService;
-    }
-
-    public void setDedvService( DesignElementDataVectorService dedvService ) {
-        this.dedvService = dedvService;
-    }
-
-    public void setEeService( ExpressionExperimentService eeService ) {
-        this.eeService = eeService;
-    }
-
-    /**
-     * @param csService the csService to set
-     */
-    protected void setCsService( CompositeSequenceService csService ) {
-        this.csService = csService;
-    }
-
     /**
      * Calculates all pairwise correlations between the query and target composite sequences and then takes the median
      * correlation
      *
-     * @param queryCss
-     * @param targetCss
-     * @param dataMatrix
+     * @param  queryCss
+     * @param  targetCss
+     * @param  dataMatrix
      * @return
      */
     private CorrelationSampleSize calculateCorrelation( Collection<CompositeSequence> queryCss,
@@ -625,8 +605,8 @@ public class CoexpressionAnalysisService {
     /**
      * Calculates a p-value from a histogram
      *
-     * @param histogram
-     * @param x
+     * @param  histogram
+     * @param  x
      * @return
      */
     private double getPvalue( Histogram1D histogram, double x ) {
@@ -643,8 +623,8 @@ public class CoexpressionAnalysisService {
     /**
      * Read a correlation distribution
      *
-     * @param fileName
-     * @return a histogram sampler for the read distribution
+     * @param  fileName
+     * @return             a histogram sampler for the read distribution
      * @throws IOException
      */
     private HistogramSampler readHistogramFile( String fileName ) throws IOException {

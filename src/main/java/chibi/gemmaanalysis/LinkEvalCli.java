@@ -1065,21 +1065,21 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      */
     @SuppressWarnings("unchecked")
     private void computeTermProbabilities() {
-        File f2 = new File( HOME_DIR + File.separatorChar + GO_PROB_MAP );
-        if ( f2.exists() ) {
-            GOProbMap = ( HashMap<String, Double> ) getCacheFromDisk( f2 );
-            log.info( "Found probability file!" );
-        }
-
-        else {
-            log.info( "Calculating probabilities... " );
-
-            GOcountMap = goMetric.getTermOccurrence( geneGoMap );
-            makeRootMap( GOcountMap.keySet() );
-            GOProbMap = makeProbMap();
-
-            this.saveCacheToDisk( GOProbMap, GO_PROB_MAP );
-        }
+//        File f2 = new File( HOME_DIR + File.separatorChar + GO_PROB_MAP );
+//        if ( f2.exists() ) {
+//            GOProbMap = ( HashMap<String, Double> ) getCacheFromDisk( f2 );
+//            log.info( "Found probability file!" );
+//        }
+//
+//        else {
+//            log.info( "Calculating probabilities... " );
+//
+//            GOcountMap = goMetric.getTermOccurrence( geneGoMap );
+//            makeRootMap( GOcountMap.keySet() );
+//            GOProbMap = makeProbMap();
+//
+//            this.saveCacheToDisk( GOProbMap, GO_PROB_MAP );
+//        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1682,13 +1682,13 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                 // calculate scores
                 for ( String geneName1 : orgGenes1.keySet() ) {
                     List<Gene> sameGenes1 = orgGenes1.get( geneName1 );
-                    for ( String geneName2 : orgGenes2.keySet() ) {
-                        List<Gene> sameGenes2 = orgGenes2.get( geneName2 );
-                        if ( sameGenes1.get( 0 ).getId() == sameGenes2.get( 0 ).getId() ) continue;
-                        double mergedScore = 0.0;
-                        mergedScore = goMetric.computeMergedOverlap( sameGenes1, sameGenes2, geneGoMap, goAspectToUse );
-                        scores.add( mergedScore );
-                    }
+//                    for ( String geneName2 : orgGenes2.keySet() ) {
+//                        List<Gene> sameGenes2 = orgGenes2.get( geneName2 );
+//                        if ( sameGenes1.get( 0 ).getId() == sameGenes2.get( 0 ).getId() ) continue;
+//                        double mergedScore = 0.0;
+//                        mergedScore = goMetric.computeMergedOverlap( sameGenes1, sameGenes2, geneGoMap, goAspectToUse );
+//                        scores.add( mergedScore );
+//                    }
                 }
 
             } else {

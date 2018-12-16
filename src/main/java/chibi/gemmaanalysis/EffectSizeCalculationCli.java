@@ -122,7 +122,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
                 } catch ( InterruptedException e ) {
                 }
             }
-            targetGenes.addAll( goService.getGenes( goTerm, taxon ) );
+            targetGenes.addAll( goService.getGenes( goTerm, this.getTaxon() ) );
         }
 
         if ( targetGenes.size() == 0 || queryGenes.size() == 0 ) {
@@ -131,7 +131,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
 
         FilterConfig filterConfig = new FilterConfig();
         CoexpressionMatrices matrices = coexpressionAnalysisService.calculateCoexpressionMatrices(
-                expressionExperiments, queryGenes, targetGenes, filterConfig, null );
+                getExpressionExperiments(), queryGenes, targetGenes, filterConfig, null );
         DenseDouble3dMatrix<Gene, Gene, BioAssaySet> correlationMatrix = matrices.getCorrelationMatrix();
         DenseDouble3dMatrix<Gene, Gene, BioAssaySet> sampleSizeMatrix = matrices.getSampleSizeMatrix();
         DoubleMatrix<Gene, Gene> effectSizeMatrix = coexpressionAnalysisService.calculateEffectSizeMatrix(
@@ -174,8 +174,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
 
     protected void initBeans() {
         coexpressionAnalysisService = this.getBean( CoexpressionAnalysisService.class );
-        eeService = this.getBean( ExpressionExperimentService.class );
-        geneService = this.getBean( GeneService.class );
+
     }
 
     @Override
@@ -187,13 +186,7 @@ public class EffectSizeCalculationCli extends AbstractGeneCoexpressionManipulati
         if ( hasOption( 'g' ) ) {
             this.goTerm = getOptionValue( 'g' );
         }
-        String taxonName = getOptionValue( 't' );
-        taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( taxonName );
-        taxon = taxonService.find( taxon );
-        if ( taxon == null ) {
-            log.info( "No Taxon found!" );
-        }
+
         if ( hasOption( 'o' ) ) {
             this.outFilePrefix = getOptionValue( 'o' );
         }

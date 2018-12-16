@@ -3,6 +3,7 @@
 	<name>GemmaAnalysis</name>
 	<comment></comment>
 	<projects>
+		<project>gemma-core</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

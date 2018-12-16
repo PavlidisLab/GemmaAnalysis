@@ -58,10 +58,10 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
     protected Exception doWork( String[] args ) {
         processCommandLine( args );
 
-        String taxonName = "human";
-        taxon = Taxon.Factory.newInstance();
-        taxon.setCommonName( taxonName );
-        taxon = taxonService.find( taxon );
+//        String taxonName = "human";
+//        taxon = Taxon.Factory.newInstance();
+//        taxon.setCommonName( taxonName );
+//        taxon = taxonService.find( taxon );
 
         DecimalFormat formatter = ( DecimalFormat ) NumberFormat.getNumberInstance( Locale.US );
         // formatter.applyPattern("0.0000");
@@ -70,7 +70,7 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
         try {
             DoubleMatrix<String, String> matrix = in.read( inFile );
             DoubleMatrix<String, String> pMatrix = coexpService.calculateMaxCorrelationPValueMatrix( matrix, 0,
-                    expressionExperiments );
+                    getExpressionExperiments() );
             MatrixWriter<String, String> out = new MatrixWriter<>( outFile, formatter );
             out.writeMatrix( pMatrix, true );
         } catch ( IOException e ) {

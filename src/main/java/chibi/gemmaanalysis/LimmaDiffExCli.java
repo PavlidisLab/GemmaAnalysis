@@ -132,11 +132,11 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "limma.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.expressionExperiments ) {
+            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                eeService.thawLite( ( ExpressionExperiment ) bas );
+                getEeService().thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
@@ -287,9 +287,9 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param beforeResults
-     * @param eBayesResults
-     * @return vector of rank correlations.
+     * @param  beforeResults
+     * @param  eBayesResults
+     * @return               vector of rank correlations.
      */
     private List<String> compare( DifferentialExpressionAnalysis beforeResults, DifferentialExpressionAnalysis eBayesResults ) {
 
@@ -408,7 +408,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ee
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
             this.arrayDesignService.thaw( ad );
@@ -418,7 +418,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param fileName
+     * @param  fileName
      * @return
      * @throws IOException
      */
@@ -433,11 +433,11 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param revisedResultDetails
-     * @param ef
-     * @param r
-     * @param c
-     * @return c
+     * @param  revisedResultDetails
+     * @param  ef
+     * @param  r
+     * @param  c
+     * @return                      c
      */
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {

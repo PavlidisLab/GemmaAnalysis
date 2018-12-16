@@ -81,11 +81,11 @@ public class ScalingCheckCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "scale.info.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tMIN\tMED\tMAX\n" );
 
-            for ( BioAssaySet bas : this.expressionExperiments ) {
+            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                eeService.thawLite( ( ExpressionExperiment ) bas );
+                getEeService().thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();

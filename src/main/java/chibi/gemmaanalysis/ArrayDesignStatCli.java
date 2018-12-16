@@ -46,7 +46,6 @@ import ubic.gemma.persistence.service.genome.taxon.TaxonService;
  * CLI for ArrayDesignMapSummaryService
  *
  * @author xwan
- * @version $Id: ArrayDesignStatCli.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
 public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
 
@@ -155,12 +154,10 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
         Collection<String> failedAds = new ArrayList<>();
         Exception err = processCommandLine( args );
         if ( err != null ) return err;
-        if ( arrayDesignsToProcess == null || arrayDesignsToProcess.size() == 0 ) {
-            this.arrayDesignsToProcess = adService.loadAll();
-        }
+
         Map<Taxon, Collection<ArrayDesign>> taxon2arraydesign = new HashMap<>();
         Collection<Long> adIds = new HashSet<>();
-        for ( ArrayDesign ad : this.arrayDesignsToProcess ) {
+        for ( ArrayDesign ad : this.getArrayDesignsToProcess() ) {
 
             Taxon taxon = ad.getPrimaryTaxon();
             if ( taxon == null ) {
@@ -218,12 +215,12 @@ public class ArrayDesignStatCli extends ArrayDesignSequenceManipulatingCli {
                         CurationDetails status = ad.getCurationDetails();
                         String isTroubled = status != null ? Boolean.toString( status.getTroubled().booleanValue() )
                                 : NA;
-                        arrayDesignService.thawLite( ad );
+                        getArrayDesignService().thawLite( ad );
                         long mergees = ad.getMergees().size();
                         long subsumes = ad.getSubsumedArrayDesigns().size();
                         String subsumedBy = ad.getSubsumingArrayDesign() != null ? ad.getSubsumingArrayDesign()
                                 .getShortName() : NA;
-                        long numEEs = arrayDesignService.getExpressionExperiments( ad ).size();
+                        long numEEs = this.getArrayDesignService().getExpressionExperiments( ad ).size();
                         // boolean merged = isMerged.get( ad.getId() );
                         // if ( merged ) continue;
                         // boolean subsumed = isSubsumed.get( ad.getId() );
