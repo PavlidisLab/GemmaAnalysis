@@ -72,7 +72,7 @@ import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 import ubic.gemma.persistence.util.Settings;
 
 /**
- * @author meeta
+ * @author  meeta
  * @version $Id: LinkEvalCli.java,v 1.2 2015/11/12 19:37:11 paul Exp $
  */
 public class LinkEvalCli extends AbstractCLIContextCLI {
@@ -414,7 +414,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     private GOAspect goAspectToUse = null;
 
     /**
-     * @param f
+     * @param  f
      * @return
      */
     public Serializable getCacheFromDisk( File f ) {
@@ -706,7 +706,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      * Opens a file for writing and adds the header for histogram data for selecting random gene pairs from an array
      * design
      *
-     * @param fileName if Null, output will be written to standard output.
+     * @param  fileName    if Null, output will be written to standard output.
      * @throws IOException
      */
     protected Writer initHistFile( String fileName ) throws IOException {
@@ -744,7 +744,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     /**
      * Opens a file for writing anda adds the header.
      *
-     * @param fileName if Null, output will be written to standard output.
+     * @param  fileName    if Null, output will be written to standard output.
      * @throws IOException
      */
     protected Writer initOutputFile( String fileName ) throws IOException {
@@ -781,7 +781,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     /**
      * Opens a file for writing scores for the randomly selected probe pairs
      *
-     * @param fileName if Null, output will be written to standard output.
+     * @param  fileName    if Null, output will be written to standard output.
      * @throws IOException
      */
     protected Writer initRandLinksFile( String fileName ) throws IOException {
@@ -973,12 +973,12 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param writer
-     * @param pairString
-     * @param score e.g. overlap
-     * @param goTerms - terms in the overlap
-     * @param masterGOTerms number of go terms for the first gene
-     * @param coExpGOTerms number of go terms for the second gene
+     * @param  writer
+     * @param  pairString
+     * @param  score         e.g. overlap
+     * @param  goTerms       - terms in the overlap
+     * @param  masterGOTerms number of go terms for the first gene
+     * @param  coExpGOTerms  number of go terms for the second gene
      * @throws IOException
      */
     protected void writeOverlapLine( Writer writer, String pairString, double score, Collection<OntologyTerm> goTerms,
@@ -1035,7 +1035,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param genePair
+     * @param  genePair
      * @return
      */
     private boolean checkGenePair( GenePair genePair ) {
@@ -1065,21 +1065,21 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      */
     @SuppressWarnings("unchecked")
     private void computeTermProbabilities() {
-//        File f2 = new File( HOME_DIR + File.separatorChar + GO_PROB_MAP );
-//        if ( f2.exists() ) {
-//            GOProbMap = ( HashMap<String, Double> ) getCacheFromDisk( f2 );
-//            log.info( "Found probability file!" );
-//        }
-//
-//        else {
-//            log.info( "Calculating probabilities... " );
-//
-//            GOcountMap = goMetric.getTermOccurrence( geneGoMap );
-//            makeRootMap( GOcountMap.keySet() );
-//            GOProbMap = makeProbMap();
-//
-//            this.saveCacheToDisk( GOProbMap, GO_PROB_MAP );
-//        }
+        //        File f2 = new File( HOME_DIR + File.separatorChar + GO_PROB_MAP );
+        //        if ( f2.exists() ) {
+        //            GOProbMap = ( HashMap<String, Double> ) getCacheFromDisk( f2 );
+        //            log.info( "Found probability file!" );
+        //        }
+        //
+        //        else {
+        //            log.info( "Calculating probabilities... " );
+        //
+        //            GOcountMap = goMetric.getTermOccurrence( geneGoMap );
+        //            makeRootMap( GOcountMap.keySet() );
+        //            GOProbMap = makeProbMap();
+        //
+        //            this.saveCacheToDisk( GOProbMap, GO_PROB_MAP );
+        //        }
     }
 
     @SuppressWarnings("unchecked")
@@ -1102,7 +1102,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param taxon
+     * @param  taxon
      * @return
      */
     private String getGeneGOMapFileName() {
@@ -1110,7 +1110,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param probemap
+     * @param  probemap
      * @return
      */
     private Collection<GenePair> getLinks() {
@@ -1135,8 +1135,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param merged1
-     * @param merged2
+     * @param  merged1
+     * @param  merged2
      * @return
      */
     private Collection<OntologyTerm> getMergedTermOverlap( Set<String> merged1, Set<String> merged2 ) {
@@ -1158,7 +1158,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                     continue;
 
                 if ( goTerm1.equalsIgnoreCase( goTerm2 ) )
-                    overlapTerms.add( GeneOntologyServiceImpl.getTermForURI( goTerm1 ) );
+                    overlapTerms.add( goService.getTerm( goTerm1 ) );
             }
         }
 
@@ -1166,8 +1166,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param file containing probe names(not IDs) in first column
-     * @return collection of composite sequences (probes) obtained from file
+     * @param  file containing probe names(not IDs) in first column
+     * @return      collection of composite sequences (probes) obtained from file
      */
     private Collection<CompositeSequence> getProbesFromSubset( File f ) throws IOException {
 
@@ -1193,8 +1193,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param take a collection of genes and size of susbset
-     * @return a collection of random gene pairs that have GO annotations
+     * @param  take a collection of genes and size of susbset
+     * @return      a collection of random gene pairs that have GO annotations
      */
     @SuppressWarnings("unused")
     private Collection<GenePair> getRandomPairs( int size, Collection<Gene> genes ) {
@@ -1241,8 +1241,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param take a collection of probes and size of susbset
-     * @return a collection of random gene pairs that may or may not have GO annotations
+     * @param  take a collection of probes and size of susbset
+     * @return      a collection of random gene pairs that may or may not have GO annotations
      */
     private Collection<GenePair> getRandomPairsFromProbes( int size ) {
 
@@ -1286,8 +1286,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param g
-     * @param coexpG
+     * @param  g
+     * @param  coexpG
      * @return
      */
     private Collection<OntologyTerm> getTermOverlap( Gene g, Gene coexpG ) {
@@ -1311,7 +1311,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                     continue;
 
                 if ( ontologyEntry.equalsIgnoreCase( ontologyEntryC ) )
-                    overlapTerms.add( GeneOntologyServiceImpl.getTermForURI( ontologyEntry ) );
+                    overlapTerms.add( goService.getTerm( ontologyEntry ) );
             }
         }
 
@@ -1456,8 +1456,8 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param firstGenes
-     * @param secondGenes
+     * @param  firstGenes
+     * @param  secondGenes
      * @return
      */
     private GenePair makeGenePair( Collection<Gene> firstGenes, Collection<Gene> secondGenes ) {
@@ -1516,15 +1516,15 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param take a collection of GOTerm URIs
-     * @return Identify the root of each term and put it in the rootMap
+     * @param  take a collection of GOTerm URIs
+     * @return      Identify the root of each term and put it in the rootMap
      */
     private void makeRootMap( Collection<String> terms ) {
 
         Collection<String> remove = new HashSet<>();
 
         for ( String t : terms ) {
-            Collection<OntologyTerm> parents = goService.getAllParents( GeneOntologyServiceImpl.getTermForURI( t ),
+            Collection<OntologyTerm> parents = goService.getAllParents( goService.getTerm( t ),
                     partOf );
 
             for ( OntologyTerm p : parents ) {
@@ -1559,9 +1559,10 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
      * Organizes a list of genes in to different bins, identified by gene name, with each bin containing duplicates
      * found of different genes with the same gene name.
      *
-     * @param genes list of genes to be organized
-     * @return a map of organized genes with the value being the collection of duplicate genes and the key being the
-     *         common gene name among them
+     * @param  genes list of genes to be organized
+     * @return       a map of organized genes with the value being the collection of duplicate genes and the key being
+     *               the
+     *               common gene name among them
      */
     private Map<String, List<Gene>> organizeDuplicates( List<Gene> genes ) {
         Map<String, List<Gene>> organizedGeneBins = new HashMap<>();
@@ -1661,7 +1662,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
     }
 
     /**
-     * @param genePairs
+     * @param  genePairs
      * @return
      */
     private Map<GenePair, Double> scorePairs( Collection<GenePair> genePairs ) {
@@ -1682,13 +1683,13 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
                 // calculate scores
                 for ( String geneName1 : orgGenes1.keySet() ) {
                     List<Gene> sameGenes1 = orgGenes1.get( geneName1 );
-//                    for ( String geneName2 : orgGenes2.keySet() ) {
-//                        List<Gene> sameGenes2 = orgGenes2.get( geneName2 );
-//                        if ( sameGenes1.get( 0 ).getId() == sameGenes2.get( 0 ).getId() ) continue;
-//                        double mergedScore = 0.0;
-//                        mergedScore = goMetric.computeMergedOverlap( sameGenes1, sameGenes2, geneGoMap, goAspectToUse );
-//                        scores.add( mergedScore );
-//                    }
+                    //                    for ( String geneName2 : orgGenes2.keySet() ) {
+                    //                        List<Gene> sameGenes2 = orgGenes2.get( geneName2 );
+                    //                        if ( sameGenes1.get( 0 ).getId() == sameGenes2.get( 0 ).getId() ) continue;
+                    //                        double mergedScore = 0.0;
+                    //                        mergedScore = goMetric.computeMergedOverlap( sameGenes1, sameGenes2, geneGoMap, goAspectToUse );
+                    //                        scores.add( mergedScore );
+                    //                    }
                 }
 
             } else {
