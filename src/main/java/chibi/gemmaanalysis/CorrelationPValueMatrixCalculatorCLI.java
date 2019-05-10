@@ -12,7 +12,6 @@ import ubic.basecode.dataStructure.matrix.DoubleMatrix;
 import ubic.basecode.io.reader.DoubleMatrixReader;
 import ubic.basecode.io.writer.MatrixWriter;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.model.genome.Taxon;
 
 /**
  * CLI for reading in a max correlation matrix to calculate p values from correlation histograms
@@ -58,10 +57,10 @@ public class CorrelationPValueMatrixCalculatorCLI extends ExpressionExperimentMa
     protected Exception doWork( String[] args ) {
         processCommandLine( args );
 
-//        String taxonName = "human";
-//        taxon = Taxon.Factory.newInstance();
-//        taxon.setCommonName( taxonName );
-//        taxon = taxonService.find( taxon );
+        //        String taxonName = "human";
+        //        taxon = Taxon.Factory.newInstance();
+        //        taxon.setCommonName( taxonName );
+        //        taxon = taxonService.find( taxon );
 
         DecimalFormat formatter = ( DecimalFormat ) NumberFormat.getNumberInstance( Locale.US );
         // formatter.applyPattern("0.0000");

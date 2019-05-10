@@ -14,7 +14,6 @@ import ubic.basecode.math.distribution.HistogramSampler;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.genome.Taxon;
 
 public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipulatingCLI {
     public static final int DEFAULT_NUM_SAMPLES = 1000;
@@ -26,8 +25,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
      */
     public static void main( String[] args ) {
         CorrelationHistogramSamplerCLI analysis = new CorrelationHistogramSamplerCLI();
-        Exception exc = analysis.doWork( args );
-        if ( exc != null ) log.error( exc.getMessage() );
+        executeCommand( analysis, args );
     }
 
     private CoexpressionAnalysisService coexprAnalysisService;
@@ -44,8 +42,7 @@ public class CorrelationHistogramSamplerCLI extends ExpressionExperimentManipula
      */
     @Override
     public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+        return "corrhist";
     }
 
     @Override

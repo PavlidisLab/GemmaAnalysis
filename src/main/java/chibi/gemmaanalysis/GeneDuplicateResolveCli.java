@@ -68,8 +68,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
      */
     public static void main( String[] args ) {
         GeneDuplicateResolveCli c = new GeneDuplicateResolveCli();
-        Exception e = c.doWork( args );
-        if ( e != null ) log.error( e.getMessage(), e );
+        executeCommand( c, args );
 
     }
 
@@ -102,9 +101,9 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
         this.addOption( pathOption );
 
-        this.addOption( "t", true, "Specific taxon for which to update genes" );
+        this.addOption( "t", "taxon", "Specific taxon for which to update genes", "taxon" );
 
-        this.addOption( "fix", false, "Fix problems if possible; otherwise just log them" );
+        this.addOption( "fix", null, "Fix problems if possible; otherwise just log them", null );
 
     }
 

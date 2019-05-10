@@ -302,14 +302,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
     public static void main( String[] args ) {
         LinkEvalCli p = new LinkEvalCli();
-        try {
-            Exception ex = p.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
+        executeCommand( p, args );
     }
 
     private DoubleMatrix<Long, String> geneVectorMatrix = new SparseRaggedDoubleMatrix<>();
@@ -1129,7 +1122,7 @@ public class LinkEvalCli extends AbstractCLIContextCLI {
 
         } else {
             log.error( "What should I do?" );
-            bail( ErrorCode.INVALID_OPTION );
+            exitwithError();
         }
         return genePairs;
     }
