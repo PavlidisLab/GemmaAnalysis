@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
 
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
@@ -63,15 +65,6 @@ import ubic.gemma.persistence.util.Settings;
  */
 public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        GeneDuplicateResolveCli c = new GeneDuplicateResolveCli();
-        executeCommand( c, args );
-
-    }
-
     private String filePath = Settings.getDownloadPath();
 
     private String taxonCommonName = null;
@@ -94,16 +87,16 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
      * @see ubic.gemma.core.util.AbstractCLI#buildOptions()
      */
     @Override
-    protected void buildOptions() {
+    protected void buildOptions( Options options ) {
         Option pathOption = Option.builder( "f" ).hasArg().argName( "Input File Path" )
                 .desc( "Optional path to the directory where gene_history.gz is; default is in configed download directory" ).longOpt( "file" )
                 .build();
 
-        this.addOption( pathOption );
+        options.addOption( pathOption );
 
-        this.addOption( "t", "taxon", "Specific taxon for which to update genes", "taxon" );
+        options.addOption( "t", "taxon", true, "Specific taxon for which to update genes" );
 
-        this.addOption( "fix", null, "Fix problems if possible; otherwise just log them", null );
+        options.addOption( "fix", "Fix problems if possible; otherwise just log them" );
 
     }
 
@@ -122,10 +115,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
      * @see ubic.gemma.core.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
-    protected Exception doWork( String[] args ) {
-        Exception e = super.processCommandLine( args );
-
-        if ( e != null ) return e;
+    protected void doWork() {
 
         gs = this.getBean( GeneService.class );
         gps = this.getBean( GeneProductService.class );
@@ -321,10 +311,9 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
             }
 
         } catch ( Exception e1 ) {
-            return e1;
+
         }
 
-        return null;
     }
 
     /**
@@ -463,15 +452,14 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
     }
 
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( 'f' ) ) {
-            this.filePath = this.getOptionValue( 'f' );
+    protected void processOptions( CommandLine c ) {
+        if ( c.hasOption( 'f' ) ) {
+            this.filePath = c.getOptionValue( 'f' );
         }
-        if ( this.hasOption( "t" ) ) {
-            this.taxonCommonName = this.getOptionValue( "t" );
+        if ( c.hasOption( "t" ) ) {
+            this.taxonCommonName = c.getOptionValue( "t" );
         }
-        if ( this.hasOption( "fix" ) ) {
+        if ( c.hasOption( "fix" ) ) {
             this.doFix = true;
         }
     }

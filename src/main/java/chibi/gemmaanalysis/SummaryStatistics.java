@@ -27,8 +27,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
 
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
 import ubic.gemma.core.genome.gene.service.GeneService;
@@ -47,7 +49,7 @@ import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 /**
  * Computing different statistics about the database to assist in computing probabilities
  *
- * @author pavlidis
+ * @author  pavlidis
  * @version $Id: SummaryStatistics.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
 public class SummaryStatistics extends AbstractSpringAwareCLI {
@@ -55,18 +57,6 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     private static final int MAX_EXPS = 5;
 
     private static final int MAX_GENES = 100000;
-
-    public static void main( String[] args ) {
-        SummaryStatistics sc = new SummaryStatistics();
-        try {
-            Exception ex = sc.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
 
     private ExpressionExperimentService expressionExperimentService;
     private String taxonName;
@@ -338,7 +328,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
 
     @SuppressWarnings("static-access")
     @Override
-    protected void buildOptions() {
+    protected void buildOptions( Options options ) {
         OptionBuilder.hasArg();
         OptionBuilder.withArgName( "taxon" );
         OptionBuilder
@@ -350,28 +340,27 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         Option outFileOption = OptionBuilder
                 .create( 'o' );
 
-        addOption( outFileOption );
-        addOption( taxonOption );
+        options.addOption( outFileOption );
+        options.addOption( taxonOption );
 
     }
 
     @Override
-    protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( args );
-        if ( err != null ) return err;
+    protected void doWork() {
+
         Taxon taxon = taxonService.findByCommonName( taxonName );
         genesPerProbe( taxon );
-        return null;
+
     }
 
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( 't' ) ) {
-            this.taxonName = this.getOptionValue( 't' );
+    protected void processOptions( CommandLine c ) {
+
+        if ( c.hasOption( 't' ) ) {
+            this.taxonName = c.getOptionValue( 't' );
         }
-        if ( this.hasOption( 'o' ) ) {
-            this.outFileName = this.getOptionValue( 'o' );
+        if ( c.hasOption( 'o' ) ) {
+            this.outFileName = c.getOptionValue( 'o' );
         }
 
         this.taxonService = getBean( TaxonService.class );

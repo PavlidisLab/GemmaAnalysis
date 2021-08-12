@@ -67,15 +67,6 @@ import ubic.gemma.persistence.util.Settings;
 public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        LimmaDiffExCli c = new LimmaDiffExCli();
-        c.doWork( args );
-
-    }
-
     private DiffExAnalyzer lma;
 
     private ArrayDesignService arrayDesignService;
@@ -118,9 +109,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
-    protected Exception doWork( String[] args ) {
-        Exception error = super.processCommandLine( args );
-        if ( error != null ) return error;
+    protected void doWork() {
 
         this.lma = this.getBean( DiffExAnalyzer.class );
         this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
@@ -143,12 +132,9 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
         } catch ( Exception e ) {
             log.error( e, e );
-            return e;
+
         }
 
-        summarizeProcessing();
-
-        return null;
     }
 
     protected void processExperiment( ExpressionExperiment ee ) {
@@ -162,7 +148,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
-                this.errorObjects.add( "Too many factors (" + experimentalFactors.size()
+                this.addErrorObject( ee, "Too many factors (" + experimentalFactors.size()
                         + " factors : " + ee.getShortName() );
                 return;
             }
@@ -279,10 +265,10 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
             summaryFile.write( summaryBuf.toString() );
             summaryFile.flush();
-            successObjects.add( ee );
+            addSuccessObject( ee, "" );
         } catch ( Exception e ) {
             log.error( e, e );
-            errorObjects.add( ee + e.getMessage() );
+            addErrorObject( ee, e.getMessage() );
         }
     }
 

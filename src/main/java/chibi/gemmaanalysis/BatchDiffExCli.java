@@ -63,15 +63,6 @@ import ubic.gemma.persistence.util.EntityUtils;
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        BatchDiffExCli c = new BatchDiffExCli();
-        c.doWork( args );
-
-    }
-
     private ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
 
     private DiffExAnalyzer lma;
@@ -117,9 +108,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
-    protected Exception doWork( String[] args ) {
-        Exception error = super.processCommandLine( args );
-        if ( error != null ) return error;
+    protected void doWork() {
+
         this.expressionExperimentBatchCorrectionService = this
                 .getBean( ExpressionExperimentBatchCorrectionService.class );
         this.lma = this.getBean( DiffExAnalyzer.class );
@@ -144,12 +134,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
         } catch ( Exception e ) {
             log.error( e, e );
-            return e;
         }
 
-        summarizeProcessing();
-
-        return null;
     }
 
     protected void processExperiment( ExpressionExperiment ee ) {
@@ -162,18 +148,18 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
 
             if ( null == batchFactor ) {
-                this.errorObjects.add( "No batch factor: " + ee.getShortName() );
+                this.addErrorObject( ee, "No batch factor: " + ee.getShortName() );
                 return;
             }
 
             if ( experimentalFactors.size() < 2 ) {
                 // need at least two factors, one of which has to be the batch.
-                this.errorObjects.add( "Too few factors: " + ee.getShortName() );
+                this.addErrorObject( ee, "Too few factors: " + ee.getShortName() );
                 return;
             }
 
             if ( ee.getBioAssays().size() < 8 ) {
-                this.errorObjects.add( "Too small (" + ee.getBioAssays().size() + " samples): " + ee.getShortName() );
+                this.addErrorObject( ee, "Too small (" + ee.getBioAssays().size() + " samples): " + ee.getShortName() );
                 return;
             }
 
@@ -181,7 +167,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
-                this.errorObjects.add( "Too many factors (" + experimentalFactors.size()
+                this.addErrorObject( ee, "Too many factors (" + experimentalFactors.size()
                         + " factors, including 'batch'): " + ee.getShortName() );
                 return;
             }
@@ -196,9 +182,8 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                  * Note that later on we can still end up with a model that is not of full rank, so combat will fail.
                  * This can sometimes be ameliorated by dropping covariates.
                  */
-                this.errorObjects
-                        .add( "Batch effect is not correctable; possibly contains batches with only one sample: "
-                                + ee.getShortName() );
+                this.addErrorObject( ee, "Batch effect is not correctable; possibly contains batches with only one sample: "
+                        + ee.getShortName() );
 
                 return;
             }
@@ -351,7 +336,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             if ( !hasNonNulls ) {
                 // this means something went wrong ... somewhere. Possibly the model cannot be fit.
-                errorObjects.add( "No valid pvalues after correction: " + ee.getShortName() );
+                addErrorObject( ee, "No valid pvalues after correction: " + ee.getShortName() );
                 return;
             }
 
@@ -404,10 +389,10 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             String correctedDataFileName = fileprefix + ".correcteddata.txt";
             saveData( comBat, correctedDataFileName );
 
-            successObjects.add( ee );
+            addSuccessObject( ee, "" );
         } catch ( Exception e ) {
             log.error( e, e );
-            errorObjects.add( ee + e.getMessage() );
+            addErrorObject( ee, e.getMessage() );
         }
     }
 

@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis.cli.deprecated;
+package chibi.gemmaanalysis;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -25,8 +25,10 @@ import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.HashSet;
 
+import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
 
 import ubic.gemma.core.apps.ArrayDesignSequenceManipulatingCli;
@@ -47,18 +49,6 @@ import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatResultService;
  */
 public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
-    public static void main( String[] args ) {
-        BioSequenceCleanupCli p = new BioSequenceCleanupCli();
-        try {
-            Exception ex = p.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
-            }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
-        }
-    }
-
     private BlatAssociationService blatAssociationService;
 
     private BlatResultService blatResultService;
@@ -75,32 +65,28 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
      */
     @Override
     public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+         return "seqCleanup";
     }
 
     @SuppressWarnings("static-access")
     @Override
-    protected void buildOptions() {
-        super.buildOptions();
+    protected void buildOptions( Options options ) {
+
         OptionBuilder.withDescription( "Set to run without any database modifications" );
         Option justTestingOption = OptionBuilder
                 .create( "dryrun" );
-        addOption( justTestingOption );
+        options.addOption( justTestingOption );
 
         OptionBuilder.hasArg();
         OptionBuilder.withArgName( "file" );
         OptionBuilder
                 .withDescription( "File with list of biosequence ids to check." );
         Option sequenceNameList = OptionBuilder.create( 'b' );
-        addOption( sequenceNameList );
+        options.addOption( sequenceNameList );
     }
 
     @Override
-    protected Exception doWork( String[] args ) {
-
-        Exception err = processCommandLine( args );
-        if ( err != null ) return err;
+    protected void doWork() {
 
         Collection<ArrayDesign> ads = new HashSet<>();
         if ( !this.getArrayDesignsToProcess().isEmpty() ) {
@@ -121,9 +107,9 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
                 Collection<BioSequence> bioSequences = bss.load( ids );
                 bss.thaw( bioSequences );
                 processSequences( bioSequences );
-                return null;
+                return;
             } catch ( Exception e ) {
-                return e;
+                return;
             }
         } else {
             ads = this.getArrayDesignService().loadAll();
@@ -199,20 +185,20 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
             }
         }
 
-        return null;
+        return;
 
     }
 
     @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( "dryrun" ) ) {
+    protected void processOptions( CommandLine commandLine ) {
+
+        if ( commandLine.hasOption( "dryrun" ) ) {
             this.justTesting = true;
             log.info( "TEST MODE: NO DATABASE UPDATES WILL BE PERFORMED" );
         }
 
-        if ( this.hasOption( 'b' ) ) {
-            this.file = getOptionValue( 'b' );
+        if ( commandLine.hasOption( 'b' ) ) {
+            this.file = commandLine.getOptionValue( 'b' );
         }
 
         bss = this.getBean( BioSequenceService.class );

@@ -31,15 +31,10 @@ import ubic.gemma.persistence.util.EntityUtils;
 /**
  * For bulk processing of batch-info-fetching.
  *
- * @author paul
+ * @author  paul
  * @version $Id: BatchEffectTestCli.java,v 1.6 2015/11/12 19:37:12 paul Exp $
  */
 public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
-
-    public static void main( String[] args ) {
-        BatchEffectTestCli b = new BatchEffectTestCli();
-        b.doWork( args );
-    }
 
     @Override
     public CommandGroup getCommandGroup() {
@@ -64,23 +59,11 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
     /*
      * (non-Javadoc)
      *
-     * @see ubic.gemma.apps.ExpressionExperimentManipulatingCLI#buildOptions()
-     */
-    @Override
-    protected void buildOptions() {
-        super.buildOptions();
-    }
-
-    /*
-     * (non-Javadoc)
-     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
-    protected Exception doWork( String[] args ) {
+    protected void doWork() {
 
-        Exception ex = super.processCommandLine( args );
-        if ( ex != null ) return ex;
         SVDService svdService = this.getBean( SVDService.class );
 
         for ( BioAssaySet bas : this.getExpressionExperiments() ) {
@@ -103,22 +86,20 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
                     success = true;
                     if ( success ) {
-                        this.successObjects.add( bas.toString() );
+                        this.addSuccessObject( bas.toString(), "" );
                     } else {
-                        this.errorObjects.add( bas.toString() + ": No dates found" );
+                        this.addErrorObject( bas.toString() + ": No dates found", "" );
 
                     }
 
                 } catch ( Exception e ) {
                     log.error( e, e );
-                    this.errorObjects.add( bas + ": " + e.getMessage() );
+                    this.addErrorObject( bas + ": " + e.getMessage(), "" );
                 }
 
             }
         }
 
-        summarizeProcessing();
-        return null;
     }
 
     /**
