@@ -88,6 +88,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
      */
     @Override
     protected void buildOptions( Options options ) {
+
         Option pathOption = Option.builder( "f" ).hasArg().argName( "Input File Path" )
                 .desc( "Optional path to the directory where gene_history.gz is; default is in configed download directory" ).longOpt( "file" )
                 .build();
@@ -453,6 +454,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
     @Override
     protected void processOptions( CommandLine c ) {
+
         if ( c.hasOption( 'f' ) ) {
             this.filePath = c.getOptionValue( 'f' );
         }

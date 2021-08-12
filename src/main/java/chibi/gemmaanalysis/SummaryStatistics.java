@@ -329,6 +329,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     @SuppressWarnings("static-access")
     @Override
     protected void buildOptions( Options options ) {
+
         OptionBuilder.hasArg();
         OptionBuilder.withArgName( "taxon" );
         OptionBuilder
