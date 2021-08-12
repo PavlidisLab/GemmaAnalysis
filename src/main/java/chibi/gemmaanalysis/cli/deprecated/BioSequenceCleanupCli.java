@@ -44,10 +44,7 @@ import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatResultService;
  * Goes through the biosequences for array designs in the database and removes duplicates.
  *
  * @author pavlidis
- * @version $Id: BioSequenceCleanupCli.java,v 1.11 2015/11/12 19:37:12 paul Exp $
- * @deprecated because we shouldn't really need this any more.
  */
-@Deprecated
 public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
 
     public static void main( String[] args ) {
@@ -227,8 +224,8 @@ public class BioSequenceCleanupCli extends ArrayDesignSequenceManipulatingCli {
     /**
      * Test whether two sequences are effectively equal (ignore the ID)
      *
-     * @param one
-     * @param that
+     * @param  one
+     * @param  that
      * @return
      */
     private boolean equals( BioSequence one, BioSequence that ) {

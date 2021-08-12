@@ -38,3 +38,10 @@ core
 target/
 null/
 *.jar
+.DS_Store
+.settings/org.eclipse.jdt.core.prefs
+src/.DS_Store
+src/main/.DS_Store
+src/main/java/.DS_Store
+src/main/java/chibi/.DS_Store
+src/main/java/chibi/gemmaanalysis/.DS_Store
