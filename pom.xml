@@ -7,28 +7,19 @@
 	<name />
 	<version>1.0.0-SNAPSHOT</version>
 	<description />
-	<pluginRepositories>
-		<pluginRepository>
-			<id>dstovall.org</id>
-			<url>http://dstovall.org/maven2/</url>
-		</pluginRepository>
-	</pluginRepositories>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.5.1</version>
-				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.2.2</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -50,18 +41,7 @@
 		<repository>
 			<id>pavlab</id>
 			<name>PavLab</name>
-			<url>
-				https://maven2.pavlab.msl.ubc.ca/
-			</url>
-			<layout>default</layout>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>daily</updatePolicy>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>never</updatePolicy>
-			</releases>
+			<url>https://maven2.pavlab.msl.ubc.ca/</url>
 		</repository>
 	</repositories>
 	<profiles>
