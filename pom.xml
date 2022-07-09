@@ -43,10 +43,7 @@
 		<dependency>
 			<groupId>gemma</groupId>
 			<artifactId>gemma-core</artifactId>
-			<version>1.26.8</version>
-			<exclusions>
-				<!--exclusion> <artifactId>commons-lang</artifactId> <groupId>commons-lang</groupId> </exclusion -->
-			</exclusions>
+			<version>1.27.16</version>
 		</dependency>
 	</dependencies>
 	<repositories>
