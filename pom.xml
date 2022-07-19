@@ -23,7 +23,7 @@
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>chibi.gemmaanalysis.GemmaAnalysisCLI</mainClass>
+							<mainClass>ubic.gemma.core.apps.GemmaAnalysisCLI</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
