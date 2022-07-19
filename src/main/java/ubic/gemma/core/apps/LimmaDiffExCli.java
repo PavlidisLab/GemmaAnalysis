@@ -131,6 +131,9 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
         try (Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" )) {
 
+		ee = eeService.thawLite(ee);	     
+
+
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
             if ( experimentalFactors.size() > 10 ) {
@@ -259,6 +262,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             log.error( e, e );
             addErrorObject( ee, e.getMessage() );
         }
+	log.info("==== Completed processing: " + ee);
     }
 
     /**
@@ -386,7 +390,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
-            this.arrayDesignService.thaw( ad );
+            ad = this.arrayDesignService.thaw( ad );
             genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
             seenArrays.add( ad );
         }
