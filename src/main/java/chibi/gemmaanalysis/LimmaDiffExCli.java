@@ -19,22 +19,10 @@
 
 package chibi.gemmaanalysis;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-
+import cern.colt.list.DoubleArrayList;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
-
-import cern.colt.list.DoubleArrayList;
 import ubic.basecode.math.Distance;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
@@ -59,6 +47,12 @@ import ubic.gemma.persistence.service.expression.designElement.CompositeSequence
 import ubic.gemma.persistence.util.EntityUtils;
 import ubic.gemma.persistence.util.Settings;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.*;
+
 /**
  * Performs differential expression analyses with and without ebayes. Based on BachDiffExCli
  *
@@ -75,21 +69,16 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
     private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
-    private Collection<ArrayDesign> seenArrays = new HashSet<>();
+    private final Collection<ArrayDesign> seenArrays = new HashSet<>();
 
-    private Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
+    private final Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
 
-    Transformer geneSymbolTransformer = new Transformer() {
-        @Override
-        public Object transform( Object input ) {
-            return ( ( Gene ) input ).getOfficialSymbol();
-        }
-    };
+    Transformer geneSymbolTransformer = input -> ( ( Gene ) input ).getOfficialSymbol();
 
     /**
      * This only affects the summaries that are output.
      */
-    private double summaryQvalThreshold = 0.01;
+    private final double summaryQvalThreshold = 0.01;
 
     Writer summaryFile;
 
@@ -140,7 +129,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     protected void processExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
-        try (Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" );) {
+        try (Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" )) {
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 

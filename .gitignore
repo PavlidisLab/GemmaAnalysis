@@ -32,6 +32,11 @@ _$*
 *.ln
 core
 
+/out/
+.idea/
+!.idea/codeStyles/
+*.iml
+
 # Project ignores (converted from .cvsignore files)
 .settings/
 .fatjar/

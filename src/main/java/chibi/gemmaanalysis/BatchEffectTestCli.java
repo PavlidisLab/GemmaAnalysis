@@ -14,9 +14,6 @@
  */
 package chibi.gemmaanalysis;
 
-import java.util.Collection;
-import java.util.Map;
-
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfound;
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundValueObject;
 import ubic.gemma.core.analysis.preprocess.svd.SVDService;
@@ -27,6 +24,9 @@ import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.persistence.util.EntityUtils;
+
+import java.util.Collection;
+import java.util.Map;
 
 /**
  * For bulk processing of batch-info-fetching.

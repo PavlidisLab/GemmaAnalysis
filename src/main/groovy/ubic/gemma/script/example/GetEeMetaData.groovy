@@ -1,6 +1,6 @@
 package ubic.gemma.script.example
 
-import ubic.gemma.script.framework.SpringSupport;
+import ubic.gemma.script.framework.SpringSupport
 
 cli = new CliBuilder()
 cli.h(longOpt: 'help', 'Usage: groovy GetEeMetaData -o')
@@ -10,37 +10,37 @@ cli.t(argName: 'taxon', longOpt: 'taxon', required: true, args: 1, '')
 cli.e(argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
 
 opts = cli.parse(args)
-if (!opts) return;
-if (opts.hasOption("h")) cli.usage();
-if (!opts.hasOption("t")) cli.usage();
+if (!opts) return
+if (opts.hasOption("h")) cli.usage()
+if (!opts.hasOption("t")) cli.usage()
 
-sx = new SpringSupport();
-taxonService = sx.getBean("taxonService");
-eeService = sx.getBean("expressionExperimentService");
-designService = sx.getBean("experimentalDesignService");
-efService = sx.getBean("experimentalFactorService");
+sx = new SpringSupport()
+taxonService = sx.getBean("taxonService")
+eeService = sx.getBean("expressionExperimentService")
+designService = sx.getBean("experimentalDesignService")
+efService = sx.getBean("experimentalFactorService")
 gdeService = sx.getBean("geneDifferentialExpressionService")
 geneService = sx.getBean("geneService")
 
-f = opts.getOptionValue("o");
-outFile = new File(f);
-outFile.delete();
+f = opts.getOptionValue("o")
+outFile = new File(f)
+outFile.delete()
 
 /**
  * Load taxon
  */
-taxonName = opts.getOptionValue("t");
-taxon = taxonService.findByCommonName(taxonName);
+taxonName = opts.getOptionValue("t")
+taxon = taxonService.findByCommonName(taxonName)
 
 /**
  * Load genes
  */
-genes = geneService.getGenesByTaxon(taxon);
-System.out.println "${new Date()}: Loaded ${genes.size()} $taxonName genes ...).";
+genes = geneService.getGenesByTaxon(taxon)
+System.out.println "${new Date()}: Loaded ${genes.size()} $taxonName genes ...)."
 f = opts.getOptionValue("o") + "-geneMetaData.txt"
-println "${new Date()}: Writing results to $f";
+println "${new Date()}: Writing results to $f"
 //println "Only genes with an ENSEMBL_ID will be written"
-fOut = new BufferedWriter(new FileWriter(f));
+fOut = new BufferedWriter(new FileWriter(f))
 fOut << "ID\tOFFICIAL_SYMBOL\tENSEMBL_ID\tNCBI_ID\tTAXON\tOFFICIAL_NAME\n"
 count = 1
 for (gene in genes) {
@@ -56,22 +56,22 @@ fOut.close()
  * Load list of ees from a file or from Gemma (for a given taxon)
  */
 //ees = eeService.loadAll()
-eeNames = (opts.hasOption("e"))? new File(opts.getOptionValue("e")).readLines() : null;
+eeNames = (opts.hasOption("e"))? new File(opts.getOptionValue("e")).readLines() : null
 // load experiment list or everything for a given taxon
 if (eeNames != null && eeNames.size() > 0) {
-    System.out.println "${new Date()}: Attempting to load ${eeNames.size()} $taxonName experiments...";
-    ees = eeNames.collect { eeService.findByShortName(it) };
-    ees = ees.findAll { it != null };
+    System.out.println "${new Date()}: Attempting to load ${eeNames.size()} $taxonName experiments..."
+    ees = eeNames.collect { eeService.findByShortName(it) }
+    ees = ees.findAll { it != null }
 } else {
-    System.out.println "${new Date()}: Loading all known $taxonName experiments...";
-    ees = eeService.findByTaxon(taxon);
+    System.out.println "${new Date()}: Loading all known $taxonName experiments..."
+    ees = eeService.findByTaxon(taxon)
 }
-System.out.println "${new Date()}: Loaded ${ees.size()} $taxonName experiments.";
+System.out.println "${new Date()}: Loaded ${ees.size()} $taxonName experiments."
 
-i = 0;
+i = 0
 
 f = opts.getOptionValue("o") + "-eeMetaData.txt"
-println "${new Date()}: Writing results to $f";
+println "${new Date()}: Writing results to $f"
 out = new BufferedWriter(new FileWriter(f))
 out << "ARSID\tName\tDescription\tValues\teeShortName\teeName\tTaxon\tNumSamples\tArrayDesignNames\tArrayDesignSizes\n"
 count = 1
@@ -83,9 +83,9 @@ for (ee in ees) {
 	//}
     
     numSamples = eeService.getBioMaterialCount(ee)
-    ads = eeService.getArrayDesignsUsed(ee);
-    adSizes = ads*.advertisedNumberOfDesignElements;
-    adNames = ads*.shortName;
+    ads = eeService.getArrayDesignsUsed(ee)
+    adSizes = ads*.advertisedNumberOfDesignElements
+    adNames = ads*.shortName
    
     ee = eeService.thawLite(ee)
     des = ee.experimentalDesign
@@ -103,12 +103,12 @@ for (ee in ees) {
         //out << "${ee.shortName}\t${ee.name}\t${taxon.commonName}\t${numSamples}\t${adNames.join('|')}\t${adSizes.join('|')}\t${efNames.join('|')}\n"
         //line = "${ee.shortName}\t${ee.name}\t${taxon.commonName}\t${numSamples}\t${adNames.join('|')}\t${adSizes.join('|')}\t${efNames.join('|')}\n"
         //line = "${ee.shortName}\t${ee.name}\t${taxon.commonName}\t${numSamples}\t${adNames.join('|')}\t${adSizes.join('|')}\t${des.normalizationDescription}\n";
-        line = "ARSID.${ee.id}.${ef.id}\t\"${ef.name}\"\t\"${ef.description}\"\t\"${vals.join('|')}\"\t${ee.shortName}\t\"${ee.name}\"\t${taxon.commonName}\t${numSamples}\t${adNames.join('|')}\t${adSizes.join('|')}\n";
+        line = "ARSID.${ee.id}.${ef.id}\t\"${ef.name}\"\t\"${ef.description}\"\t\"${vals.join('|')}\"\t${ee.shortName}\t\"${ee.name}\"\t${taxon.commonName}\t${numSamples}\t${adNames.join('|')}\t${adSizes.join('|')}\n"
         //System.out.print "$line"
         out << line
         
         if (count++ % 50 == 0) {
-            System.out.println "${new Date()}: Processed $count experimental factors";
+            System.out.println "${new Date()}: Processed $count experimental factors"
         }        
     }
     
@@ -122,5 +122,5 @@ out.close()
 
 
 
-sx.shutdown();
+sx.shutdown()
 

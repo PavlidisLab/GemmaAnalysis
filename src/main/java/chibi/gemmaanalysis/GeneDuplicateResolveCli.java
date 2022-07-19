@@ -19,17 +19,10 @@
 
 package chibi.gemmaanalysis;
 
-import java.io.File;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
-
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.core.genome.gene.service.GeneService;
 import ubic.gemma.core.genome.gene.service.GeneSetService;
@@ -57,6 +50,12 @@ import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociat
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 import ubic.gemma.persistence.util.Settings;
+
+import java.io.File;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 /**
  * Identify, diagnose and optionally fix instances where genes are duplicated (due to changes in NCBI IDs)
@@ -292,7 +291,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                     }
 
                 }
-                System.err.println( "" );
+                System.err.println();
             }
             if ( !couldNotFix.isEmpty() ) {
                 System.err.println( ">>>The following could not be fixed" );

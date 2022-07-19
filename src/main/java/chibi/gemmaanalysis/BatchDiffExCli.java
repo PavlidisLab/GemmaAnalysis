@@ -19,19 +19,9 @@
 
 package chibi.gemmaanalysis;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
-
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
 import ubic.gemma.core.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
@@ -53,6 +43,15 @@ import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressio
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.util.EntityUtils;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+
 /**
  * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
  * with including it; and repeating those, after batch correction
@@ -73,21 +72,16 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
     private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
 
-    private Collection<ArrayDesign> seenArrays = new HashSet<>();
+    private final Collection<ArrayDesign> seenArrays = new HashSet<>();
 
-    private Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
+    private final Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
 
-    Transformer geneSymbolTransformer = new Transformer() {
-        @Override
-        public Object transform( Object input ) {
-            return ( ( Gene ) input ).getOfficialSymbol();
-        }
-    };
+    Transformer geneSymbolTransformer = input -> ( ( Gene ) input ).getOfficialSymbol();
 
     /**
      * This only affects the summaries that are output.
      */
-    private double summaryQvalThreshold = 0.01;
+    private final double summaryQvalThreshold = 0.01;
 
     Writer summaryFile;
 
@@ -141,7 +135,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     protected void processExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
-        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );) {
+        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" )) {
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
@@ -399,7 +393,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     /**
      * Gets annotations for this experiment, if the array designs have not already been seen in this run.
      *
-     * @param ee
+     * @param ee experiment
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
         Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
@@ -433,7 +427,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
         MatrixWriter mw = new MatrixWriter();
-        try (FileWriter fw = new FileWriter( new File( filename ) );) {
+        try (FileWriter fw = new FileWriter( new File( filename ) )) {
             mw.write( fw, mat, null, true, true );
         }
     }
