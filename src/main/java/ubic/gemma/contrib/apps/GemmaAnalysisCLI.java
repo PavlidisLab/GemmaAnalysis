@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package ubic.gemma.core.apps;
+package ubic.gemma.contrib.apps;
 
 import ubic.gemma.core.util.AbstractCLI;
 
@@ -33,7 +33,7 @@ import java.util.Arrays;
  * @version $Id: GemmaAnalysisCLI.java,v 1.3 2015/11/30 23:50:56 paul Exp $
  */
 public class GemmaAnalysisCLI {
-    private static final String[] apps = { "ubic.gemma.core.apps.LimmaDiffExCli"  };
+    private static final String[] apps = { "ubic.gemma.contrib.apps.LimmaDiffExCli"  };
 
     /**
      * @param args

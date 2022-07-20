@@ -16,7 +16,7 @@
  * limitations under the License.
  *
  */
-package ubic.gemma.core.apps;
+package ubic.gemma.contrib.apps;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
