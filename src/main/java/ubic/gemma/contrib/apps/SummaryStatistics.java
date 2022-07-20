@@ -23,6 +23,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
+import ubic.gemma.core.apps.GemmaCLI;
 import ubic.gemma.core.genome.gene.service.GeneService;
 import ubic.gemma.core.util.AbstractSpringAwareCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
@@ -284,6 +285,11 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     @Override
     public String getCommandName() {
         // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public GemmaCLI.CommandGroup getCommandGroup() {
         return null;
     }
 
