@@ -38,3 +38,11 @@ core
 target/
 null/
 *.jar
+
+# added
+.DS_Store
+GemmaAnalysis.iml
+.idea/libraries
+.idea/*.xml
+.idea/inspectionProfiles
+.idea/.gitignore
