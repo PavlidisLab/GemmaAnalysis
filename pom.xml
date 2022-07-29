@@ -7,32 +7,23 @@
 	<name />
 	<version>1.0.0-SNAPSHOT</version>
 	<description />
-	<pluginRepositories>
-		<pluginRepository>
-			<id>dstovall.org</id>
-			<url>http://dstovall.org/maven2/</url>
-		</pluginRepository>
-	</pluginRepositories>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.5.1</version>
-				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
-				</configuration>
-			</plugin>
-
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
+				<version>3.2.0</version>
 				<configuration>
 					<archive>
 						<manifest>
-							<mainClass>chibi.gemmaanalysis.GemmaAnalysisCLI</mainClass>
+							<mainClass>ubic.gemma.contrib.apps.GemmaAnalysisCLI</mainClass>
 						</manifest>
 					</archive>
 				</configuration>
@@ -43,31 +34,14 @@
 		<dependency>
 			<groupId>gemma</groupId>
 			<artifactId>gemma-core</artifactId>
-			<version>1.8-SNAPSHOT</version>
-			<exclusions>
-				<!--exclusion>
-					<artifactId>commons-lang</artifactId>
-					<groupId>commons-lang</groupId>
-				</exclusion-->
-			</exclusions>
+			<version>1.28.0-SNAPSHOT</version>
 		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
 			<id>pavlab</id>
 			<name>PavLab</name>
-			<url>
-				http://www.chibi.ubc.ca/maven2
-			</url>
-			<layout>default</layout>
-			<snapshots>
-				<enabled>true</enabled>
-				<updatePolicy>daily</updatePolicy>
-			</snapshots>
-			<releases>
-				<enabled>true</enabled>
-				<updatePolicy>never</updatePolicy>
-			</releases>
+			<url>https://maven2.pavlab.msl.ubc.ca/</url>
 		</repository>
 	</repositories>
 	<profiles>

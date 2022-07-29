@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2008 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,27 +16,24 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package ubic.gemma.contrib.apps;
+
+import ubic.gemma.core.util.AbstractCLI;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import ubic.gemma.util.AbstractCLI;
-
 /**
  * Generic command line information for GemmaAnalysis. This doesn't do anything but print some help.
  * FIXME make this like the other one
+ *
  * @author paul
  * @author raymond
- * @version $Id$
+ * @version $Id: GemmaAnalysisCLI.java,v 1.3 2015/11/30 23:50:56 paul Exp $
  */
 public class GemmaAnalysisCLI {
-    private static final String[] apps = { "chibi.gemmaanalysis.Gene2GeneCoexpressionResultsCli",
-            "chibi.gemmaanalysis.GeneExpressionProfileWriterCLI", "chibi.gemmaanalysis.LinkStatisticsCLI",
-            "chibi.gemmaanalysis.MetaLinkFinderCli", "chibi.gemmaanalysis.MicroRNAFinderCli",
-            "chibi.gemmaanalysis.ProbeAlignedRegionAnalysisCLI", "chibi.gemmaanalysis.ProbeMapperCli",
-            "chibi.gemmaanalysis.PSDCoexpressionResultsCli", "chibi.gemmaanalysis.RandomGenesCli", };
+    private static final String[] apps = { "ubic.gemma.contrib.apps.LimmaDiffExCli"  };
 
     /**
      * @param args
@@ -54,7 +51,7 @@ public class GemmaAnalysisCLI {
             try {
                 Class<?> aclazz = Class.forName( a );
                 Object cliinstance = aclazz.newInstance();
-                Method method = aclazz.getMethod( "getShortDesc", new Class[] {} );
+                Method method = aclazz.getMethod( "getShortDesc");
                 desc = ( String ) method.invoke( cliinstance, new Object[] {} );
             } catch ( ClassNotFoundException e ) {
                 e.printStackTrace();

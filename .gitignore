@@ -32,6 +32,11 @@ _$*
 *.ln
 core
 
+/out/
+.idea/
+!.idea/codeStyles/
+*.iml
+
 # Project ignores (converted from .cvsignore files)
 .settings/
 .fatjar/
@@ -46,3 +51,10 @@ GemmaAnalysis.iml
 .idea/*.xml
 .idea/inspectionProfiles
 .idea/.gitignore
+.settings/org.eclipse.jdt.core.prefs
+src/.DS_Store
+src/main/.DS_Store
+src/main/java/.DS_Store
+src/main/java/chibi/.DS_Store
+src/main/java/chibi/gemmaanalysis/.DS_Store
+

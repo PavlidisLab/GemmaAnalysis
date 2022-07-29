@@ -1,8 +1,8 @@
 /*
  * The Gemma project
- * 
+ *
  * Copyright (c) 2007 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -16,7 +16,26 @@
  * limitations under the License.
  *
  */
-package chibi.gemmaanalysis;
+package ubic.gemma.contrib.apps;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
+import ubic.gemma.core.apps.GemmaCLI;
+import ubic.gemma.core.genome.gene.service.GeneService;
+import ubic.gemma.core.util.AbstractSpringAwareCLI;
+import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.genome.Gene;
+import ubic.gemma.model.genome.Taxon;
+import ubic.gemma.model.genome.biosequence.BioSequence;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -27,28 +46,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
-
-import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.model.genome.Taxon;
-import ubic.gemma.genome.taxon.service.TaxonService;
-import ubic.gemma.model.genome.biosequence.BioSequence;
-import ubic.gemma.expression.experiment.service.ExpressionExperimentService;
-import ubic.gemma.genome.gene.service.GeneService;
-import ubic.gemma.util.AbstractSpringAwareCLI;
-
 /**
  * Computing different statistics about the database to assist in computing probabilities
- * 
- * @author pavlidis
- * @version $Id$
+ *
+ * @author  pavlidis
+ * @version $Id: SummaryStatistics.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
 public class SummaryStatistics extends AbstractSpringAwareCLI {
 
@@ -57,20 +59,20 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     private static final int MAX_GENES = 100000;
 
     private ExpressionExperimentService expressionExperimentService;
-
     private String taxonName;
     private TaxonService taxonService;
     private CompositeSequenceService compositeSequenceService;
+
     private String outFileName;
 
     /**
      * For each gene, count how many expression experiments it appears in.
-     * 
+     *
      * @param taxon
      */
     public void geneOccurrenceDistributions( Taxon taxon ) {
 
-        Map<Long, Integer> counts = new HashMap<Long, Integer>();
+        Map<Long, Integer> counts = new HashMap<>();
 
         // get all expression experiments
 
@@ -84,7 +86,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
             Collection<ArrayDesign> ads = expressionExperimentService.getArrayDesignsUsed( experiment );
 
             // only count each gene once per data set.
-            Collection<Long> seenids = new HashSet<Long>();
+            Collection<Long> seenids = new HashSet<>();
 
             for ( ArrayDesign design : ads ) {
                 log.info( i + " " + design );
@@ -116,144 +118,15 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     }
 
     /**
-     * For each gene, count how many microarray probes there are.
-     * 
-     * @param taxon
-     */
-    public void probesPerGene( Taxon taxon ) {
-        GeneService geneService = this.getBean( GeneService.class );
-
-        Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
-        Map<Long, Integer> counts = new HashMap<Long, Integer>();
-        int i = 0;
-        for ( Gene gene : genes ) {
-            Collection<CompositeSequence> compositeSequences = geneService.getCompositeSequencesById( gene.getId() );
-            counts.put( gene.getId(), compositeSequences.size() );
-            if ( ++i % 1000 == 0 ) {
-                log.info( "Processed " + i + " genes" );
-            }
-        }
-        for ( Long l : counts.keySet() ) {
-            System.out.println( l + "\t" + counts.get( l ) );
-        }
-    }
-
-    /**
-     * For each composites sequence, count how many genes there are. This does not take into account multiple occurrence
-     * os the same sequence in different probes!
-     * 
-     * @param taxon
-     */
-    public void genesPerProbe( Taxon taxon ) {
-        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
-        Collection<ArrayDesign> allAds = adService.loadAll();
-        Collection<ArrayDesign> ads = new HashSet<ArrayDesign>();
-        for ( ArrayDesign ad : allAds ) {
-            Taxon t = ad.getPrimaryTaxon();
-            if ( t != null && t.equals( taxon ) ) {
-                ads.add( ad );
-            }
-        }
-
-        Map<ArrayDesign, Map<Integer, Integer>> countMap = new HashMap<ArrayDesign, Map<Integer, Integer>>();
-        Collection<Long> seenSeqs = new HashSet<Long>();
-        int count = 0;
-        for ( ArrayDesign design : ads ) {
-            log.info( design + " : " + ++count + " of " + ads.size() );
-            design = adService.thawLite( design );
-            Map<Integer, Integer> counts = new HashMap<Integer, Integer>();
-
-            int i = 0;
-            for ( CompositeSequence cs : design.getCompositeSequences() ) {
-
-                BioSequence bs = cs.getBiologicalCharacteristic();
-
-                if ( bs == null ) continue; // these don't count.
-
-                if ( seenSeqs.contains( bs ) ) continue;
-
-                Integer numGenes = 0;
-                Collection<Gene> genes = compositeSequenceService.getGenes( cs );
-
-                if ( genes == null )
-                    numGenes = 0;
-                else
-                    numGenes = genes.size();
-
-                if ( !counts.containsKey( numGenes ) ) {
-                    counts.put( numGenes, 1 );
-                } else {
-                    counts.put( numGenes, counts.get( numGenes ) + 1 );
-                }
-                if ( ++i % 1000 == 0 ) {
-                    log.info( "Processed " + i + " compositeSequences" );
-                }
-
-                seenSeqs.add( bs.getId() );
-            }
-            countMap.put( design, counts );
-
-        }
-
-        try {
-            printGenesPerProbeCountMap( countMap );
-        } catch ( IOException e ) {
-            e.printStackTrace();
-        }
-
-    }
-
-    private void printGenesPerProbeCountMap( Map<ArrayDesign, Map<Integer, Integer>> countMap ) throws IOException {
-        PrintWriter out;
-        if ( outFileName == null ) {
-            out = new PrintWriter( System.out );
-        } else {
-            out = new PrintWriter( new FileWriter( outFileName ) );
-        }
-
-        // get max number of genes
-        int maxNumGenes = 0;
-        for ( Map<Integer, Integer> counts : countMap.values() ) {
-            for ( Integer n : counts.keySet() ) {
-                int count = counts.get( n );
-                if ( count > 0 && n > maxNumGenes ) maxNumGenes = n;
-            }
-        }
-
-        StringBuffer buf = new StringBuffer( "Count\t" );
-        for ( ArrayDesign ad : countMap.keySet() ) {
-            buf.append( ad.getShortName() + "\t" );
-        }
-        buf.deleteCharAt( buf.length() - 1 );
-        out.println( buf );
-
-        for ( int numGenes = 0; numGenes <= maxNumGenes; numGenes++ ) {
-            buf = new StringBuffer();
-            buf.append( numGenes + "\t" );
-            for ( ArrayDesign ad : countMap.keySet() ) {
-                Map<Integer, Integer> counts = countMap.get( ad );
-                if ( counts.get( numGenes ) != null )
-                    buf.append( counts.get( numGenes ) );
-                else
-                    buf.append( "0" );
-                buf.append( "\t" );
-            }
-            buf.deleteCharAt( buf.length() - 1 );
-            out.println( buf );
-        }
-        out.close();
-    }
-
-    /**
      * For each pair of genes, count how many expression experiments both appear in.
-     * 
+     *
      * @param taxon
      */
     public void genePairOccurrenceDistributions( Taxon taxon ) {
 
         Collection<ExpressionExperiment> eeColl = expressionExperimentService.loadAll();
 
-        CompressedSparseDoubleMatrix<Long, Long> mat = new CompressedSparseDoubleMatrix<Long, Long>( MAX_GENES,
+        CompressedSparseDoubleMatrix<Long, Long> mat = new CompressedSparseDoubleMatrix<>( MAX_GENES,
                 MAX_GENES );
 
         int numEEs = 0;
@@ -264,7 +137,7 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
             Collection<ArrayDesign> ads = expressionExperimentService.getArrayDesignsUsed( experiment );
 
             // only count each gene once per data set.
-            Collection<Long> seenids = new HashSet<Long>();
+            Collection<Long> seenids = new HashSet<>();
 
             for ( ArrayDesign design : ads ) {
 
@@ -339,61 +212,108 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         }
     }
 
-    public static void main( String[] args ) {
-        SummaryStatistics sc = new SummaryStatistics();
-        try {
-            Exception ex = sc.doWork( args );
-            if ( ex != null ) {
-                ex.printStackTrace();
+    /**
+     * For each composites sequence, count how many genes there are. This does not take into account multiple occurrence
+     * os the same sequence in different probes!
+     *
+     * @param taxon
+     */
+    public void genesPerProbe( Taxon taxon ) {
+        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
+        Collection<ArrayDesign> allAds = adService.loadAll();
+        Collection<ArrayDesign> ads = new HashSet<>();
+        for ( ArrayDesign ad : allAds ) {
+            Taxon t = ad.getPrimaryTaxon();
+            if ( t != null && t.equals( taxon ) ) {
+                ads.add( ad );
             }
-        } catch ( Exception e ) {
-            throw new RuntimeException( e );
         }
+
+        Map<ArrayDesign, Map<Integer, Integer>> countMap = new HashMap<>();
+        Collection<Long> seenSeqs = new HashSet<>();
+        int count = 0;
+        for ( ArrayDesign design : ads ) {
+            log.info( design + " : " + ++count + " of " + ads.size() );
+            adService.thawLite( design );
+            Map<Integer, Integer> counts = new HashMap<>();
+
+            int i = 0;
+            for ( CompositeSequence cs : design.getCompositeSequences() ) {
+
+                BioSequence bs = cs.getBiologicalCharacteristic();
+
+                if ( bs == null ) continue; // these don't count.
+
+                if ( seenSeqs.contains( bs ) ) continue;
+
+                Integer numGenes = 0;
+                Collection<Gene> genes = compositeSequenceService.getGenes( cs );
+
+                if ( genes == null )
+                    numGenes = 0;
+                else
+                    numGenes = genes.size();
+
+                if ( !counts.containsKey( numGenes ) ) {
+                    counts.put( numGenes, 1 );
+                } else {
+                    counts.put( numGenes, counts.get( numGenes ) + 1 );
+                }
+                if ( ++i % 1000 == 0 ) {
+                    log.info( "Processed " + i + " compositeSequences" );
+                }
+
+                seenSeqs.add( bs.getId() );
+            }
+            countMap.put( design, counts );
+
+        }
+
+        try {
+            printGenesPerProbeCountMap( countMap );
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
+
     }
 
-    public void setExpressionExperimentService( ExpressionExperimentService ees ) {
-        this.expressionExperimentService = ees;
-    }
-
-    @SuppressWarnings("static-access")
+    /*
+     * (non-Javadoc)
+     *
+     * @see ubic.gemma.util.AbstractCLI#getCommandName()
+     */
     @Override
-    protected void buildOptions() {
-        Option taxonOption = OptionBuilder.hasArg().withArgName( "taxon" )
-                .withDescription( "Taxon common name (e.g., human)" ).create( 't' );
-        Option outFileOption = OptionBuilder.hasArg().withArgName( "outFile" ).withDescription( "Output file" )
-                .create( 'o' );
-
-        addOption( outFileOption );
-        addOption( taxonOption );
-
-    }
-
-    @Override
-    protected Exception doWork( String[] args ) {
-        Exception err = processCommandLine( args );
-        if ( err != null ) return err;
-        Taxon taxon = taxonService.findByCommonName( taxonName );
-        genesPerProbe( taxon );
+    public String getCommandName() {
+        // TODO Auto-generated method stub
         return null;
     }
 
-    public void setTaxonService( TaxonService taxonService ) {
-        this.taxonService = taxonService;
+    @Override
+    public GemmaCLI.CommandGroup getCommandGroup() {
+        return null;
     }
 
-    @Override
-    protected void processOptions() {
-        super.processOptions();
-        if ( this.hasOption( 't' ) ) {
-            this.taxonName = this.getOptionValue( 't' );
-        }
-        if ( this.hasOption( 'o' ) ) {
-            this.outFileName = this.getOptionValue( 'o' );
-        }
+    /**
+     * For each gene, count how many microarray probes there are.
+     *
+     * @param taxon
+     */
+    public void probesPerGene( Taxon taxon ) {
+        GeneService geneService = this.getBean( GeneService.class );
 
-        this.taxonService = getBean( TaxonService.class );
-        this.expressionExperimentService = getBean( ExpressionExperimentService.class );
-        this.compositeSequenceService = getBean( CompositeSequenceService.class );
+        Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
+        Map<Long, Integer> counts = new HashMap<>();
+        int i = 0;
+        for ( Gene gene : genes ) {
+            Collection<CompositeSequence> compositeSequences = geneService.getCompositeSequencesById( gene.getId() );
+            counts.put( gene.getId(), compositeSequences.size() );
+            if ( ++i % 1000 == 0 ) {
+                log.info( "Processed " + i + " genes" );
+            }
+        }
+        for ( Long l : counts.keySet() ) {
+            System.out.println( l + "\t" + counts.get( l ) );
+        }
     }
 
     /**
@@ -403,12 +323,95 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
         this.compositeSequenceService = compositeSequenceService;
     }
 
-    /* (non-Javadoc)
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
+    public void setExpressionExperimentService( ExpressionExperimentService ees ) {
+        this.expressionExperimentService = ees;
+    }
+
+    public void setTaxonService( TaxonService taxonService ) {
+        this.taxonService = taxonService;
+    }
+
+    @SuppressWarnings("static-access")
     @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
+    protected void buildOptions( Options options ) {
+
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "taxon" );
+        OptionBuilder
+                .withDescription( "Taxon common name (e.g., human)" );
+        Option taxonOption = OptionBuilder.create( 't' );
+        OptionBuilder.hasArg();
+        OptionBuilder.withArgName( "outFile" );
+        OptionBuilder.withDescription( "Output file" );
+        Option outFileOption = OptionBuilder
+                .create( 'o' );
+
+        options.addOption( outFileOption );
+        options.addOption( taxonOption );
+
+    }
+
+    @Override
+    protected void doWork() {
+
+        Taxon taxon = taxonService.findByCommonName( taxonName );
+        genesPerProbe( taxon );
+
+    }
+
+    @Override
+    protected void processOptions( CommandLine c ) {
+
+        if ( c.hasOption( 't' ) ) {
+            this.taxonName = c.getOptionValue( 't' );
+        }
+        if ( c.hasOption( 'o' ) ) {
+            this.outFileName = c.getOptionValue( 'o' );
+        }
+
+        this.taxonService = getBean( TaxonService.class );
+        this.expressionExperimentService = getBean( ExpressionExperimentService.class );
+        this.compositeSequenceService = getBean( CompositeSequenceService.class );
+    }
+
+    private void printGenesPerProbeCountMap( Map<ArrayDesign, Map<Integer, Integer>> countMap ) throws IOException {
+        PrintWriter out;
+        if ( outFileName == null ) {
+            out = new PrintWriter( System.out );
+        } else {
+            out = new PrintWriter( new FileWriter( outFileName ) );
+        }
+
+        // get max number of genes
+        int maxNumGenes = 0;
+        for ( Map<Integer, Integer> counts : countMap.values() ) {
+            for ( Integer n : counts.keySet() ) {
+                int count = counts.get( n );
+                if ( count > 0 && n > maxNumGenes ) maxNumGenes = n;
+            }
+        }
+
+        StringBuffer buf = new StringBuffer( "Count\t" );
+        for ( ArrayDesign ad : countMap.keySet() ) {
+            buf.append( ad.getShortName() + "\t" );
+        }
+        buf.deleteCharAt( buf.length() - 1 );
+        out.println( buf );
+
+        for ( int numGenes = 0; numGenes <= maxNumGenes; numGenes++ ) {
+            buf = new StringBuffer();
+            buf.append( numGenes + "\t" );
+            for ( ArrayDesign ad : countMap.keySet() ) {
+                Map<Integer, Integer> counts = countMap.get( ad );
+                if ( counts.get( numGenes ) != null )
+                    buf.append( counts.get( numGenes ) );
+                else
+                    buf.append( "0" );
+                buf.append( "\t" );
+            }
+            buf.deleteCharAt( buf.length() - 1 );
+            out.println( buf );
+        }
+        out.close();
     }
 }

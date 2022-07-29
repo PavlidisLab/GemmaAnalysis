@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2011 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -17,7 +17,31 @@
  *
  */
 
-package chibi.gemmaanalysis;
+package ubic.gemma.contrib.apps;
+
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
+import org.apache.commons.lang3.StringUtils;
+import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
+import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
+import ubic.gemma.core.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
+import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
+import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
+import ubic.gemma.core.datastructure.matrix.MatrixWriter;
+import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
+import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
+import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
+import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
+import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
+import ubic.gemma.model.expression.designElement.CompositeSequence;
+import ubic.gemma.model.expression.experiment.BioAssaySet;
+import ubic.gemma.model.expression.experiment.ExperimentalFactor;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.genome.Gene;
+import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
+import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
+import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
+import ubic.gemma.persistence.util.EntityUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,41 +52,38 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Transformer;
-import org.apache.commons.lang3.StringUtils;
-
-import ubic.gemma.analysis.expression.diff.DiffExAnalyzer;
-import ubic.gemma.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.analysis.expression.diff.LinearModelAnalyzer;
-import ubic.gemma.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
-import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
-import ubic.gemma.datastructure.matrix.ExpressionDataDoubleMatrix;
-import ubic.gemma.datastructure.matrix.MatrixWriter;
-import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
-import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
-import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
-import ubic.gemma.model.expression.arrayDesign.ArrayDesignService;
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorService;
-import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.designElement.CompositeSequenceService;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
-import ubic.gemma.model.expression.experiment.ExperimentalFactor;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.genome.Gene;
-import ubic.gemma.util.EntityUtils;
-
 /**
  * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
  * with including it; and repeating those, after batch correction
- * 
- * @author paul
- * @version $Id$
+ *
+ * @author  paul
+ * @version $Id: BatchDiffExCli.java,v 1.33 2015/12/03 21:46:40 paul Exp $
  */
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
+
+    private ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
+
+    private DiffExAnalyzer lma;
+
+    private ArrayDesignService arrayDesignService;
+
+    private CompositeSequenceService compositeSequenceService;
+
+    private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    private final Collection<ArrayDesign> seenArrays = new HashSet<>();
+
+    private final Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
+
+    Transformer geneSymbolTransformer = input -> ( ( Gene ) input ).getOfficialSymbol();
+
+    /**
+     * This only affects the summaries that are output.
+     */
+    private final double summaryQvalThreshold = 0.01;
+
+    Writer summaryFile;
 
     @Override
     public String getCommandName() {
@@ -75,107 +96,18 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 + "with including it; and repeating those, after batch correction";
     }
 
-    /**
-     * @param args
-     */
-    public static void main( String[] args ) {
-        BatchDiffExCli c = new BatchDiffExCli();
-        c.doWork( args );
-
-    }
-
-    private ExpressionExperimentBatchCorrectionService expressionExperimentBatchCorrectionService;
-
-    private DiffExAnalyzer lma;
-
-    private ArrayDesignService arrayDesignService;
-
-    private CompositeSequenceService compositeSequenceService;
-
-    private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
-
-    private Collection<ArrayDesign> seenArrays = new HashSet<ArrayDesign>();
-
-    private Map<CompositeSequence, Collection<Gene>> genes = new HashMap<CompositeSequence, Collection<Gene>>();
-
-    Transformer geneSymbolTransformer = new Transformer() {
-        @Override
-        public Object transform( Object input ) {
-            return ( ( Gene ) input ).getOfficialSymbol();
-        }
-    };
-
-    /**
-     * This only affects the summaries that are output.
-     */
-    private double summaryQvalThreshold = 0.01;
-
-    Writer summaryFile;
-
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
-     */
-    private Writer initOutputFile( String fileName ) throws IOException {
-        File f = new File( fileName );
-        if ( f.exists() ) {
-            f.delete();
-        }
-        f.createNewFile();
-        log.info( "New file: " + f.getAbsolutePath() );
-        return new FileWriter( f );
-    }
-
-    /**
-     * @param mat
-     * @param filename
-     * @throws IOException
-     */
-    private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
-        MatrixWriter mw = new MatrixWriter();
-        try (FileWriter fw = new FileWriter( new File( filename ) );) {
-            mw.write( fw, mat, null, true, true );
-        }
-    }
-
-    /**
-     * @param revisedResultDetails
-     * @param ef
-     * @param r
-     * @param c
-     * @return c
-     */
-    private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
-            ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
-        Double pval = r.getCorrectedPvalue();
-
-        if ( pval != null && pval < summaryQvalThreshold ) {
-            c++;
-        }
-        /*
-         * Map of probe -> factor -> pval
-         */
-        CompositeSequence probe = r.getProbe();
-        if ( !revisedResultDetails.containsKey( probe ) ) {
-            revisedResultDetails.put( probe, new HashMap<ExperimentalFactor, Double>() );
-        }
-        revisedResultDetails.get( probe ).put( ef, pval );
-        return c;
-    }
-
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
-    protected Exception doWork( String[] args ) {
-        Exception error = super.processCommandLine( args );
-        if ( error != null ) return error;
+    protected void doWork() {
+
         this.expressionExperimentBatchCorrectionService = this
                 .getBean( ExpressionExperimentBatchCorrectionService.class );
-        this.lma = new LinearModelAnalyzer();
+        this.lma = this.getBean( DiffExAnalyzer.class );
+
         this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
         this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
 
@@ -185,54 +117,43 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.expressionExperiments ) {
+            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                ExpressionExperiment ee = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ee );
+                getEeService().thawLite( ( ExpressionExperiment ) bas );
+                processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 
         } catch ( Exception e ) {
             log.error( e, e );
-            return e;
         }
 
-        summarizeProcessing();
-
-        return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seeubic.gemma.apps.DifferentialExpressionAnalysisCli#processExperiment(ubic.gemma.model.expression.experiment.
-     * ExpressionExperiment)
-     */
-    @Override
     protected void processExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
-        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" );) {
+        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" )) {
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
             ExperimentalFactor batchFactor = expressionExperimentBatchCorrectionService.getBatchFactor( ee );
 
             if ( null == batchFactor ) {
-                this.errorObjects.add( "No batch factor: " + ee.getShortName() );
+                this.addErrorObject( ee, "No batch factor: " + ee.getShortName() );
                 return;
             }
 
             if ( experimentalFactors.size() < 2 ) {
                 // need at least two factors, one of which has to be the batch.
-                this.errorObjects.add( "Too few factors: " + ee.getShortName() );
+                this.addErrorObject( ee, "Too few factors: " + ee.getShortName() );
                 return;
             }
 
             if ( ee.getBioAssays().size() < 8 ) {
-                this.errorObjects.add( "Too small (" + ee.getBioAssays().size() + " samples): " + ee.getShortName() );
+                this.addErrorObject( ee, "Too small (" + ee.getBioAssays().size() + " samples): " + ee.getShortName() );
                 return;
             }
 
@@ -240,7 +161,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
-                this.errorObjects.add( "Too many factors (" + experimentalFactors.size()
+                this.addErrorObject( ee, "Too many factors (" + experimentalFactors.size()
                         + " factors, including 'batch'): " + ee.getShortName() );
                 return;
             }
@@ -248,16 +169,15 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /* TODO use this, or skip it... we have this information elsewhere already */
             // expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
 
-            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee );
+            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee, false );
             if ( !correctable ) {
 
                 /*
                  * Note that later on we can still end up with a model that is not of full rank, so combat will fail.
                  * This can sometimes be ameliorated by dropping covariates.
                  */
-                this.errorObjects
-                        .add( "Batch effect is not correctable; possibly contains batches with only one sample: "
-                                + ee.getShortName() );
+                this.addErrorObject( ee, "Batch effect is not correctable; possibly contains batches with only one sample: "
+                        + ee.getShortName() );
 
                 return;
             }
@@ -282,17 +202,16 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * first do an analysis without batch; this is our baseline. Let's ignore interactions to keep things
              * simple.
              */
-            Collection<ExperimentalFactor> factors2 = new HashSet<ExperimentalFactor>();
+            Collection<ExperimentalFactor> factors2 = new HashSet<>();
             for ( ExperimentalFactor ef : experimentalFactors ) {
                 if ( ef.equals( batchFactor ) ) continue;
                 factors2.add( ef );
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig configWithoutBatch = new DifferentialExpressionAnalysisConfig();
-            configWithoutBatch.setQvalueThreshold( null );
             configWithoutBatch.setFactorsToInclude( factors2 );
             DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, configWithoutBatch ).iterator().next();
-            Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+            Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<>();
             for ( ExpressionAnalysisResultSet brs : beforeResults.getResultSets() ) {
                 assert brs.getExperimentalFactors().size() == 1;
                 ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
@@ -314,7 +233,6 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             Collection<ExperimentalFactor> factors = experimentalFactors;
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
-            configIncludingBatch.setQvalueThreshold( summaryQvalThreshold );
 
             configIncludingBatch.setFactorsToInclude( factors );
 
@@ -349,10 +267,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              * Correct for batch effects; covariates which are "unimportant" will be dropped.
              */
             log.info( "ComBat-ing" );
-            boolean parametric = true;
-            double importanceThreshold = 0.01;
-            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat, parametric,
-                    importanceThreshold );
+            //            boolean parametric = true;
+            //   double importanceThreshold = 0.01;
+            ExpressionDataDoubleMatrix comBat = expressionExperimentBatchCorrectionService.comBat( mat );
             assert comBat != null;
 
             /*
@@ -363,7 +280,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             DifferentialExpressionAnalysis revisedResultWithBatch = lma.run( ee, comBat, configIncludingBatch )
                     .iterator().next();
 
-            Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectAfterCorrDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+            Map<CompositeSequence, Map<ExperimentalFactor, Double>> batchEffectAfterCorrDetails = new HashMap<>();
 
             for ( ExpressionAnalysisResultSet brs : revisedResultWithBatch.getResultSets() ) {
                 assert brs.getExperimentalFactors().size() == 1;
@@ -387,7 +304,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
              */
             boolean hasNonNulls = false;
             DifferentialExpressionAnalysis revisedResult = lma.run( ee, comBat, configWithoutBatch ).iterator().next();
-            Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails = new HashMap<CompositeSequence, Map<ExperimentalFactor, Double>>();
+            Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails = new HashMap<>();
             for ( ExpressionAnalysisResultSet brs : revisedResult.getResultSets() ) {
                 assert brs.getExperimentalFactors().size() == 1;
                 ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
@@ -413,7 +330,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
 
             if ( !hasNonNulls ) {
                 // this means something went wrong ... somewhere. Possibly the model cannot be fit.
-                errorObjects.add( "No valid pvalues after correction: " + ee.getShortName() );
+                addErrorObject( ee, "No valid pvalues after correction: " + ee.getShortName() );
                 return;
             }
 
@@ -432,7 +349,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 String geneSymbs = "";
                 String geneIds = "";
                 if ( genes.containsKey( c ) ) {
-                    Collection<Gene> g = new HashSet<Gene>();
+                    Collection<Gene> g = new HashSet<>();
                     g.addAll( genes.get( c ) );
                     CollectionUtils.transform( g, geneSymbolTransformer );
                     geneSymbs = StringUtils.join( g, "|" );
@@ -466,25 +383,77 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             String correctedDataFileName = fileprefix + ".correcteddata.txt";
             saveData( comBat, correctedDataFileName );
 
-            successObjects.add( ee );
+            addSuccessObject( ee, "" );
         } catch ( Exception e ) {
             log.error( e, e );
-            errorObjects.add( ee + e.getMessage() );
+            addErrorObject( ee, e.getMessage() );
         }
     }
 
     /**
      * Gets annotations for this experiment, if the array designs have not already been seen in this run.
-     * 
-     * @param ee
+     *
+     * @param ee experiment
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
-            ad = this.arrayDesignService.thaw( ad );
+            this.arrayDesignService.thaw( ad );
             genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
             seenArrays.add( ad );
         }
+    }
+
+    /**
+     * @param  fileName
+     * @return
+     * @throws IOException
+     */
+    private Writer initOutputFile( String fileName ) throws IOException {
+        File f = new File( fileName );
+        if ( f.exists() ) {
+            f.delete();
+        }
+        f.createNewFile();
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
+    }
+
+    /**
+     * @param  mat
+     * @param  filename
+     * @throws IOException
+     */
+    private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
+        MatrixWriter mw = new MatrixWriter();
+        try (FileWriter fw = new FileWriter( new File( filename ) )) {
+            mw.write( fw, mat, null, true, true );
+        }
+    }
+
+    /**
+     * @param  revisedResultDetails
+     * @param  ef
+     * @param  r
+     * @param  c
+     * @return                      c
+     */
+    private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
+            ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
+        Double pval = r.getCorrectedPvalue();
+
+        if ( pval != null && pval < summaryQvalThreshold ) {
+            c++;
+        }
+        /*
+         * Map of probe -> factor -> pval
+         */
+        CompositeSequence probe = r.getProbe();
+        if ( !revisedResultDetails.containsKey( probe ) ) {
+            revisedResultDetails.put( probe, new HashMap<ExperimentalFactor, Double>() );
+        }
+        revisedResultDetails.get( probe ).put( ef, pval );
+        return c;
     }
 }
