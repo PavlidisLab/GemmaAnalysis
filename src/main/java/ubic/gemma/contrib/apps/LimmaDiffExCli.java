@@ -89,7 +89,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
     @Override
     public String getShortDesc() {
-        return "Performs multiple differential expression analyses with or without ebayes";
+        return "Performs multiple differential expression analyses with and without ebayes, generate comparison stats";
     }
 
     /*
