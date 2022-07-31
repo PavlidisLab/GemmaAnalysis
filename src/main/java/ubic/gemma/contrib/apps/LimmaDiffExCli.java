@@ -294,8 +294,8 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
          * Collect vectors of values and compute rank correlations. Other comparisions can be done as well...
          */
 
-        Map<ExperimentalFactor, Map<CompositeSequence, Double[]>> apv = new HashMap<>();
-        Map<FactorValue, Map<CompositeSequence, Double[]>> cpv = new HashMap<>();
+        Map<ExperimentalFactor, Map<CompositeSequence, Double[]>> apv = new HashMap<>(); // ANOVA effects
+        Map<FactorValue, Map<CompositeSequence, Double[]>> cpv = new HashMap<>(); // contrasts
 
         for ( ExpressionAnalysisResultSet brs : beforeResultSets ) {
             // Note: ignoring interactions.
@@ -367,6 +367,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         List<String> r = new ArrayList<>();
 
         // unroll
+        // ANOVA effects
         for ( ExperimentalFactor ef : apv.keySet() ) {
             int n = apv.get( ef ).keySet().size();
             DoubleArrayList a = new DoubleArrayList( n );
@@ -382,6 +383,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             r.add( corr );
         }
 
+        // Contrasts
         for ( FactorValue fv : cpv.keySet() ) {
             int n = cpv.get( fv ).keySet().size();
             DoubleArrayList a = new DoubleArrayList( n );
