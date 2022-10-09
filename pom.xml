@@ -34,7 +34,7 @@
 		<dependency>
 			<groupId>gemma</groupId>
 			<artifactId>gemma-core</artifactId>
-			<version>1.28.0-SNAPSHOT</version>
+			<version>1.28.0</version>
 		</dependency>
 	</dependencies>
 	<repositories>
