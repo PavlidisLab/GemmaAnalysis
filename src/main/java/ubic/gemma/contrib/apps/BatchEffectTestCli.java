@@ -15,7 +15,7 @@
 package ubic.gemma.contrib.apps;
 
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfound;
-import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundValueObject;
+import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundUtils;
 import ubic.gemma.core.analysis.preprocess.svd.SVDService;
 import ubic.gemma.core.analysis.preprocess.svd.SVDValueObject;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
@@ -78,9 +78,9 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
                     pcaFactorTest( svdService, ee );
 
-                    Collection<BatchConfoundValueObject> results = BatchConfound.test( ee );
+                    Collection<BatchConfound> results = BatchConfoundUtils.test( ee );
 
-                    for ( BatchConfoundValueObject r : results ) {
+                    for ( BatchConfound r : results ) {
                         System.out.println( r );
                     }
 
