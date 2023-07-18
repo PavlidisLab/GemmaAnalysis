@@ -356,7 +356,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
         if ( !geneSets.isEmpty() ) System.err.println(
                 "Updating " + geneSets.size() + " gene set associations for " + discontinued + " ---> switch to " + useThisOne );
         for ( GeneSet gset : geneSets ) {
-            gsService.thaw( gset );
+            //gsService.thaw( gset );
             GeneSetMember toRemoveFromSet = null;
             for ( GeneSetMember gsm : gset.getMembers() ) {
                 if ( gsm.getGene().equals( d ) ) {
@@ -424,7 +424,8 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                                 BioSequence bs = bsService.findByAccession( accessions.iterator().next() );
                                 b2gp.setBioSequence( bs );
 
-                                aaService.update( ( AnnotationAssociation ) b2gp );
+                                //aaService.update( ( AnnotationAssociation ) b2gp );
+                                throw new IllegalStateException("Not implemented - need aaService.update method");
                             } else {
                                 // No existing association to use; we'll delete this one, and then a new one will be made when we update the generic platform.
                                 annotationAssocRemove.add( ( AnnotationAssociation ) b2gp );

@@ -169,7 +169,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             /* TODO use this, or skip it... we have this information elsewhere already */
             // expressionExperimentBatchCorrectionService.checkBatchEffectSeverity( ee );
 
-            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee, false );
+            boolean correctable = expressionExperimentBatchCorrectionService.checkCorrectability( ee );
             if ( !correctable ) {
 
                 /*
