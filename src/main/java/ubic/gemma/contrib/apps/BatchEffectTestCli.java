@@ -66,10 +66,10 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
         SVDService svdService = this.getBean( SVDService.class );
 
-        for ( BioAssaySet bas : this.getExpressionExperiments() ) {
+        for ( BioAssaySet bas : this.expressionExperiments ) {
             if ( bas instanceof ExpressionExperiment ) {
                 ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                this.getEeService().thawLite( ee );
+                this.eeService.thawLite( ee );
                 log.info( "Processing: " + ee );
 
                 try {

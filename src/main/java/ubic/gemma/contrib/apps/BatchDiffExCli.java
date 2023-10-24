@@ -19,8 +19,8 @@
 
 package ubic.gemma.contrib.apps;
 
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Transformer;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.Transformer;
 import org.apache.commons.lang3.StringUtils;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
@@ -56,7 +56,7 @@ import java.util.Map;
  * Performs multiple differential expression analyses under different conditions: Without including a batch covariate;
  * with including it; and repeating those, after batch correction
  *
- * @author  paul
+ * @author paul
  * @version $Id: BatchDiffExCli.java,v 1.33 2015/12/03 21:46:40 paul Exp $
  */
 public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
@@ -117,11 +117,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
+            for ( BioAssaySet bas : this.expressionExperiments ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                getEeService().thawLite( ( ExpressionExperiment ) bas );
+                this.eeService.thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
@@ -135,7 +135,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     protected void processExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
-        try (Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" )) {
+        try ( Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" ) ) {
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
@@ -396,7 +396,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ee experiment
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
             this.arrayDesignService.thaw( ad );
@@ -427,7 +427,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      */
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
         MatrixWriter mw = new MatrixWriter();
-        try (FileWriter fw = new FileWriter( new File( filename ) )) {
+        try ( FileWriter fw = new FileWriter( new File( filename ) ) ) {
             mw.write( fw, mat, null, true, true );
         }
     }
@@ -437,7 +437,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param  ef
      * @param  r
      * @param  c
-     * @return                      c
+     * @return c
      */
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
