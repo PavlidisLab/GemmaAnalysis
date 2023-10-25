@@ -25,7 +25,7 @@ import org.apache.commons.cli.Options;
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
 import ubic.gemma.core.apps.GemmaCLI;
 import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.util.AbstractSpringAwareCLI;
+import ubic.gemma.core.util.AbstractCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -37,6 +37,7 @@ import ubic.gemma.persistence.service.expression.designElement.CompositeSequence
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
+import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -49,10 +50,10 @@ import java.util.Map;
 /**
  * Computing different statistics about the database to assist in computing probabilities
  *
- * @author  pavlidis
+ * @author pavlidis
  * @version $Id: SummaryStatistics.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
-public class SummaryStatistics extends AbstractSpringAwareCLI {
+public class SummaryStatistics extends AbstractCLI {
 
     private static final int MAX_EXPS = 5;
 
@@ -285,6 +286,12 @@ public class SummaryStatistics extends AbstractSpringAwareCLI {
     @Override
     public String getCommandName() {
         // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public String getShortDesc() {
         return null;
     }
 

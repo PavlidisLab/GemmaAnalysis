@@ -110,11 +110,11 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "limma.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.getExpressionExperiments() ) {
+            for ( BioAssaySet bas : expressionExperiments ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                getEeService().thawLite( ( ExpressionExperiment ) bas );
+                eeService.thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
@@ -131,7 +131,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
         try ( Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" ) ) {
 
-            ee = super.getEeService().thawLite( ee );
+            ee = eeService.thawLite( ee );
 
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
@@ -406,7 +406,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ee
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
             ad = this.arrayDesignService.thaw( ad );

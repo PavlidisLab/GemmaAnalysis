@@ -31,7 +31,7 @@ import java.util.Map;
 /**
  * For bulk processing of batch-info-fetching.
  *
- * @author  paul
+ * @author paul
  * @version $Id: BatchEffectTestCli.java,v 1.6 2015/11/12 19:37:12 paul Exp $
  */
 public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
@@ -66,10 +66,10 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
         SVDService svdService = this.getBean( SVDService.class );
 
-        for ( BioAssaySet bas : this.getExpressionExperiments() ) {
+        for ( BioAssaySet bas : expressionExperiments ) {
             if ( bas instanceof ExpressionExperiment ) {
                 ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                this.getEeService().thawLite( ee );
+                ee = eeService.thawLite( ee );
                 log.info( "Processing: " + ee );
 
                 try {

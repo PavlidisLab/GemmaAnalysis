@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>ubc.pavlab</groupId>
 		<artifactId>pavlab-starter-parent</artifactId>
-		<version>1.2.7</version>
+		<version>1.2.10</version>
 	</parent>
 
 	<groupId>GemmaAnalysis</groupId>
@@ -16,7 +16,7 @@
 	<description/>
 
 	<properties>
-		<gemma.version>1.29.7</gemma.version>
+		<gemma.version>1.30.4</gemma.version>
 	</properties>
 
 	<build>
