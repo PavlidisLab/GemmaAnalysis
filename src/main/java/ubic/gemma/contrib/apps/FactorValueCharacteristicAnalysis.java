@@ -126,7 +126,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             return result;
         }
 
-        private final List<String> customOrder = Arrays.asList("treatment", "genotype", "cell type", "cell line", "developmental stage", "organism part", "disease", "disease staging", "disease modifier", "reference subject role", "timepoint", "delivery", "control", "dose" );
+        private final List<String> customOrder = Arrays.asList( "treatment", "genotype", "cell type", "cell line", "developmental stage", "strain", "organism part", "disease", "disease staging", "disease model", "phenotype", "timepoint", "age", "behavior", "delivery", "growth condition", "control", "reference subject role", "dose" );
 
         public String tabularize() {
             List<String> fields = new ArrayList<>();
@@ -146,24 +146,28 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                             Integer o1x = customOrder.indexOf( o1.getCategory().toLowerCase() );
                             Integer o2x = customOrder.indexOf( o2.getCategory().toLowerCase() );
 
-                            if ( o1x != null && o2x != null ) {
+                            if ( o1x != null && o2x != null ) { // should always be true as NPE will be thrown if either is null (or if the category is null)
                                 return o1x.compareTo( o2x );
                             }
                         } catch ( NullPointerException e ) {
                             // ignore - it was a different category
+                            //System.err.println(o1.getCategory() + " " + o2.getCategory());
                         }
+
+                        // Otherwise: put free text at the end
                         if ( o1.getValueUri() == null ) {
-                            return -1;
+                            return 1;
                         } else if ( o2.getValueUri() == null ) {
-                            return -1;
+                            return 1;
                         } else {
                             return o1.getValue().compareTo( o2.getValue() );
                         }
                     }
                 } );
                 fields.add( "" + fv.getCharacteristics().size() );
-                fields.add( fv.getCharacteristics().stream().map( c -> new String( c.getId() + "\t" + ( c.getCategory() == null ? "" : c.getCategory() ) + "\t" + c.getValue() + "\t" + ( c.getValueUri() == null ? "" : c.getValueUri() ) ) ).collect( Collectors.joining( "\t" ) ) );
+                fields.add( listchars.stream().map( c -> new String( c.getId() + "\t" + ( c.getCategory() == null ? "" : c.getCategory() ) + "\t" + c.getValue() + "\t" + ( c.getValueUri() == null ? "" : c.getValueUri() ) ) ).collect( Collectors.joining( "\t" ) ) );
             } else {
+                // resolved.
                 fields.add( summary );
                 fields.add( subject.getId().toString() );
                 fields.add( object.getId().toString() );
@@ -184,6 +188,8 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
      */
     @Override
     protected void doWork() {
+
+        log.info( "Starting examining experiments ..." );
 
         ExperimentalDesignService eds = this.getBean( ExperimentalDesignService.class ); // autowire not available here
 
@@ -212,6 +218,11 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
         int experimentsExamined = 0; // not counting ones that have no experimental design
 
         for ( BioAssaySet bas : this.expressionExperiments ) {
+
+            if ( experimentsExamined > 0 && experimentsExamined % 500 == 0 ) {
+                log.info( "Processed " + experimentsExamined + " experiments / " + this.expressionExperiments.size() );
+            }
+
             if ( bas instanceof ExpressionExperiment ) {
                 ExpressionExperiment ee = ( ExpressionExperiment ) bas;
 
@@ -339,7 +350,6 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                                     ri.object = cs1;
                                     ri.predicate = "has_stage";
                                     solved = true;
-
                                 }
 
                                 // an UBERON term and a location modifier
@@ -356,7 +366,6 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                                     ri.object = cs1;
                                     ri.predicate = "has_location";
                                     solved = true;
-
                                 }
 
 
@@ -492,7 +501,6 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                                     ri.object = cs1;
                                     ri.predicate = "has_role[?]";
                                     solved = true;
-
                                 }
 
                                 /*
@@ -557,6 +565,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                                     ri.object = cs1;
                                     ri.subject = cs2;
                                     ri.predicate = "has_timepoint";
+                                    solved = true;
                                 } else if ( isTimepoint( cs2 ) && !isTimepoint( cs1 ) ) {
                                     ri.summary = "Timepoint";
                                     ri.object = cs2;
@@ -565,67 +574,6 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
                                     solved = true;
 
                                 }
-
-
-
-                                /* TODO: genotype + treatment
-                                FactorValue 159436: treatment:antagonist | JAK1 [human] Janus kinase 1 |
- - c - treatment: antagonist http://purl.obolibrary.org/obo/CHEBI_48706
- - c - genotype: JAK1 [human] Janus kinase 1 http://purl.org/commons/record/ncbi_gene/3716
-
- FactorValue 119738: treatment:Tgfb1 [mouse] transforming growth factor, beta 1 | Immunodepletion |
- - c - genotype: Tgfb1 [mouse] transforming growth factor, beta 1 http://purl.org/commons/record/ncbi_gene/21803
- - c - treatment: Immunodepletion http://gemma.msl.ubc.ca/ont/TGEMO_00012
-
-
- ExpressionExperiment Id=4121 Name=Gene expression profiling of HhAntag-treated pancreatic xenografts - Mus musculus Short Name=GSE11981.2
-FactorValue 75535: Treatment:Hedgehog signaling complex | antagonist |
- - c - treatment: Hedgehog signaling complex http://purl.obolibrary.org/obo/GO_0035301 drug=false phys=false deliv=false dismod=false stage=false
- - c - treatment: antagonist http://purl.obolibrary.org/obo/CHEBI_48706 drug=true phys=false deliv=false dismod=false stage=false
-
-
-
-
-                                 */
-
-                                /* TODO protein + treatment?
-                                FactorValue 178121: treatment:amyloid fibril | amyloid beta peptide |
- - c - treatment: amyloid fibril http://purl.obolibrary.org/obo/CHEBI_60425
- - c - treatment: amyloid beta peptide http://purl.obolibrary.org/obo/PR_000036193
-
- FactorValue 178122: treatment:amyloid beta peptide | oligomer |
- - c - treatment: amyloid beta peptide http://purl.obolibrary.org/obo/PR_000036193
- - c - treatment: oligomer http://purl.obolibrary.org/obo/CHEBI_132554
-
-                                 */
-
-
-                                /*
-                                TODO?
-                                FactorValue 181206: disease:ischemic disease | ipsilateral to |
- - c - disease: ischemic disease http://purl.obolibrary.org/obo/MONDO_0005053
- - c - disease: ipsilateral to http://purl.obolibrary.org/obo/PATO_0002035 -- this is a physicalobjectproperty - children of 'position' http://purl.obolibrary.org/obo/PATO_0000140, 'direction' http://purl.obolibrary.org/obo/PATO_0000039? 'distance' http://purl.obolibrary.org/obo/PATO_0000040?
-                                 */
-
-
-
-
-                                /*
-                               TODO  http://purl.obolibrary.org/obo/PATO_0000069 - deviation (from_normal) modifiers such as "increased amount"
-
-                                 resistance to, sensitive towards ...
-                                 */
-
-
-                                /* TODO
-
-                                generic type of disease with a descriptor (e.g. toxoplasma infection disease
-
-                                ExpressionExperiment Id=16507 Name=Genome-wide gene expression analysis of WERI-Rb-1 (retinal cells) infected with Toxoplasma gondii over time Short Name=GSE81016
-FactorValue 164946: treatment:infectious disease | Toxoplasma gondii |
- - c - disease: infectious disease http://purl.obolibrary.org/obo/MONDO_0005550 drug=false phys=false deliv=false dismod=false stage=false
- - c - treatment: Toxoplasma gondii http://purl.obolibrary.org/obo/NCBITaxon_5811 drug=false phys=false deliv=false dismod=false stage=false
-                                 */
 
 
                                 // somewhat generic case of where there is a physical object property or occurrence type of term, which we treat as the modifier.
@@ -742,9 +690,9 @@ FactorValue 164946: treatment:infectious disease | Toxoplasma gondii |
                                         ri.summary = "Genetic modifier [multigene]";
                                         results.add( ri );
                                     }
+                                    log.info( "Resolve multi-gene genotype" );
                                     solved = true;
                                 }
-
 
                                 // look for fusion_gene and two genes
                                 Characteristic cf = isGeneFusion( fv );
@@ -767,6 +715,7 @@ FactorValue 164946: treatment:infectious disease | Toxoplasma gondii |
                                         throw new IllegalStateException( "Didn't find all three parts of the fusion for: " + ee + " " + fv );
                                     }
 
+                                    log.info( "Resolved gene fusion" );
                                     solved = true;
                                 }
                                 //nosolution++; let's not count these yet
