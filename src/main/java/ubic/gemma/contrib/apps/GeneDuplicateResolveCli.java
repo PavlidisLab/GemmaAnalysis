@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2018 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,11 +23,14 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.core.genome.gene.service.GeneService;
 import ubic.gemma.core.genome.gene.service.GeneSetService;
 import ubic.gemma.core.loader.genome.gene.ncbi.NcbiGeneHistoryParser;
-import ubic.gemma.core.util.AbstractCLIContextCLI;
+import ubic.gemma.core.util.AbstractCLI;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.association.Gene2GOAssociation;
 import ubic.gemma.model.association.phenotype.PhenotypeAssociation;
@@ -46,11 +49,14 @@ import ubic.gemma.persistence.service.association.phenotype.service.PhenotypeAss
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
 import ubic.gemma.persistence.service.genome.gene.GeneProductService;
+import ubic.gemma.persistence.service.genome.gene.GeneSetDao;
+import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociationDao;
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociationService;
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 import ubic.gemma.persistence.util.Settings;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
@@ -59,10 +65,10 @@ import java.util.Map;
 
 /**
  * Identify, diagnose and optionally fix instances where genes are duplicated (due to changes in NCBI IDs)
- * 
+ *
  * @author paul
  */
-public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
+public class GeneDuplicateResolveCli extends AbstractCLI {
 
     private String filePath = Settings.getDownloadPath();
 
@@ -70,9 +76,36 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
     private boolean doFix = false;
 
+    @Service
+    static class HelperService {
+
+        @Autowired
+        private GeneSetDao geneSetDao;
+
+        @Autowired
+        private AnnotationAssociationDao annotationAssociationDao;
+
+        @Transactional(readOnly = true)
+        public GeneSet thaw( GeneSet gs ) {
+            gs = geneSetDao.load( gs.getId() );
+            if ( gs != null ) {
+                geneSetDao.thaw( gs );
+            }
+            return gs;
+        }
+
+        @Transactional
+        public void update( AnnotationAssociation aa ) {
+            annotationAssociationDao.update( aa );
+        }
+    }
+
+    @Autowired
+    private HelperService helperService;
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.core.util.AbstractCLI#getCommandName()
      */
     @Override
@@ -80,9 +113,15 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
         return "geneDupResolve";
     }
 
+    @Nullable
+    @Override
+    public String getShortDesc() {
+        return null;
+    }
+
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.core.util.AbstractCLI#buildOptions()
      */
     @Override
@@ -111,7 +150,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.core.util.AbstractCLI#doWork(java.lang.String[])
      */
     @Override
@@ -230,12 +269,12 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                     /*
                      * If we switch existing assocations to a "real" gene, then we have to deal with:
                      * GENE2GO_ASSOCIATION (but easily updated), PHENOTYPE_ASSOCIATION, GENE_SET_MEMBER,
-                     * 
-                     * 
+                     *
+                     *
                      * Then, probe-gene mappings should probably be retained - but this is at the gene product level,
                      * and if the products are
                      * being deleted, this is not a big deal.
-                     * 
+                     *
                      */
                     if ( doFix && canFix && useThisOne != null ) {
                         // Collection<GeneProduct> products = useThisOne.getProducts();
@@ -356,7 +395,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
         if ( !geneSets.isEmpty() ) System.err.println(
                 "Updating " + geneSets.size() + " gene set associations for " + discontinued + " ---> switch to " + useThisOne );
         for ( GeneSet gset : geneSets ) {
-            //gsService.thaw( gset );
+            gset = helperService.thaw( gset );
             GeneSetMember toRemoveFromSet = null;
             for ( GeneSetMember gsm : gset.getMembers() ) {
                 if ( gsm.getGene().equals( d ) ) {
@@ -424,8 +463,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                                 BioSequence bs = bsService.findByAccession( accessions.iterator().next() );
                                 b2gp.setBioSequence( bs );
 
-                                //aaService.update( ( AnnotationAssociation ) b2gp );
-                                throw new IllegalStateException("Not implemented - need aaService.update method");
+                                helperService.update( ( AnnotationAssociation ) b2gp );
                             } else {
                                 // No existing association to use; we'll delete this one, and then a new one will be made when we update the generic platform.
                                 annotationAssocRemove.add( ( AnnotationAssociation ) b2gp );
@@ -468,7 +506,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see ubic.gemma.core.util.AbstractCLIContextCLI#getCommandGroup()
      */
     @Override

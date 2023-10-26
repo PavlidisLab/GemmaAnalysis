@@ -19,8 +19,8 @@
 
 package ubic.gemma.contrib.apps;
 
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections4.Transformer;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
@@ -117,11 +117,11 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             summaryFile = initOutputFile( "batch.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for ( BioAssaySet bas : this.expressionExperiments ) {
+            for ( BioAssaySet bas : expressionExperiments ) {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                this.eeService.thawLite( ( ExpressionExperiment ) bas );
+                bas = eeService.thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
@@ -396,10 +396,10 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
      * @param ee experiment
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
-        Collection<ArrayDesign> arrayDesigns = this.eeService.getArrayDesignsUsed( ee );
+        Collection<ArrayDesign> arrayDesigns = eeService.getArrayDesignsUsed( ee );
         for ( ArrayDesign ad : arrayDesigns ) {
             if ( seenArrays.contains( ad ) ) continue;
-            this.arrayDesignService.thaw( ad );
+            ad = this.arrayDesignService.thaw( ad );
             genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
             seenArrays.add( ad );
         }
