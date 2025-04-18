@@ -27,12 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
+import ubic.gemma.cli.util.AbstractCLI;
 import ubic.gemma.core.loader.genome.gene.ncbi.NcbiGeneHistoryParser;
-import ubic.gemma.core.util.AbstractCLI;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.association.Gene2GOAssociation;
-import ubic.gemma.model.association.phenotype.PhenotypeAssociation;
 import ubic.gemma.model.common.description.DatabaseEntry;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.genome.Gene;
@@ -44,7 +42,6 @@ import ubic.gemma.model.genome.gene.GeneSetMember;
 import ubic.gemma.model.genome.sequenceAnalysis.AnnotationAssociation;
 import ubic.gemma.model.genome.sequenceAnalysis.BlatAssociation;
 import ubic.gemma.persistence.service.association.Gene2GOAssociationService;
-import ubic.gemma.persistence.service.association.phenotype.service.PhenotypeAssociationService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
 import ubic.gemma.persistence.service.genome.gene.GeneProductService;
@@ -56,7 +53,6 @@ import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociat
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
-import javax.annotation.Nullable;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -87,8 +83,6 @@ public class GeneDuplicateResolveCli extends AbstractCLI {
     private BioSequenceService bsService;
     @Autowired
     private GeneSetService gsService;
-    @Autowired
-    private PhenotypeAssociationService paService;
     @Autowired
     private Gene2GOAssociationService g2goService;
 
@@ -131,12 +125,6 @@ public class GeneDuplicateResolveCli extends AbstractCLI {
         return "geneDupResolve";
     }
 
-    @Nullable
-    @Override
-    public String getShortDesc() {
-        return null;
-    }
-
     @Override
     protected void buildOptions( Options options ) {
         Option pathOption = Option.builder( "f" ).hasArg().argName( "Input File Path" )
@@ -159,12 +147,7 @@ public class GeneDuplicateResolveCli extends AbstractCLI {
             this.doFix = true;
         }
     }
-
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.MISC;
-    }
-
+    
     @Override
     protected void doWork() {
         try {
@@ -298,8 +281,6 @@ public class GeneDuplicateResolveCli extends AbstractCLI {
 
                             fixGOAssociations( d );
 
-                            fixPhenotypes( paService, discontinued, useThisOne, d );
-
                             fixGeneSets( discontinued, useThisOne, d );
 
                             fixPlatformAssociations( genesWithRemovedProbeAssociations, genesWithNoProducts, sym, useThisOne, d );
@@ -361,17 +342,6 @@ public class GeneDuplicateResolveCli extends AbstractCLI {
         if ( !goassocs.isEmpty() )
             System.err.println( "Removing " + goassocs.size() + " GO associations for discontinued gene " + d );
         g2goService.remove( goassocs );
-    }
-
-    private void fixPhenotypes( PhenotypeAssociationService paService, Collection<Gene> discontinued, Gene useThisOne, Gene d ) {
-        // phenotypes: replace
-        Collection<PhenotypeAssociation> pass = paService.findPhenotypeAssociationForGeneId( d.getId() );
-        if ( !pass.isEmpty() ) System.err.println(
-                "Updating " + pass.size() + " phenotype associations for " + discontinued + " ---> switch to " + useThisOne );
-        for ( PhenotypeAssociation pas : pass ) {
-            pas.setGene( useThisOne );
-            paService.update( pas );
-        }
     }
 
     private void fixGeneSets( Collection<Gene> discontinued, Gene useThisOne, Gene d ) {

@@ -24,9 +24,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import ubic.basecode.math.Distance;
+import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.analysis.expression.diff.ContrastResult;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
@@ -35,12 +35,15 @@ import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.experiment.*;
+import ubic.gemma.model.expression.experiment.ExperimentalDesignUtils;
+import ubic.gemma.model.expression.experiment.ExperimentalFactor;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.expression.experiment.FactorValue;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
-import ubic.gemma.persistence.util.EntityUtils;
+import ubic.gemma.persistence.util.IdentifiableUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -95,26 +98,18 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     @Override
-    protected void doWork() {
-        try {
-            summaryFile = initOutputFile( "limma.proc.summary.txt" );
+    protected void doAuthenticatedWork() throws Exception {
+        try ( Writer summaryFile = initOutputFile( "limma.proc.summary.txt" ) ) {
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
-
-            for ( BioAssaySet bas : expressionExperiments ) {
-                if ( !( bas instanceof ExpressionExperiment ) ) {
-                    continue;
-                }
-                bas = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ( ExpressionExperiment ) bas );
-            }
-            summaryFile.close();
-
-        } catch ( Exception e ) {
-            log.error( e, e );
+            this.summaryFile = summaryFile;
+            super.doAuthenticatedWork();
+        } finally {
+            this.summaryFile = null;
         }
     }
 
-    protected void processExperiment( ExpressionExperiment ee ) {
+    @Override
+    protected void processExpressionExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
         try ( Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" ) ) {
@@ -151,12 +146,12 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
              */
             Collection<ExperimentalFactor> factorsToAnalyze = new HashSet<>();
             for ( ExperimentalFactor ef : experimentalFactors ) {
-                if ( ExperimentalDesignUtils.isBatch( ef ) ) continue;
+                if ( ExperimentalDesignUtils.isBatchFactor( ef ) ) continue;
                 factorsToAnalyze.add( ef );
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig config1 = new DifferentialExpressionAnalysisConfig();
-            config1.setFactorsToInclude( factorsToAnalyze );
+            config1.addFactorsToInclude( factorsToAnalyze );
             config1.setMakeArchiveFile( false );
             config1.setModerateStatistics( false ); // <----
             log.info( "=== Nobayes === " );
@@ -187,7 +182,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
              */
             DifferentialExpressionAnalysisConfig config2 = new DifferentialExpressionAnalysisConfig();
             config2.setModerateStatistics( true ); // <----
-            config2.setFactorsToInclude( factorsToAnalyze );
+            config2.addFactorsToInclude( factorsToAnalyze );
             config2.setMakeArchiveFile( false );
             log.info( "=== With ebayes ===" );
             Collection<DifferentialExpressionAnalysis> deas2 = lma.run( ee, mat, config2 );
@@ -240,7 +235,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 if ( genes.containsKey( c ) ) {
                     LinkedHashSet<Gene> g = new LinkedHashSet<>( genes.get( c ) );
                     geneSymbs = g.stream().map( Gene::getOfficialSymbol ).collect( Collectors.joining( "|" ) );
-                    geneIds = StringUtils.join( EntityUtils.getIds( g ), "|" );
+                    geneIds = StringUtils.join( IdentifiableUtils.getIds( g ), "|" );
                 }
 
                 for ( ExperimentalFactor ef : factorsToAnalyze ) {

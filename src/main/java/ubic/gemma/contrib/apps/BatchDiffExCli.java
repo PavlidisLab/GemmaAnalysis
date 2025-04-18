@@ -21,26 +21,25 @@ package ubic.gemma.contrib.apps;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
 import ubic.gemma.core.analysis.preprocess.batcheffects.ExpressionExperimentBatchCorrectionService;
-import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
-import ubic.gemma.core.datastructure.matrix.MatrixWriter;
+import ubic.gemma.core.datastructure.matrix.io.MatrixWriter;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult;
 import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
-import ubic.gemma.persistence.util.EntityUtils;
+import ubic.gemma.persistence.util.IdentifiableUtils;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -91,33 +90,19 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 + "with including it; and repeating those, after batch correction";
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
     @Override
-    protected void doWork() {
-        try {
-            summaryFile = initOutputFile( "batch.proc.summary.txt" );
+    protected void doAuthenticatedWork() throws Exception {
+        try ( Writer summaryFile = initOutputFile( "batch.proc.summary.txt" ) ) {
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
-
-            for ( BioAssaySet bas : expressionExperiments ) {
-                if ( !( bas instanceof ExpressionExperiment ) ) {
-                    continue;
-                }
-                bas = eeService.thawLite( ( ExpressionExperiment ) bas );
-                processExperiment( ( ExpressionExperiment ) bas );
-            }
-            summaryFile.close();
-
-        } catch ( Exception e ) {
-            log.error( e, e );
+            this.summaryFile = summaryFile;
+            super.doAuthenticatedWork();
+        } finally {
+            this.summaryFile = null;
         }
-
     }
 
-    protected void processExperiment( ExpressionExperiment ee ) {
+    @Override
+    protected void processExpressionExperiment( ExpressionExperiment ee ) {
         String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
         try ( Writer detailFile = initOutputFile( "batch.proc.detail." + fileprefix + ".txt" ) ) {
@@ -194,7 +179,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig configWithoutBatch = new DifferentialExpressionAnalysisConfig();
-            configWithoutBatch.setFactorsToInclude( factors2 );
+            configWithoutBatch.addFactorsToInclude( factors2 );
             DifferentialExpressionAnalysis beforeResults = lma.run( ee, mat, configWithoutBatch ).iterator().next();
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<>();
             for ( ExpressionAnalysisResultSet brs : beforeResults.getResultSets() ) {
@@ -224,7 +209,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
             assert factors.contains( batchFactor );
             DifferentialExpressionAnalysisConfig configIncludingBatch = new DifferentialExpressionAnalysisConfig();
 
-            configIncludingBatch.setFactorsToInclude( factors );
+            configIncludingBatch.addFactorsToInclude( factors );
 
             DifferentialExpressionAnalysis withBatchEffectResults = lma.run( ee, mat, configIncludingBatch ).iterator()
                     .next();
@@ -351,7 +336,7 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
                 if ( genes.containsKey( c ) ) {
                     LinkedHashSet<Gene> g = new LinkedHashSet<>( genes.get( c ) );
                     geneSymbs = g.stream().map( Gene::getOfficialSymbol ).collect( Collectors.joining( "|" ) );
-                    geneIds = StringUtils.join( EntityUtils.getIds( g ), "|" );
+                    geneIds = StringUtils.join( IdentifiableUtils.getIds( g ), "|" );
                 }
 
                 for ( ExperimentalFactor ef : factors ) {
@@ -414,9 +399,9 @@ public class BatchDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     private void saveData( ExpressionDataDoubleMatrix mat, String filename ) throws IOException {
-        MatrixWriter mw = new MatrixWriter();
-        try ( FileWriter fw = new FileWriter( new File( filename ) ) ) {
-            mw.write( fw, mat, null, true, true );
+        MatrixWriter mw = new MatrixWriter( null, null );
+        try ( FileWriter fw = new FileWriter( filename ) ) {
+            mw.write( mat, null, fw );
         }
     }
 

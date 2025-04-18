@@ -20,7 +20,6 @@
 package ubic.gemma.script.example
 
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix
-import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.expression.experiment.ExpressionExperiment
 import ubic.gemma.model.genome.Gene
 

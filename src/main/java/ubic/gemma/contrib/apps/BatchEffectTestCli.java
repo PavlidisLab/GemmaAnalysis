@@ -15,12 +15,11 @@
 package ubic.gemma.contrib.apps;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfound;
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundUtils;
 import ubic.gemma.core.analysis.preprocess.svd.SVDResult;
 import ubic.gemma.core.analysis.preprocess.svd.SVDService;
-import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
 
@@ -49,49 +48,41 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
     }
 
     @Override
-    protected void doWork() {
+    protected void processExpressionExperiment( ExpressionExperiment ee ) {
+        ee = eeService.thawLite( ee );
+        log.info( "Processing: " + ee );
 
-        for ( BioAssaySet bas : expressionExperiments ) {
-            if ( bas instanceof ExpressionExperiment ) {
-                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                ee = eeService.thawLite( ee );
-                log.info( "Processing: " + ee );
+        try {
 
-                try {
+            boolean success = false;
 
-                    boolean success = false;
+            pcaFactorTest( svdService, ee );
 
-                    pcaFactorTest( svdService, ee );
+            Collection<BatchConfound> results = BatchConfoundUtils.test( ee );
 
-                    Collection<BatchConfound> results = BatchConfoundUtils.test( ee );
+            for ( BatchConfound r : results ) {
+                System.out.println( r );
+            }
 
-                    for ( BatchConfound r : results ) {
-                        System.out.println( r );
-                    }
-
-                    success = true;
-                    if ( success ) {
-                        this.addSuccessObject( bas.toString(), "" );
-                    } else {
-                        this.addErrorObject( bas.toString() + ": No dates found", "" );
-
-                    }
-
-                } catch ( Exception e ) {
-                    log.error( e, e );
-                    this.addErrorObject( bas + ": " + e.getMessage(), "" );
-                }
+            success = true;
+            if ( success ) {
+                this.addSuccessObject( ee.toString(), "" );
+            } else {
+                this.addErrorObject( ee.toString() + ": No dates found", "" );
 
             }
-        }
 
+        } catch ( Exception e ) {
+            log.error( e, e );
+            this.addErrorObject( ee + ": " + e.getMessage(), "" );
+        }
     }
 
     /**
      * Just extracts information from the SVD and prints it out.
      */
     private void pcaFactorTest( SVDService svdService, ExpressionExperiment ee ) {
-        SVDResult svdo = svdService.getSvdFactorAnalysis( ee.getId() );
+        SVDResult svdo = svdService.getSvdFactorAnalysis( ee );
         /*
          * Compare PCs to batches.
          */

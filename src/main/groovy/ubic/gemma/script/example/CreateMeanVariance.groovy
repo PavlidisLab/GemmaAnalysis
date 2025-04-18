@@ -5,7 +5,6 @@ package ubic.gemma.script.example
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
 import ubic.gemma.core.analysis.preprocess.MeanVarianceService
-import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.expression.experiment.ExpressionExperiment
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService
 

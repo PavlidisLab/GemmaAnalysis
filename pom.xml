@@ -16,7 +16,7 @@
 	<description/>
 
 	<properties>
-		<gemma.version>1.31.13</gemma.version>
+		<gemma.version>1.32.0-SNAPSHOT</gemma.version>
 	</properties>
 
 	<build>
@@ -82,11 +82,6 @@
 		<dependency>
 			<groupId>gemma</groupId>
 			<artifactId>gemma-cli</artifactId>
-			<version>${gemma.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>gemma</groupId>
-			<artifactId>gemma-groovy-support</artifactId>
 			<version>${gemma.version}</version>
 		</dependency>
 		<dependency>

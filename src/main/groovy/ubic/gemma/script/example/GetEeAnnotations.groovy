@@ -1,6 +1,5 @@
 package ubic.gemma.script.example
 
-import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService
 import ubic.gemma.persistence.service.genome.taxon.TaxonService
 

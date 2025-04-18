@@ -3,7 +3,6 @@ package ubic.gemma.script.example
 
 import ubic.gemma.core.analysis.expression.coexpression.CoexpressionValueObjectExt
 import ubic.gemma.core.analysis.expression.coexpression.GeneCoexpressionSearchService
-import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.genome.Gene
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService
 import ubic.gemma.persistence.service.genome.gene.GeneService

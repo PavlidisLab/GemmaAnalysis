@@ -18,7 +18,7 @@
  */
 package ubic.gemma.contrib.apps;
 
-import ubic.gemma.core.apps.GemmaCLI;
+import ubic.gemma.cli.main.GemmaCLI;
 
 /**
  * This is not necessary, you can just run {@link GemmaCLI} directly.

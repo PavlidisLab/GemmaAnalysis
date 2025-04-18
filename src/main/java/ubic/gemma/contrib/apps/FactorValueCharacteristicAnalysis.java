@@ -15,9 +15,9 @@
 package ubic.gemma.contrib.apps;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.analysis.expression.diff.BaselineSelection;
-import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.common.description.Characteristic;
 import ubic.gemma.model.expression.experiment.*;
 import ubic.gemma.persistence.service.expression.experiment.ExperimentalDesignService;
@@ -35,17 +35,18 @@ import java.util.stream.Collectors;
  */
 public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManipulatingCLI {
 
+    @Autowired
+    private ExperimentalDesignService eds;
 
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.EXPERIMENT;
-    }
+    Collection<RemappingInfo> results = new HashSet<>();
+    Collection<RemappingInfo> unresolved = new HashSet<>();
+    private int numSingletons = 0;
+    private int numMultiplex = 0;
+    private int numDuplex = 0;
+    private int nosolution = 0;
+    private int experimentsExamined = 0; // not counting ones that have no experimental design
+    private int numExperiments;
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
     @Override
     public String getCommandName() {
         return "fvAnalysis";
@@ -56,139 +57,10 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
         return "Analyze factor value characteristics for grouping oppotunities";
     }
 
-
-    Collection<RemappingInfo> results = new HashSet<>();
-
-    Collection<RemappingInfo> unresolved = new HashSet<>();
-
-    class RemappingInfo {
-
-        private FactorValue fv;
-        private ExpressionExperiment ee;
-
-        /* note that it is possible we would have more than one statement, but I'm assuming we have just one for now as
-        more complicated cases (>2 characteristics) are going to be hard.
-         */
-        private Characteristic subject = null;
-        private String predicate = null;
-        private Characteristic object = null;
-
-        private String summary = null;
-
-
-        public RemappingInfo( ExpressionExperiment ee, FactorValue fv ) {
-            this.ee = ee;
-            this.fv = fv;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash( fv, ee ); // this is unique to each fv
-        }
-
-
-        /**
-         pretty-print a characteristic
-         */
-        private String sc( Characteristic c ) {
-            return c.getValue() + " [" + ( c.getValueUri() == null ? "free text" : c.getValueUri() ) + "]";
-        }
-
-        private String getString() {
-            return ee + "\n" + fv + "\n" + fv.getCharacteristics().stream().map( c ->
-                    new String( " - c - " + c.getCategory() + ": " + c.getValue() + " " + ( c.getValueUri() == null ? "[free text]" : c.getValueUri() )
-                            + " drug=" + isDrug( c )
-                            + " phys=" + isQualityProperty( c )
-                            + " deliv=" + isDelivery( c )
-                            + " dismodif=" + isDiseaseModifier( c )
-                            + " control=" + isControlCondition( c )
-                            + " stage=" + isDevelopmentalStage( c )
-                            + " time=" + isTimepoint( c )
-                            + " loc=" + isLocation( c )
-                            + " genet=" + isGeneticManipulation( c )
-                            + "\n" ) ).collect( Collectors.joining() );
-        }
-
-        public String toString() {
-            String result = getString();
-            if ( summary != null ) {
-                if ( predicate == null ) {
-                    result = result
-                            + summary + " -> " + sc( subject ) + " " + "no relation" + " " + sc( object );
-                } else {
-                    result = result
-                            + summary + " -> " + sc( subject ) + " " + predicate + " " + sc( object );
-                }
-            }
-            return result;
-        }
-
-        private final List<String> customOrder = Arrays.asList( "treatment", "genotype", "cell type", "cell line", "developmental stage", "strain", "organism part", "disease", "disease staging", "disease model", "phenotype", "timepoint", "age", "behavior", "delivery", "growth condition", "control", "reference subject role", "dose" );
-
-        public String tabularize() {
-            List<String> fields = new ArrayList<>();
-            fields.add( ee.getShortName() );
-            fields.add( ee.getId().toString() );
-            fields.add( StringUtils.strip( fv.toString() ) );
-            fields.add( fv.getId().toString() );
-
-            if ( summary == null || predicate == null || subject == null ) {
-                // unresolved
-                List<Characteristic> listchars = new ArrayList<>( fv.getCharacteristics() );
-                listchars.sort( new Comparator<Characteristic>() {
-                    @Override
-                    public int compare( Characteristic o1, Characteristic o2 ) {
-
-                        try {
-                            Integer o1x = customOrder.indexOf( o1.getCategory().toLowerCase() );
-                            Integer o2x = customOrder.indexOf( o2.getCategory().toLowerCase() );
-
-                            if ( o1x != null && o2x != null ) { // should always be true as NPE will be thrown if either is null (or if the category is null)
-                                return o1x.compareTo( o2x );
-                            }
-                        } catch ( NullPointerException e ) {
-                            // ignore - it was a different category
-                            //System.err.println(o1.getCategory() + " " + o2.getCategory());
-                        }
-
-                        // Otherwise: put free text at the end
-                        if ( o1.getValueUri() == null ) {
-                            return 1;
-                        } else if ( o2.getValueUri() == null ) {
-                            return 1;
-                        } else {
-                            return o1.getValue().compareTo( o2.getValue() );
-                        }
-                    }
-                } );
-                fields.add( "" + fv.getCharacteristics().size() );
-                fields.add( listchars.stream().map( c -> new String( c.getId() + "\t" + ( c.getCategory() == null ? "" : c.getCategory() ) + "\t" + c.getValue() + "\t" + ( c.getValueUri() == null ? "" : c.getValueUri() ) ) ).collect( Collectors.joining( "\t" ) ) );
-            } else {
-                // resolved.
-                fields.add( summary );
-                fields.add( subject.getId().toString() );
-                fields.add( object.getId().toString() );
-                fields.add( subject.getCategory() );
-                fields.add( sc( subject ) );
-                fields.add( predicate );
-                fields.add( object.getCategory() );
-                fields.add( sc( object ) );
-            }
-            return StringUtils.join( fields, "\t" );
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
     @Override
-    protected void doWork() {
+    protected void doAuthenticatedWork() throws Exception {
 
         log.info( "Starting examining experiments ..." );
-
-        ExperimentalDesignService eds = this.getBean( ExperimentalDesignService.class ); // autowire not available here
 
         // this.ontologyService = this.getBean( OntologyService.class );
 
@@ -208,540 +80,8 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
 //            throw new RuntimeException( e );
 //        }
 
-        int numSingletons = 0;
-        int numMultiplex = 0;
-        int numDuplex = 0;
-        int nosolution = 0;
-        int experimentsExamined = 0; // not counting ones that have no experimental design
+        super.doAuthenticatedWork();
 
-        for ( BioAssaySet bas : this.expressionExperiments ) {
-
-            if ( experimentsExamined > 0 && experimentsExamined % 500 == 0 ) {
-                log.info( "Processed " + experimentsExamined + " experiments / " + this.expressionExperiments.size() );
-            }
-
-            if ( bas instanceof ExpressionExperiment ) {
-                ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-
-                try {
-
-                    boolean success = false;
-
-                    // retrieve the experimental factors
-                    ExperimentalDesign ed = eds.loadWithExperimentalFactors( ee.getExperimentalDesign().getId() );
-
-                    if ( !ed.getExperimentalFactors().isEmpty() ) {
-                        experimentsExamined++;
-                        // log.info( "Processing: " + ee );
-                        // System.out.println( "================" );
-                    }
-
-                    for ( ExperimentalFactor factor : ed.getExperimentalFactors() ) {
-                        for ( FactorValue fv : factor.getFactorValues() ) {
-
-                            if ( fv.getCharacteristics().size() <= 1 ) {
-                                numSingletons++;
-                                continue;
-                            }
-
-                            boolean solved = false;
-                            RemappingInfo ri = new RemappingInfo( ee, fv ); // note: for some complex cases we will recreate this
-
-
-                            /*
-                             * Handle cases like If there two characteristics, and one is Dose and one is Treatment, print it out like Treatment has_dose Dose
-                             */
-                            if ( fv.getCharacteristics().size() == 2 ) {
-
-                                numDuplex++;
-
-                                Characteristic[] cs = fv.getCharacteristics().toArray( new Characteristic[0] );
-                                Characteristic cs1 = cs[0];
-                                Characteristic cs2 = cs[1];
-
-                                // drug - dose
-                                if ( cs1.getCategory() != null && cs1.getCategory().equals( "dose" ) && cs2.getCategory() != null && cs2.getCategory().equals( "treatment" ) ) {
-                                    ri.summary = "Treatment-dose";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_dose";
-                                    solved = true;
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "dose" ) && cs1.getCategory() != null && cs1.getCategory().equals( "treatment" ) ) {
-                                    ri.summary = "Treatment-dose";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_dose";
-                                    solved = true;
-
-                                    /* case where we have a dose but the other thing isn't obviously a drug - we just treat it as the modifier anyway */
-                                } else if ( cs1.getCategory() != null && cs1.getCategory().equals( "dose" ) ) {
-                                    ri.summary = "Generic dosing ";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_dose";
-                                    solved = true;
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "dose" ) ) {
-                                    ri.summary = "Generic dosing ";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_dose";
-                                    solved = true;
-
-
-                                    // gene - `genotype -- assumine the genotype is a genetic manipulation or some details of the genotype.
-                                } else if ( isGene( cs1 ) &&
-                                        cs2.getCategory() != null && cs2.getCategory().equals( "genotype" ) ) {
-                                    ri.summary = "Genotype ";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_genotype";
-                                    solved = true;
-
-
-                                } else if ( isGene( cs2 ) &&
-                                        cs1.getCategory() != null && cs1.getCategory().equals( "genotype" ) ) {
-                                    ri.summary = "Genotype ";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_genotype";
-                                    solved = true;
-
-                                }
-
-
-                                /*
-                                A cell type and a cell line. We assume this means "this cell type from this cell line"
-                                 */
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) && cs2.getCategory() != null && cs2.getCategory().equals( "cell line" ) ) {
-                                    ri.summary = "Cell type+line";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "from_cell_line";
-                                    solved = true;
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "cell type" ) && cs1.getCategory() != null && cs1.getCategory().equals( "cell line" ) ) {
-                                    ri.summary = "Cell type+line";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "from_cell_line";
-                                    solved = true;
-
-                                }
-
-
-                                // developmental stages described by free text
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "developmental stage" ) && isDevelopmentalStage( cs1 ) &&
-                                        cs2.getCategory() != null && cs2.getCategory().equals( "developmental stage" ) && cs2.getValueUri() == null ) {
-                                    ri.summary = "Stage";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_stage";
-                                    solved = true;
-
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "developmental stage" ) && isDevelopmentalStage( cs2 ) &&
-                                        cs1.getCategory() != null && cs1.getCategory().equals( "developmental stage" ) && cs1.getValueUri() == null ) {
-                                    ri.summary = "Stage";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_stage";
-                                    solved = true;
-                                }
-
-                                // an UBERON term and a location modifier
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && isLocation( cs2 ) ) {
-                                    ri.summary = "OrganismPart location";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_location";
-                                    solved = true;
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && isLocation( cs1 ) ) {
-                                    ri.summary = "OrganismPart location";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_location";
-                                    solved = true;
-                                }
-
-
-
-                                /*  disease in an organism part (location)
-                                *
-                                * FactorValue 134421: phenotype:kidney | disease related to solid organ transplantation |
- - c - organism part: kidney http://purl.obolibrary.org/obo/UBERON_0002113
- - c - disease: disease related to solid organ transplantation http://purl.obolibrary.org/obo/MONDO_0700221 */
-
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && cs2.getCategory() != null && isDisease( cs2 ) ) {
-                                    ri.summary = "Disease in part";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_location";
-                                    solved = true;
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && cs1.getCategory() != null && isDisease( cs1 ) ) {
-                                    ri.summary = "Disease in part";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_location";
-                                    solved = true;
-
-                                }
-
-
-                                /* disease + stage */
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "disease staging" ) && isDisease( cs2 ) ) {
-                                    ri.summary = "Disease stage";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_stage";
-                                    solved = true;
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "disease staging" ) && isDisease( cs1 ) ) {
-                                    ri.summary = "Disease stage";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_stage";
-                                    solved = true;
-
-                                }
-
-
-
-
-
-                                /* disease + modifier */
-                                else if ( isDiseaseModifier( cs1 ) && isDisease( cs2 ) ) {
-                                    ri.summary = "Disease with modifier";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_modifier";
-                                    solved = true;
-
-                                } else if ( isDiseaseModifier( cs2 ) && isDisease( cs1 ) ) {
-                                    ri.summary = "Disease with modifier";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_modifier";
-                                    solved = true;
-
-                                }
-
-
-                                /* cell type from a particular organism part */
-                                /*
-                                 - c - organism part: astrocyte http://purl.obolibrary.org/obo/CL_0000127
-                                 - c - organism part: prefrontal cortex http://purl.obolibrary.org/obo/UBERON_0000451
-
-                                 */
-                                else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && cs2.getCategory() != null && cs2.getCategory().equals( "cell type" ) ) {
-                                    ri.summary = "Cell type from part";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "from_location";
-                                    solved = true;
-
-
-                                } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) ) {
-                                    ri.summary = "Cell type from part";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "from_location";
-                                    solved = true;
-
-                                }
-
-
-                                /*  drug -> delivery (children of OBI "adding a material entity into a target"[http://purl.obolibrary.org/obo/OBI_0000274]?)
-                                    FactorValue 137132: treatment:sodium metaarsenite | intraperitoneal injection |
-                                    - c - treatment: sodium metaarsenite http://purl.obolibrary.org/obo/CHEBI_29678
-                                    - c - treatment: intraperitoneal injection http://purl.obolibrary.org/obo/OBI_0000281
-                                  */
-                                else if ( isDrug( cs2 ) && isDelivery( cs1 ) ) {
-                                    ri.summary = "Drug with delivery";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_delivery";
-                                    solved = true;
-
-                                } else if ( isDrug( cs1 ) && isDelivery( cs2 ) ) {
-                                    ri.summary = "Drug with delivery";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_delivery";
-                                    solved = true;
-
-                                }
-
-
-                                // control + reference subject role etc. We assume that 'reference subject role' (or whatever) has_role 'control', I guess.
-                                /*
-                                FactorValue 144634: treatment:control | reference subject role |
- - c - treatment: control http://www.ebi.ac.uk/efo/EFO_0001461
- - c - treatment: reference subject role http://purl.obolibrary.org/obo/OBI_0000220
-
- FactorValue 147812: genotype:wild type genotype | control |
- - c - genotype: wild type genotype http://www.ebi.ac.uk/efo/EFO_0005168
- - c - genotype: control http://www.ebi.ac.uk/efo/EFO_0001461
-                                 */
-                                else if ( cs2.getValueUri() != null && cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0001461" /*control*/ ) ) {
-                                    ri.summary = "Control";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_role[?]";
-                                    solved = true;
-
-                                } else if ( cs1.getValueUri() != null && cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0001461" /*control*/ ) ) {
-                                    ri.summary = "Control";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_role[?]";
-                                    solved = true;
-                                }
-
-                                /*
-                                when we have two cell types, and one of them is either iPSC derived cell line or ESC derived cell line
-                                 */
-                                else if ( cs2.getCategory() != null && cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) && cs2.getCategory().equals( "cell type" ) ) {
-                                    if ( cs1.getValueUri() != null && ( cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005738" ) || cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005740" ) ) ) {
-                                        ri.summary = "Derived cells";
-                                        ri.subject = cs1;
-                                        ri.object = cs2;
-                                        ri.predicate = "cell_derived_from";
-                                        solved = true;
-
-                                    } else if ( cs2.getValueUri() != null && ( cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005738" ) || cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005740" ) ) ) {
-                                        ri.summary = "Derived cells";
-                                        ri.subject = cs2;
-                                        ri.object = cs1;
-                                        ri.predicate = "cell_derived_from";
-                                        solved = true;
-
-                                    }
-                                }
-
-
-
-                                   /*  chemical has_role reference substance role
-                                --------------------
-                                FactorValue 165331: treatment:reference substance role | DMSO |
-                                    - c - treatment: reference substance role http://purl.obolibrary.org/obo/OBI_0000025
-                                 - c - treatment: DMSO http://purl.obolibrary.org/obo/CHEBI_2826
-                                 and so on:
-
-                                 FactorValue 186321: phenotype:asynchronous | reference subject role |
-                                - c - phenotype: asynchronous http://purl.obolibrary.org/obo/PATO_0000688
-                                   - c - phenotype: reference subject role http://purl.obolibrary.org/obo/OBI_0000220
-
-
-                                iment Id=23348 Name=Transcriptomic analysis of corticosteroids-treated hiPSC-derived RPE cells Short Name=GSE172478
-                                FactorValue 187865: treatment:ethanol | reference substance role |
-                                - c - treatment: ethanol http://purl.obolibrary.org/obo/CHEBI_16236
-                                    - c - treatment: reference substance role http://purl.obolibrary.org/obo/OBI_0000025
-                                 */
-                                else if ( isControlCondition( cs1 ) ) {
-                                    ri.summary = "Control";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_role";
-                                    solved = true;
-
-                                } else if ( isControlCondition( cs2 ) ) {
-                                    ri.summary = "Control";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_role";
-                                    solved = true;
-
-                                }
-
-                                /* something and a timepoint where we don't really know what the other thing is*/
-                                else if ( isTimepoint( cs1 ) && !isTimepoint( cs2 ) ) {
-                                    ri.summary = "Timepoint";
-                                    ri.object = cs1;
-                                    ri.subject = cs2;
-                                    ri.predicate = "has_timepoint";
-                                    solved = true;
-                                } else if ( isTimepoint( cs2 ) && !isTimepoint( cs1 ) ) {
-                                    ri.summary = "Timepoint";
-                                    ri.object = cs2;
-                                    ri.subject = cs1;
-                                    ri.predicate = "has_timepoint";
-                                    solved = true;
-
-                                }
-
-
-                                // somewhat generic case of where there is a physical object property or occurrence type of term, which we treat as the modifier.
-                                // The exception here is when one is free text, is might be a dose or details like for "radiation exposure"
-                                else if ( isQualityProperty( cs1 ) ) {
-
-                                    if ( cs2.getValueUri() == null ) {
-                                        // then print is as cs1 cs2
-                                        ri.summary = "Property";
-                                        ri.subject = cs1;
-                                        ri.object = cs2;
-                                        ri.predicate = "has_property[?]";
-                                        solved = true;
-
-                                    } else {
-                                        // also not quite clear - cs2 is free text.
-                                        ri.summary = "Physical property";
-                                        ri.subject = cs2;
-                                        ri.object = cs1;
-                                        ri.predicate = "has_property[?]";
-                                        solved = true;
-
-                                    }
-
-                                } else if ( isQualityProperty( cs2 ) ) {
-                                    if ( cs1.getValueUri() == null ) {
-                                        ri.summary = "Property";
-                                        ri.subject = cs2;
-                                        ri.object = cs1;
-                                        ri.predicate = "has_property[?]";
-                                        solved = true;
-
-                                    } else {
-                                        ri.summary = "Physical property";
-                                        ri.subject = cs1;
-                                        ri.object = cs2;
-                                        ri.predicate = "has_property[?]";
-                                        solved = true;
-
-                                    }
-                                } // FIXME also deal with children of http://purl.obolibrary.org/obo/PATO_0000069 - deviation (from_normal)
-
-
-
-                                /*
-                                If it's just two drugs, we can't do anything, it's just how it is.
-                                 */
-                                else if ( isDrug( cs1 ) && isDrug( cs2 ) ) {
-                                    // we count this as solved.
-                                    ri.summary = "Two unrelated drugs";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = null;
-                                    solved = true;
-
-                                }
-
-
-                                // fall through to generic case where one value is an ontology term and the other is free text. We assume the free text is the modifier.
-                                else if ( cs1.getValueUri() != null && cs2.getValueUri() == null ) {
-                                    ri.summary = "Generic";
-                                    ri.subject = cs1;
-                                    ri.object = cs2;
-                                    ri.predicate = "has_modifier[?]";
-                                    solved = true;
-
-
-                                } else if ( cs2.getValueUri() != null && cs1.getValueUri() == null ) {
-                                    ri.summary = "Generic";
-                                    ri.subject = cs2;
-                                    ri.object = cs1;
-                                    ri.predicate = "has_modifier[?]";
-                                    solved = true;
-
-
-                                } else {
-                                    solved = false;
-                                    nosolution++;
-                                }
-
-                            } else /* more than 2 characteristics */ {
-                                numMultiplex++;
-
-                                // case of one genetic modifier, and > 1 gene: assume modifier applies to each.
-                                // which case, we need to duplicate the modifier
-                                int numGenes = 0;
-                                boolean hasgeneticmodifier = false;
-                                for ( Characteristic c : fv.getCharacteristics() ) {
-                                    if ( isGene( c ) ) {
-                                        numGenes++;
-                                    } else if ( isGeneticManipulation( c ) ) {
-                                        hasgeneticmodifier = true;
-                                    }
-                                }
-                                if ( hasgeneticmodifier && numGenes == fv.getCharacteristics().size() - 1 ) {
-                                    // then we have a genetic modifier and a bunch of genes
-                                    // we need to duplicate the modifier
-                                    Characteristic geneticmodifier = null;
-                                    for ( Characteristic c : fv.getCharacteristics() ) {
-                                        if ( isGeneticManipulation( c ) ) {
-                                            geneticmodifier = c;
-                                            break;
-                                        }
-                                    }
-                                    if ( geneticmodifier == null ) {
-                                        throw new IllegalStateException( "Didn't find genetic modifier for: " + ee + " " + fv );
-                                    }
-                                    for ( Characteristic c : fv.getCharacteristics() ) {
-                                        if ( c.equals( geneticmodifier ) ) continue;
-                                        ri = new RemappingInfo( ee, fv );
-                                        ri.subject = c;
-                                        ri.predicate = "has_genetic_modifier";
-                                        ri.object = geneticmodifier; // FIXME: we need to create a new copy of the modifier Characteristic!!
-                                        ri.summary = "Genetic modifier [multigene]";
-                                        results.add( ri );
-                                    }
-                                    log.info( "Resolve multi-gene genotype" );
-                                    solved = true;
-                                }
-
-                                // look for fusion_gene and two genes
-                                Characteristic cf = isGeneFusion( fv );
-                                if ( !solved && fv.getCharacteristics().size() == 3 && cf != null ) {
-                                    boolean firstGene = true;
-                                    ri.summary = "Gene fusion";
-                                    ri.predicate = "fusion_gene";
-                                    Characteristic[] characteristics = fv.getCharacteristics().toArray( new Characteristic[0] );
-                                    for ( int i = 0; i < characteristics.length; i++ ) {
-                                        Characteristic c = characteristics[i];
-                                        if ( c.equals( cf ) ) continue;
-                                        if ( isGene( c ) ) {
-                                            if ( ri.object == null )
-                                                ri.object = c; // arbitrarily pick one gene to be the object.
-                                            else ri.subject = c;
-                                        }
-                                    }
-
-                                    if ( ri.subject == null || ri.object == null || ri.predicate == null ) {
-                                        throw new IllegalStateException( "Didn't find all three parts of the fusion for: " + ee + " " + fv );
-                                    }
-
-                                    log.info( "Resolved gene fusion" );
-                                    solved = true;
-                                }
-                                //nosolution++; let's not count these yet
-
-                                //solved = false;
-
-
-                            } // end inspections of the characteristics
-
-
-                            if ( !solved ) {
-                                System.out.println( "--- Unsolved --" );
-                                System.out.println( ri );
-                                unresolved.add( ri );
-                            } else {
-                                results.add( ri );
-                            }
-                        }
-                    }
-
-
-                } catch ( Exception e ) {
-                    log.error( e, e );
-                    this.addErrorObject( bas + ": " + e.getMessage(), "" );
-                }
-
-            }
-
-        }
         System.err.println( "Total experiments examined = " + experimentsExamined );
         System.err.println( "Total two-characteristic factor values = " + numDuplex + " of which " + ( numDuplex - nosolution ) + " had a solution (" + String.format( "%.2f", 100.0 * ( 1.0 - ( double ) nosolution / numDuplex ) ) + "%)" );
         System.err.println( "Total singleton factor values = " + numSingletons );
@@ -780,7 +120,535 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
         } catch ( IOException e ) {
             throw new RuntimeException( e );
         }
+    }
 
+    @Override
+    protected void processBioAssaySets( Collection<BioAssaySet> expressionExperiments ) {
+        numExperiments = expressionExperiments.size();
+        super.processBioAssaySets( expressionExperiments );
+    }
+
+    @Override
+    protected void processExpressionExperiment( ExpressionExperiment ee ) throws Exception {
+        if ( experimentsExamined > 0 && experimentsExamined % 500 == 0 ) {
+            log.info( "Processed " + experimentsExamined + " experiments / " + numExperiments );
+        }
+
+        try {
+
+            boolean success = false;
+
+            // retrieve the experimental factors
+            ExperimentalDesign ed = eds.loadWithExperimentalFactors( ee.getExperimentalDesign().getId() );
+
+            if ( !ed.getExperimentalFactors().isEmpty() ) {
+                experimentsExamined++;
+                // log.info( "Processing: " + ee );
+                // System.out.println( "================" );
+            }
+
+            for ( ExperimentalFactor factor : ed.getExperimentalFactors() ) {
+                for ( FactorValue fv : factor.getFactorValues() ) {
+
+                    if ( fv.getCharacteristics().size() <= 1 ) {
+                        numSingletons++;
+                        continue;
+                    }
+
+                    boolean solved = false;
+                    RemappingInfo ri = new RemappingInfo( ee, fv ); // note: for some complex cases we will recreate this
+
+
+                    /*
+                     * Handle cases like If there two characteristics, and one is Dose and one is Treatment, print it out like Treatment has_dose Dose
+                     */
+                    if ( fv.getCharacteristics().size() == 2 ) {
+
+                        numDuplex++;
+
+                        Characteristic[] cs = fv.getCharacteristics().toArray( new Characteristic[0] );
+                        Characteristic cs1 = cs[0];
+                        Characteristic cs2 = cs[1];
+
+                        // drug - dose
+                        if ( cs1.getCategory() != null && cs1.getCategory().equals( "dose" ) && cs2.getCategory() != null && cs2.getCategory().equals( "treatment" ) ) {
+                            ri.summary = "Treatment-dose";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_dose";
+                            solved = true;
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "dose" ) && cs1.getCategory() != null && cs1.getCategory().equals( "treatment" ) ) {
+                            ri.summary = "Treatment-dose";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_dose";
+                            solved = true;
+
+                            /* case where we have a dose but the other thing isn't obviously a drug - we just treat it as the modifier anyway */
+                        } else if ( cs1.getCategory() != null && cs1.getCategory().equals( "dose" ) ) {
+                            ri.summary = "Generic dosing ";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_dose";
+                            solved = true;
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "dose" ) ) {
+                            ri.summary = "Generic dosing ";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_dose";
+                            solved = true;
+
+
+                            // gene - `genotype -- assumine the genotype is a genetic manipulation or some details of the genotype.
+                        } else if ( isGene( cs1 ) &&
+                                cs2.getCategory() != null && cs2.getCategory().equals( "genotype" ) ) {
+                            ri.summary = "Genotype ";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_genotype";
+                            solved = true;
+
+
+                        } else if ( isGene( cs2 ) &&
+                                cs1.getCategory() != null && cs1.getCategory().equals( "genotype" ) ) {
+                            ri.summary = "Genotype ";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_genotype";
+                            solved = true;
+
+                        }
+
+
+                                /*
+                                A cell type and a cell line. We assume this means "this cell type from this cell line"
+                                 */
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) && cs2.getCategory() != null && cs2.getCategory().equals( "cell line" ) ) {
+                            ri.summary = "Cell type+line";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "from_cell_line";
+                            solved = true;
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "cell type" ) && cs1.getCategory() != null && cs1.getCategory().equals( "cell line" ) ) {
+                            ri.summary = "Cell type+line";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "from_cell_line";
+                            solved = true;
+
+                        }
+
+
+                        // developmental stages described by free text
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "developmental stage" ) && isDevelopmentalStage( cs1 ) &&
+                                cs2.getCategory() != null && cs2.getCategory().equals( "developmental stage" ) && cs2.getValueUri() == null ) {
+                            ri.summary = "Stage";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_stage";
+                            solved = true;
+
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "developmental stage" ) && isDevelopmentalStage( cs2 ) &&
+                                cs1.getCategory() != null && cs1.getCategory().equals( "developmental stage" ) && cs1.getValueUri() == null ) {
+                            ri.summary = "Stage";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_stage";
+                            solved = true;
+                        }
+
+                        // an UBERON term and a location modifier
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && isLocation( cs2 ) ) {
+                            ri.summary = "OrganismPart location";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_location";
+                            solved = true;
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && isLocation( cs1 ) ) {
+                            ri.summary = "OrganismPart location";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_location";
+                            solved = true;
+                        }
+
+
+
+                                /*  disease in an organism part (location)
+                                *
+                                * FactorValue 134421: phenotype:kidney | disease related to solid organ transplantation |
+ - c - organism part: kidney http://purl.obolibrary.org/obo/UBERON_0002113
+ - c - disease: disease related to solid organ transplantation http://purl.obolibrary.org/obo/MONDO_0700221 */
+
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && cs2.getCategory() != null && isDisease( cs2 ) ) {
+                            ri.summary = "Disease in part";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_location";
+                            solved = true;
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && cs1.getCategory() != null && isDisease( cs1 ) ) {
+                            ri.summary = "Disease in part";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_location";
+                            solved = true;
+
+                        }
+
+
+                        /* disease + stage */
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "disease staging" ) && isDisease( cs2 ) ) {
+                            ri.summary = "Disease stage";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_stage";
+                            solved = true;
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "disease staging" ) && isDisease( cs1 ) ) {
+                            ri.summary = "Disease stage";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_stage";
+                            solved = true;
+
+                        }
+
+
+
+
+
+                        /* disease + modifier */
+                        else if ( isDiseaseModifier( cs1 ) && isDisease( cs2 ) ) {
+                            ri.summary = "Disease with modifier";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_modifier";
+                            solved = true;
+
+                        } else if ( isDiseaseModifier( cs2 ) && isDisease( cs1 ) ) {
+                            ri.summary = "Disease with modifier";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_modifier";
+                            solved = true;
+
+                        }
+
+
+                        /* cell type from a particular organism part */
+                                /*
+                                 - c - organism part: astrocyte http://purl.obolibrary.org/obo/CL_0000127
+                                 - c - organism part: prefrontal cortex http://purl.obolibrary.org/obo/UBERON_0000451
+
+                                 */
+                        else if ( cs1.getCategory() != null && cs1.getCategory().equals( "organism part" ) && cs2.getCategory() != null && cs2.getCategory().equals( "cell type" ) ) {
+                            ri.summary = "Cell type from part";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "from_location";
+                            solved = true;
+
+
+                        } else if ( cs2.getCategory() != null && cs2.getCategory().equals( "organism part" ) && cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) ) {
+                            ri.summary = "Cell type from part";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "from_location";
+                            solved = true;
+
+                        }
+
+
+                                /*  drug -> delivery (children of OBI "adding a material entity into a target"[http://purl.obolibrary.org/obo/OBI_0000274]?)
+                                    FactorValue 137132: treatment:sodium metaarsenite | intraperitoneal injection |
+                                    - c - treatment: sodium metaarsenite http://purl.obolibrary.org/obo/CHEBI_29678
+                                    - c - treatment: intraperitoneal injection http://purl.obolibrary.org/obo/OBI_0000281
+                                  */
+                        else if ( isDrug( cs2 ) && isDelivery( cs1 ) ) {
+                            ri.summary = "Drug with delivery";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_delivery";
+                            solved = true;
+
+                        } else if ( isDrug( cs1 ) && isDelivery( cs2 ) ) {
+                            ri.summary = "Drug with delivery";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_delivery";
+                            solved = true;
+
+                        }
+
+
+                        // control + reference subject role etc. We assume that 'reference subject role' (or whatever) has_role 'control', I guess.
+                                /*
+                                FactorValue 144634: treatment:control | reference subject role |
+ - c - treatment: control http://www.ebi.ac.uk/efo/EFO_0001461
+ - c - treatment: reference subject role http://purl.obolibrary.org/obo/OBI_0000220
+
+ FactorValue 147812: genotype:wild type genotype | control |
+ - c - genotype: wild type genotype http://www.ebi.ac.uk/efo/EFO_0005168
+ - c - genotype: control http://www.ebi.ac.uk/efo/EFO_0001461
+                                 */
+                        else if ( cs2.getValueUri() != null && cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0001461" /*control*/ ) ) {
+                            ri.summary = "Control";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_role[?]";
+                            solved = true;
+
+                        } else if ( cs1.getValueUri() != null && cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0001461" /*control*/ ) ) {
+                            ri.summary = "Control";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_role[?]";
+                            solved = true;
+                        }
+
+                                /*
+                                when we have two cell types, and one of them is either iPSC derived cell line or ESC derived cell line
+                                 */
+                        else if ( cs2.getCategory() != null && cs1.getCategory() != null && cs1.getCategory().equals( "cell type" ) && cs2.getCategory().equals( "cell type" ) ) {
+                            if ( cs1.getValueUri() != null && ( cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005738" ) || cs1.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005740" ) ) ) {
+                                ri.summary = "Derived cells";
+                                ri.subject = cs1;
+                                ri.object = cs2;
+                                ri.predicate = "cell_derived_from";
+                                solved = true;
+
+                            } else if ( cs2.getValueUri() != null && ( cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005738" ) || cs2.getValueUri().equals( "http://www.ebi.ac.uk/efo/EFO_0005740" ) ) ) {
+                                ri.summary = "Derived cells";
+                                ri.subject = cs2;
+                                ri.object = cs1;
+                                ri.predicate = "cell_derived_from";
+                                solved = true;
+
+                            }
+                        }
+
+
+
+                                   /*  chemical has_role reference substance role
+                                --------------------
+                                FactorValue 165331: treatment:reference substance role | DMSO |
+                                    - c - treatment: reference substance role http://purl.obolibrary.org/obo/OBI_0000025
+                                 - c - treatment: DMSO http://purl.obolibrary.org/obo/CHEBI_2826
+                                 and so on:
+
+                                 FactorValue 186321: phenotype:asynchronous | reference subject role |
+                                - c - phenotype: asynchronous http://purl.obolibrary.org/obo/PATO_0000688
+                                   - c - phenotype: reference subject role http://purl.obolibrary.org/obo/OBI_0000220
+
+
+                                iment Id=23348 Name=Transcriptomic analysis of corticosteroids-treated hiPSC-derived RPE cells Short Name=GSE172478
+                                FactorValue 187865: treatment:ethanol | reference substance role |
+                                - c - treatment: ethanol http://purl.obolibrary.org/obo/CHEBI_16236
+                                    - c - treatment: reference substance role http://purl.obolibrary.org/obo/OBI_0000025
+                                 */
+                        else if ( isControlCondition( cs1 ) ) {
+                            ri.summary = "Control";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_role";
+                            solved = true;
+
+                        } else if ( isControlCondition( cs2 ) ) {
+                            ri.summary = "Control";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_role";
+                            solved = true;
+
+                        }
+
+                        /* something and a timepoint where we don't really know what the other thing is*/
+                        else if ( isTimepoint( cs1 ) && !isTimepoint( cs2 ) ) {
+                            ri.summary = "Timepoint";
+                            ri.object = cs1;
+                            ri.subject = cs2;
+                            ri.predicate = "has_timepoint";
+                            solved = true;
+                        } else if ( isTimepoint( cs2 ) && !isTimepoint( cs1 ) ) {
+                            ri.summary = "Timepoint";
+                            ri.object = cs2;
+                            ri.subject = cs1;
+                            ri.predicate = "has_timepoint";
+                            solved = true;
+
+                        }
+
+
+                        // somewhat generic case of where there is a physical object property or occurrence type of term, which we treat as the modifier.
+                        // The exception here is when one is free text, is might be a dose or details like for "radiation exposure"
+                        else if ( isQualityProperty( cs1 ) ) {
+
+                            if ( cs2.getValueUri() == null ) {
+                                // then print is as cs1 cs2
+                                ri.summary = "Property";
+                                ri.subject = cs1;
+                                ri.object = cs2;
+                                ri.predicate = "has_property[?]";
+                                solved = true;
+
+                            } else {
+                                // also not quite clear - cs2 is free text.
+                                ri.summary = "Physical property";
+                                ri.subject = cs2;
+                                ri.object = cs1;
+                                ri.predicate = "has_property[?]";
+                                solved = true;
+
+                            }
+
+                        } else if ( isQualityProperty( cs2 ) ) {
+                            if ( cs1.getValueUri() == null ) {
+                                ri.summary = "Property";
+                                ri.subject = cs2;
+                                ri.object = cs1;
+                                ri.predicate = "has_property[?]";
+                                solved = true;
+
+                            } else {
+                                ri.summary = "Physical property";
+                                ri.subject = cs1;
+                                ri.object = cs2;
+                                ri.predicate = "has_property[?]";
+                                solved = true;
+
+                            }
+                        } // FIXME also deal with children of http://purl.obolibrary.org/obo/PATO_0000069 - deviation (from_normal)
+
+
+
+                                /*
+                                If it's just two drugs, we can't do anything, it's just how it is.
+                                 */
+                        else if ( isDrug( cs1 ) && isDrug( cs2 ) ) {
+                            // we count this as solved.
+                            ri.summary = "Two unrelated drugs";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = null;
+                            solved = true;
+
+                        }
+
+
+                        // fall through to generic case where one value is an ontology term and the other is free text. We assume the free text is the modifier.
+                        else if ( cs1.getValueUri() != null && cs2.getValueUri() == null ) {
+                            ri.summary = "Generic";
+                            ri.subject = cs1;
+                            ri.object = cs2;
+                            ri.predicate = "has_modifier[?]";
+                            solved = true;
+
+
+                        } else if ( cs2.getValueUri() != null && cs1.getValueUri() == null ) {
+                            ri.summary = "Generic";
+                            ri.subject = cs2;
+                            ri.object = cs1;
+                            ri.predicate = "has_modifier[?]";
+                            solved = true;
+
+
+                        } else {
+                            solved = false;
+                            nosolution++;
+                        }
+
+                    } else /* more than 2 characteristics */ {
+                        numMultiplex++;
+
+                        // case of one genetic modifier, and > 1 gene: assume modifier applies to each.
+                        // which case, we need to duplicate the modifier
+                        int numGenes = 0;
+                        boolean hasgeneticmodifier = false;
+                        for ( Characteristic c : fv.getCharacteristics() ) {
+                            if ( isGene( c ) ) {
+                                numGenes++;
+                            } else if ( isGeneticManipulation( c ) ) {
+                                hasgeneticmodifier = true;
+                            }
+                        }
+                        if ( hasgeneticmodifier && numGenes == fv.getCharacteristics().size() - 1 ) {
+                            // then we have a genetic modifier and a bunch of genes
+                            // we need to duplicate the modifier
+                            Characteristic geneticmodifier = null;
+                            for ( Characteristic c : fv.getCharacteristics() ) {
+                                if ( isGeneticManipulation( c ) ) {
+                                    geneticmodifier = c;
+                                    break;
+                                }
+                            }
+                            if ( geneticmodifier == null ) {
+                                throw new IllegalStateException( "Didn't find genetic modifier for: " + ee + " " + fv );
+                            }
+                            for ( Characteristic c : fv.getCharacteristics() ) {
+                                if ( c.equals( geneticmodifier ) ) continue;
+                                ri = new RemappingInfo( ee, fv );
+                                ri.subject = c;
+                                ri.predicate = "has_genetic_modifier";
+                                ri.object = geneticmodifier; // FIXME: we need to create a new copy of the modifier Characteristic!!
+                                ri.summary = "Genetic modifier [multigene]";
+                                results.add( ri );
+                            }
+                            log.info( "Resolve multi-gene genotype" );
+                            solved = true;
+                        }
+
+                        // look for fusion_gene and two genes
+                        Characteristic cf = isGeneFusion( fv );
+                        if ( !solved && fv.getCharacteristics().size() == 3 && cf != null ) {
+                            boolean firstGene = true;
+                            ri.summary = "Gene fusion";
+                            ri.predicate = "fusion_gene";
+                            Characteristic[] characteristics = fv.getCharacteristics().toArray( new Characteristic[0] );
+                            for ( int i = 0; i < characteristics.length; i++ ) {
+                                Characteristic c = characteristics[i];
+                                if ( c.equals( cf ) ) continue;
+                                if ( isGene( c ) ) {
+                                    if ( ri.object == null )
+                                        ri.object = c; // arbitrarily pick one gene to be the object.
+                                    else ri.subject = c;
+                                }
+                            }
+
+                            if ( ri.subject == null || ri.object == null || ri.predicate == null ) {
+                                throw new IllegalStateException( "Didn't find all three parts of the fusion for: " + ee + " " + fv );
+                            }
+
+                            log.info( "Resolved gene fusion" );
+                            solved = true;
+                        }
+                        //nosolution++; let's not count these yet
+
+                        //solved = false;
+
+
+                    } // end inspections of the characteristics
+
+
+                    if ( !solved ) {
+                        System.out.println( "--- Unsolved --" );
+                        System.out.println( ri );
+                        unresolved.add( ri );
+                    } else {
+                        results.add( ri );
+                    }
+                }
+            }
+
+
+        } catch ( Exception e ) {
+            log.error( e, e );
+            this.addErrorObject( ee + ": " + e.getMessage(), "" );
+        }
     }
 
     private static boolean isTimepoint( Characteristic cs1 ) {
@@ -847,7 +715,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
         return cs.getValueUri() != null && geneticTerms.contains( cs.getValueUri() );
     }
 
-    private Set<String> geneticTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> geneticTerms = new HashSet<>( Arrays.asList(
             /*Dominant negative mutation */ "http://gemma.msl.ubc.ca/ont/TGEMO_00009",
             /*Constitutive active mutation */ "http://gemma.msl.ubc.ca/ont/TGEMO_00008",
             /*Knockdown */ "http://gemma.msl.ubc.ca/ont/TGEMO_00007",
@@ -860,7 +728,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /*Rescue by external protein */ "http://gemma.msl.ubc.ca/ont/TGEMO_00102"
     ) );
 
-    private Set<String> stageTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> stageTerms = new HashSet<>( Arrays.asList(
             /*  http://purl.obolibrary.org/obo/UBERON_0000105 (life cycle stage)
                 and http://www.ebi.ac.uk/efo/EFO_0000399 (developmental stage) children */
             /* embryo stage */ "http://purl.obolibrary.org/obo/UBERON_0000068",
@@ -1114,7 +982,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* embryonic day 16.5 */ "http://www.ebi.ac.uk/efo/EFO_0002567" ) );
 
 
-    private Set<String> qualityTerms = new HashSet<>( Arrays.asList( /* maybe this is too broad */
+    private final Set<String> qualityTerms = new HashSet<>( Arrays.asList( /* maybe this is too broad */
             /* occurrence */ "http://purl.obolibrary.org/obo/PATO_0000057", // occurrence terms
             /* decreased occurrence */ "http://purl.obolibrary.org/obo/PATO_0002052",
             /* arrested */ "http://purl.obolibrary.org/obo/PATO_0000297",
@@ -2803,7 +2671,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* decreased object quality */ "http://purl.obolibrary.org/obo/PATO_0002303"
     ) );
 
-    private Set<String> locationTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> locationTerms = new HashSet<>( Arrays.asList(
             /* prothoracic leg disc */ "http://purl.obolibrary.org/obo/FBbt_00001781",
             /* otic placode */ "http://purl.obolibrary.org/obo/UBERON_0003069",
             /* left */ "http://www.ebi.ac.uk/efo/EFO_0001658",
@@ -2854,7 +2722,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* right */ "http://www.ebi.ac.uk/efo/EFO_0001659" ) );
 
 
-    private Set<String> deviationFromNormalTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> deviationFromNormalTerms = new HashSet<>( Arrays.asList(
             /* deviation (from_normal) */ "http://purl.obolibrary.org/obo/PATO_0000069",
             /* decreased quality */ "http://purl.obolibrary.org/obo/PATO_0002301",
             /* decreased intensity */ "http://purl.obolibrary.org/obo/PATO_0001783",
@@ -3105,7 +2973,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* pathological */ "http://purl.obolibrary.org/obo/PATO_0001869"
     ) );
 
-    private Set<String> diseaseModifierTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> diseaseModifierTerms = new HashSet<>( Arrays.asList(
             /* has an isolated presentation */ "http://purl.obolibrary.org/obo/MONDO_0021128",
             /* classic or non-classic genetic disease presentation */ "http://purl.obolibrary.org/obo/MONDO_0100355",
             /* mosaic */ "http://purl.obolibrary.org/obo/MONDO_0700062",
@@ -3159,7 +3027,7 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* remittent intensity */ "http://purl.obolibrary.org/obo/PATO_0001841"
     ) );
 
-    private Set<String> addingMaterialentityToTargetTerms = new HashSet<>( Arrays.asList(
+    private final Set<String> addingMaterialentityToTargetTerms = new HashSet<>( Arrays.asList(
             /* adding a material entity into a target */ "http://purl.obolibrary.org/obo/OBI_0000274",
             /* administering substance in vivo */ "http://purl.obolibrary.org/obo/OBI_0600007",
             /* passive immunization */ "http://purl.obolibrary.org/obo/OBI_0001174",
@@ -3190,6 +3058,122 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
             /* injection into organ section */ "http://purl.obolibrary.org/obo/OBI_0000431"
     ) );
 
+    private class RemappingInfo {
+
+        private FactorValue fv;
+        private ExpressionExperiment ee;
+
+        /* note that it is possible we would have more than one statement, but I'm assuming we have just one for now as
+        more complicated cases (>2 characteristics) are going to be hard.
+         */
+        private Characteristic subject = null;
+        private String predicate = null;
+        private Characteristic object = null;
+
+        private String summary = null;
+
+
+        public RemappingInfo( ExpressionExperiment ee, FactorValue fv ) {
+            this.ee = ee;
+            this.fv = fv;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash( fv, ee ); // this is unique to each fv
+        }
+
+
+        /**
+         pretty-print a characteristic
+         */
+        private String sc( Characteristic c ) {
+            return c.getValue() + " [" + ( c.getValueUri() == null ? "free text" : c.getValueUri() ) + "]";
+        }
+
+        private String getString() {
+            return ee + "\n" + fv + "\n" + fv.getCharacteristics().stream().map( c ->
+                    new String( " - c - " + c.getCategory() + ": " + c.getValue() + " " + ( c.getValueUri() == null ? "[free text]" : c.getValueUri() )
+                            + " drug=" + isDrug( c )
+                            + " phys=" + isQualityProperty( c )
+                            + " deliv=" + isDelivery( c )
+                            + " dismodif=" + isDiseaseModifier( c )
+                            + " control=" + isControlCondition( c )
+                            + " stage=" + isDevelopmentalStage( c )
+                            + " time=" + isTimepoint( c )
+                            + " loc=" + isLocation( c )
+                            + " genet=" + isGeneticManipulation( c )
+                            + "\n" ) ).collect( Collectors.joining() );
+        }
+
+        public String toString() {
+            String result = getString();
+            if ( summary != null ) {
+                if ( predicate == null ) {
+                    result = result
+                            + summary + " -> " + sc( subject ) + " " + "no relation" + " " + sc( object );
+                } else {
+                    result = result
+                            + summary + " -> " + sc( subject ) + " " + predicate + " " + sc( object );
+                }
+            }
+            return result;
+        }
+
+        private final List<String> customOrder = Arrays.asList( "treatment", "genotype", "cell type", "cell line", "developmental stage", "strain", "organism part", "disease", "disease staging", "disease model", "phenotype", "timepoint", "age", "behavior", "delivery", "growth condition", "control", "reference subject role", "dose" );
+
+        public String tabularize() {
+            List<String> fields = new ArrayList<>();
+            fields.add( ee.getShortName() );
+            fields.add( ee.getId().toString() );
+            fields.add( StringUtils.strip( fv.toString() ) );
+            fields.add( fv.getId().toString() );
+
+            if ( summary == null || predicate == null || subject == null ) {
+                // unresolved
+                List<Characteristic> listchars = new ArrayList<>( fv.getCharacteristics() );
+                listchars.sort( new Comparator<Characteristic>() {
+                    @Override
+                    public int compare( Characteristic o1, Characteristic o2 ) {
+
+                        try {
+                            Integer o1x = customOrder.indexOf( o1.getCategory().toLowerCase() );
+                            Integer o2x = customOrder.indexOf( o2.getCategory().toLowerCase() );
+
+                            if ( o1x != null && o2x != null ) { // should always be true as NPE will be thrown if either is null (or if the category is null)
+                                return o1x.compareTo( o2x );
+                            }
+                        } catch ( NullPointerException e ) {
+                            // ignore - it was a different category
+                            //System.err.println(o1.getCategory() + " " + o2.getCategory());
+                        }
+
+                        // Otherwise: put free text at the end
+                        if ( o1.getValueUri() == null ) {
+                            return 1;
+                        } else if ( o2.getValueUri() == null ) {
+                            return 1;
+                        } else {
+                            return o1.getValue().compareTo( o2.getValue() );
+                        }
+                    }
+                } );
+                fields.add( "" + fv.getCharacteristics().size() );
+                fields.add( listchars.stream().map( c -> c.getId() + "\t" + ( c.getCategory() == null ? "" : c.getCategory() ) + "\t" + c.getValue() + "\t" + ( c.getValueUri() == null ? "" : c.getValueUri() ) ).collect( Collectors.joining( "\t" ) ) );
+            } else {
+                // resolved.
+                fields.add( summary );
+                fields.add( subject.getId().toString() );
+                fields.add( object.getId().toString() );
+                fields.add( subject.getCategory() );
+                fields.add( sc( subject ) );
+                fields.add( predicate );
+                fields.add( object.getCategory() );
+                fields.add( sc( object ) );
+            }
+            return StringUtils.join( fields, "\t" );
+        }
+    }
 }
 
 

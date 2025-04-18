@@ -23,8 +23,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.springframework.beans.factory.annotation.Autowired;
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
-import ubic.gemma.core.apps.GemmaCLI;
-import ubic.gemma.core.util.AbstractCLI;
+import ubic.gemma.cli.util.AbstractCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
@@ -76,17 +75,6 @@ public class SummaryStatisticsCli extends AbstractCLI {
     @Override
     public String getCommandName() {
         return "summaryStatistics";
-    }
-
-    @Nullable
-    @Override
-    public String getShortDesc() {
-        return null;
-    }
-
-    @Override
-    public GemmaCLI.CommandGroup getCommandGroup() {
-        return GemmaCLI.CommandGroup.MISC;
     }
 
     @Override
