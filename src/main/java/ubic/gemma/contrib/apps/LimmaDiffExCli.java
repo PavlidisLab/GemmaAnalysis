@@ -20,13 +20,12 @@
 package ubic.gemma.contrib.apps;
 
 import cern.colt.list.DoubleArrayList;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import ubic.basecode.math.Distance;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.core.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.analysis.expression.diff.ContrastResult;
@@ -36,22 +35,20 @@ import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
-import ubic.gemma.model.expression.experiment.ExperimentalFactor;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.expression.experiment.FactorValue;
+import ubic.gemma.model.expression.experiment.*;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.util.EntityUtils;
-import ubic.gemma.persistence.util.Settings;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Performs differential expression analyses with and without ebayes. Based on BachDiffExCli
@@ -61,26 +58,31 @@ import java.util.*;
 public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
 
+    /**
+     * This only affects the summaries that are output.
+     */
+    private static final double summaryQvalThreshold = 0.01;
+
+    @Autowired
     private DiffExAnalyzer lma;
 
+    @Autowired
     private ArrayDesignService arrayDesignService;
 
+    @Autowired
     private CompositeSequenceService compositeSequenceService;
 
+    @Autowired
     private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    @Value("${gemma.download.path}")
+    private Path downloadPath;
 
     private final Collection<ArrayDesign> seenArrays = new HashSet<>();
 
     private final Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
 
-    Transformer geneSymbolTransformer = input -> ((Gene) input).getOfficialSymbol();
-
-    /**
-     * This only affects the summaries that are output.
-     */
-    private final double summaryQvalThreshold = 0.01;
-
-    Writer summaryFile;
+    private Writer summaryFile;
 
     @Override
     public String getCommandName() {
@@ -92,68 +94,54 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         return "Performs multiple differential expression analyses with and without ebayes, generate comparison stats";
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
     @Override
     protected void doWork() {
-
-        this.lma = this.getBean(DiffExAnalyzer.class);
-        this.processedExpressionDataVectorService = this.getBean(ProcessedExpressionDataVectorService.class);
-        this.compositeSequenceService = this.getBean(CompositeSequenceService.class);
-
-        arrayDesignService = this.getBean(ArrayDesignService.class);
-
         try {
-            summaryFile = initOutputFile("limma.proc.summary.txt");
-            summaryFile.write("State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n");
+            summaryFile = initOutputFile( "limma.proc.summary.txt" );
+            summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
 
-            for (BioAssaySet bas : this.getExpressionExperiments()) {
-                if (!(bas instanceof ExpressionExperiment)) {
+            for ( BioAssaySet bas : expressionExperiments ) {
+                if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                getEeService().thawLite((ExpressionExperiment) bas);
-                processExperiment((ExpressionExperiment) bas);
+                bas = eeService.thawLite( ( ExpressionExperiment ) bas );
+                processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 
-        } catch (Exception e) {
-            log.error(e, e);
-
+        } catch ( Exception e ) {
+            log.error( e, e );
         }
-
     }
 
-    protected void processExperiment(ExpressionExperiment ee) {
-        String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll("[\\W\\s]+", "_");
+    protected void processExperiment( ExpressionExperiment ee ) {
+        String fileprefix = ee.getId() + "." + ee.getShortName().replaceAll( "[\\W\\s]+", "_" );
 
-        try (Writer detailFile = initOutputFile("ebayes.proc.detail." + fileprefix + ".txt")) {
+        try ( Writer detailFile = initOutputFile( "ebayes.proc.detail." + fileprefix + ".txt" ) ) {
 
-            ee = super.getEeService().thawLite(ee);
+            ee = eeService.thawLite( ee );
 
 
             Collection<ExperimentalFactor> experimentalFactors = ee.getExperimentalDesign().getExperimentalFactors();
 
-            if (experimentalFactors.size() > 10) {
+            if ( experimentalFactors.size() > 10 ) {
                 /*
                  * This could be modified to select just a few factors, at random ... but that's probably
                  */
-                this.addErrorObject(ee, "Too many factors (" + experimentalFactors.size()
-                        + " factors : " + ee.getShortName());
+                this.addErrorObject( ee, "Too many factors (" + experimentalFactors.size()
+                        + " factors : " + ee.getShortName() );
                 return;
             }
 
-            log.info("===== Processing: " + ee);
+            log.info( "===== Processing: " + ee );
 
             /*
              * Extract data FIXME make this ONE STEP to getting the data matrix.
              */
             Collection<ProcessedExpressionDataVector> vectos = processedExpressionDataVectorService
-                    .getProcessedDataVectors(ee);
-            processedExpressionDataVectorService.thaw(vectos);
-            ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix(vectos);
+                    .getProcessedDataVectors( ee );
+            processedExpressionDataVectorService.thaw( vectos );
+            ExpressionDataDoubleMatrix mat = new ExpressionDataDoubleMatrix( vectos );
 
             StringBuilder summaryBuf = new StringBuilder();
 
@@ -162,49 +150,50 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
              * simple.
              */
             Collection<ExperimentalFactor> factorsToAnalyze = new HashSet<>();
-            for (ExperimentalFactor ef : experimentalFactors) {
-                if (ExperimentalDesignUtils.isBatch(ef)) continue;
-                factorsToAnalyze.add(ef);
+            for ( ExperimentalFactor ef : experimentalFactors ) {
+                if ( ExperimentalDesignUtils.isBatch( ef ) ) continue;
+                factorsToAnalyze.add( ef );
             }
             int j = 0;
             DifferentialExpressionAnalysisConfig config1 = new DifferentialExpressionAnalysisConfig();
-            config1.setFactorsToInclude(factorsToAnalyze);
-            config1.setModerateStatistics(false); // <----
-            log.info("=== Nobayes === ");
-            Collection<DifferentialExpressionAnalysis> deas = lma.run(ee, mat, config1);
-            if (deas.isEmpty()) {
-                log.error("No differential expression results obtained, moving on");
-                addErrorObject(ee, "No differential expression results obtained");
+            config1.setFactorsToInclude( factorsToAnalyze );
+            config1.setMakeArchiveFile( false );
+            config1.setModerateStatistics( false ); // <----
+            log.info( "=== Nobayes === " );
+            Collection<DifferentialExpressionAnalysis> deas = lma.run( ee, mat, config1 );
+            if ( deas.isEmpty() ) {
+                log.error( "No differential expression results obtained, moving on" );
+                addErrorObject( ee, "No differential expression results obtained" );
                 return;
             }
             DifferentialExpressionAnalysis beforeResults = deas.iterator().next();
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> beforeResultDetails = new HashMap<>();
-            for (ExpressionAnalysisResultSet brs : beforeResults.getResultSets()) {
+            for ( ExpressionAnalysisResultSet brs : beforeResults.getResultSets() ) {
                 ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
                 Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
                 int c = 0;
-                for (DifferentialExpressionAnalysisResult r : results) {
-                    c = tally(beforeResultDetails, ef, r, c);
-                    if (++j % LOGGING_FREQ == 0) {
-                        log.info(j + " processed");
+                for ( DifferentialExpressionAnalysisResult r : results ) {
+                    c = tally( beforeResultDetails, ef, r, c );
+                    if ( ++j % LOGGING_FREQ == 0 ) {
+                        log.info( j + " processed" );
                     }
                 }
-                summaryBuf.append("Nobayes\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
-                        + ef.getName() + "\t" + results.size() + "\t" + c + "\n");
+                summaryBuf.append( "Nobayes\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
+                        + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
             }
 
             /*
              * Then do it with ebayes.
              */
             DifferentialExpressionAnalysisConfig config2 = new DifferentialExpressionAnalysisConfig();
-            config2.setModerateStatistics(true); // <----
-            config2.setFactorsToInclude(factorsToAnalyze);
-
-            log.info("=== With ebayes ===");
-            Collection<DifferentialExpressionAnalysis> deas2 = lma.run(ee, mat, config2);
-            if (deas2.isEmpty()) {
-                log.error("No differential expression results obtained with eBayes, moving on");
-                addErrorObject(ee, "No differential expression results obtained with eBayes");
+            config2.setModerateStatistics( true ); // <----
+            config2.setFactorsToInclude( factorsToAnalyze );
+            config2.setMakeArchiveFile( false );
+            log.info( "=== With ebayes ===" );
+            Collection<DifferentialExpressionAnalysis> deas2 = lma.run( ee, mat, config2 );
+            if ( deas2.isEmpty() ) {
+                log.error( "No differential expression results obtained with eBayes, moving on" );
+                addErrorObject( ee, "No differential expression results obtained with eBayes" );
                 return;
             }
             DifferentialExpressionAnalysis eBayesResults = deas2.iterator()
@@ -212,79 +201,77 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
             Map<CompositeSequence, Map<ExperimentalFactor, Double>> afterDetails = new HashMap<>();
 
-            for (ExpressionAnalysisResultSet brs : eBayesResults.getResultSets()) {
+            for ( ExpressionAnalysisResultSet brs : eBayesResults.getResultSets() ) {
                 ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
                 Collection<DifferentialExpressionAnalysisResult> results = brs.getResults();
                 int c = 0;
-                for (DifferentialExpressionAnalysisResult r : results) {
-                    c = tally(afterDetails, ef, r, c);
-                    if (++j % LOGGING_FREQ == 0) {
-                        log.info(j + " processed");
+                for ( DifferentialExpressionAnalysisResult r : results ) {
+                    c = tally( afterDetails, ef, r, c );
+                    if ( ++j % LOGGING_FREQ == 0 ) {
+                        log.info( j + " processed" );
                     }
 
                 }
-                summaryBuf.append("Ebayes\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
-                        + ef.getName() + "\t" + results.size() + "\t" + c + "\n");
+                summaryBuf.append( "Ebayes\t" ).append( ee.getId() ).append( "\t" )
+                        .append( ee.getShortName() ).append( "\t" )
+                        .append( ef.getId() ).append( "\t" ).append( ef.getName() ).append( "\t" )
+                        .append( results.size() ).append( "\t" ).append( c ).append( "\n" );
             }
 
-            List<String> correlations = compare(beforeResults, eBayesResults);
-            summaryBuf.append(
-                    "Correlations\t" + ee.getId() + "\t" + ee.getShortName() + "\t" +
-                            StringUtils.join(correlations, " ") + "\n");
+            List<String> correlations = compare( beforeResults, eBayesResults );
+            summaryBuf.append( "Correlations\t" ).append( ee.getId() ).append( "\t" )
+                    .append( ee.getShortName() ).append( "\t" )
+                    .append( StringUtils.join( correlations, " " ) ).append( "\n" );
 
             /*
              * Print out details
              */
 
             detailFile
-                    .write("EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tNOBAYESQVAL\tEBAYESQVAL\n");
+                    .write( "EEID\tEENAME\tEFID\tEFNAME\tPROBEID\tPROBENAME\tGENESYMBS\tGENEIDS\tNOBAYESQVAL\tEBAYESQVAL\n" );
 
-            getGeneAnnotations(ee);
+            getGeneAnnotations( ee );
 
-            for (CompositeSequence c : beforeResultDetails.keySet()) {
+            for ( CompositeSequence c : beforeResultDetails.keySet() ) {
 
                 // Get the gene information
                 String geneSymbs = "";
                 String geneIds = "";
-                if (genes.containsKey(c)) {
-                    Collection<Gene> g = new HashSet<>();
-                    g.addAll(genes.get(c));
-                    CollectionUtils.transform(g, geneSymbolTransformer);
-                    geneSymbs = StringUtils.join(g, "|");
-                    geneIds = StringUtils.join(EntityUtils.getIds(genes.get(c)), "|");
+                if ( genes.containsKey( c ) ) {
+                    LinkedHashSet<Gene> g = new LinkedHashSet<>( genes.get( c ) );
+                    geneSymbs = g.stream().map( Gene::getOfficialSymbol ).collect( Collectors.joining( "|" ) );
+                    geneIds = StringUtils.join( EntityUtils.getIds( g ), "|" );
                 }
 
-                for (ExperimentalFactor ef : factorsToAnalyze) {
+                for ( ExperimentalFactor ef : factorsToAnalyze ) {
 
-                    detailFile.write(ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t" + ef.getName()
-                            + "\t" + c.getId() + "\t" + c.getName() + "\t" + geneSymbs + "\t" + geneIds + "\t");
+                    detailFile.write( ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t" + ef.getName()
+                            + "\t" + c.getId() + "\t" + c.getName() + "\t" + geneSymbs + "\t" + geneIds + "\t" );
 
-                    Double bpval = beforeResultDetails.get(c).get(ef); // will be null for 'batch'
+                    Double bpval = beforeResultDetails.get( c ).get( ef ); // will be null for 'batch'
 
-                    Double batpval = afterDetails.get(c).get(ef); // when batch was included.
+                    Double batpval = afterDetails.get( c ).get( ef ); // when batch was included.
 
-                    detailFile.write(String.format("%.4g\t%.4g\n", bpval, batpval));
+                    detailFile.write( String.format( "%.4g\t%.4g\n", bpval, batpval ) );
 
                 }
             }
             detailFile.close();
 
-            summaryFile.write(summaryBuf.toString());
+            summaryFile.write( summaryBuf.toString() );
             summaryFile.flush();
-            addSuccessObject(ee, "");
-        } catch (Exception e) {
-            log.error(e, e);
-            addErrorObject(ee, e.getMessage());
+            addSuccessObject( ee, "" );
+        } catch ( Exception e ) {
+            log.error( e, e );
+            addErrorObject( ee, e.getMessage() );
         }
-        log.info("==== Completed processing: " + ee);
+        log.info( "==== Completed processing: " + ee );
     }
 
     /**
-     * @param beforeResults
-     * @param eBayesResults
      * @return vector of rank correlations.
      */
-    private List<String> compare(DifferentialExpressionAnalysis beforeResults, DifferentialExpressionAnalysis eBayesResults) {
+    private List<String> compare( DifferentialExpressionAnalysis beforeResults, DifferentialExpressionAnalysis eBayesResults ) {
 
         Collection<ExpressionAnalysisResultSet> beforeResultSets = beforeResults.getResultSets();
         Collection<ExpressionAnalysisResultSet> eBayesResultSets = eBayesResults.getResultSets();
@@ -293,69 +280,71 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
          * Collect vectors of values and compute rank correlations. Other comparisions can be done as well...
          */
 
-        Map<ExperimentalFactor, Map<CompositeSequence, Double[]>> apv = new HashMap<>();
-        Map<FactorValue, Map<CompositeSequence, Double[]>> cpv = new HashMap<>();
+        Map<ExperimentalFactor, Map<CompositeSequence, Double[]>> apv = new HashMap<>(); // ANOVA effects
+        Map<FactorValue, Map<CompositeSequence, Double[]>> cpv = new HashMap<>(); // contrasts
 
-        for (ExpressionAnalysisResultSet brs : beforeResultSets) {
+        for ( ExpressionAnalysisResultSet brs : beforeResultSets ) {
             // Note: ignoring interactions.
-            if (brs.getExperimentalFactors().size() > 1) {
+            if ( brs.getExperimentalFactors().size() > 1 ) {
                 continue;
             }
             ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
-            if (!apv.containsKey(ef)) apv.put(ef, new HashMap<CompositeSequence, Double[]>());
+            if ( !apv.containsKey( ef ) ) apv.put( ef, new HashMap<CompositeSequence, Double[]>() );
 
-            for (DifferentialExpressionAnalysisResult r : brs.getResults()) {
+            for ( DifferentialExpressionAnalysisResult r : brs.getResults() ) {
 
                 Double pvalue2 = r.getPvalue();
                 CompositeSequence probe = r.getProbe();
-                if (!apv.get(ef).containsKey(probe)) apv.get(ef).put(probe, new Double[2]);
-                apv.get(ef).get(probe)[0] = pvalue2;
+                if ( !apv.get( ef ).containsKey( probe ) ) apv.get( ef ).put( probe, new Double[2] );
+                apv.get( ef ).get( probe )[0] = pvalue2;
 
-                for (ContrastResult cr : r.getContrasts()) {
+                for ( ContrastResult cr : r.getContrasts() ) {
                     FactorValue factorValue = cr.getFactorValue();
                     Double pvalue = cr.getPvalue();
 
-                    if (!cpv.containsKey(factorValue)) cpv.put(factorValue, new HashMap<CompositeSequence, Double[]>());
-                    if (!cpv.get(factorValue).containsKey(probe)) cpv.get(factorValue).put(probe, new Double[2]);
+                    if ( !cpv.containsKey( factorValue ) )
+                        cpv.put( factorValue, new HashMap<CompositeSequence, Double[]>() );
+                    if ( !cpv.get( factorValue ).containsKey( probe ) )
+                        cpv.get( factorValue ).put( probe, new Double[2] );
 
-                    cpv.get(factorValue).get(probe)[0] = pvalue;
+                    cpv.get( factorValue ).get( probe )[0] = pvalue;
 
                 }
             }
         }
 
         boolean warned = false;
-        for (ExpressionAnalysisResultSet brs : eBayesResultSets) {
-            if (brs.getExperimentalFactors().size() > 1) {
+        for ( ExpressionAnalysisResultSet brs : eBayesResultSets ) {
+            if ( brs.getExperimentalFactors().size() > 1 ) {
                 continue;
             }
             ExperimentalFactor ef = brs.getExperimentalFactors().iterator().next();
 
-            for (DifferentialExpressionAnalysisResult r : brs.getResults()) {
+            for ( DifferentialExpressionAnalysisResult r : brs.getResults() ) {
 
                 Double pvalue2 = r.getPvalue();
                 CompositeSequence probe = r.getProbe();
-                assert apv.get(ef) != null;
-                if (apv.get(ef).get(probe) == null) {
+                assert apv.get( ef ) != null;
+                if ( apv.get( ef ).get( probe ) == null ) {
                     // If it's missing from the nobayes analysis we put in NaN. Not sure why that happens.
-                    if (!warned) {
-                        log.warn("No nobayes result for " + probe + ", further warnings suppressed");
+                    if ( !warned ) {
+                        log.warn( "No nobayes result for " + probe + ", further warnings suppressed" );
                         warned = true;
                     }
-                    apv.get(ef).put(probe, new Double[2]);
-                    apv.get(ef).get(probe)[0] = Double.NaN;
+                    apv.get( ef ).put( probe, new Double[2] );
+                    apv.get( ef ).get( probe )[0] = Double.NaN;
                 }
 
-                apv.get(ef).get(probe)[1] = pvalue2;
+                apv.get( ef ).get( probe )[1] = pvalue2;
 
-                for (ContrastResult cr : r.getContrasts()) {
+                for ( ContrastResult cr : r.getContrasts() ) {
                     FactorValue factorValue = cr.getFactorValue();
                     Double pvalue = cr.getPvalue();
-                    if (cpv.get(factorValue).get(probe) == null) {
-                        cpv.get(factorValue).put(probe, new Double[2]);
-                        cpv.get(factorValue).get(probe)[0] = Double.NaN;
+                    if ( cpv.get( factorValue ).get( probe ) == null ) {
+                        cpv.get( factorValue ).put( probe, new Double[2] );
+                        cpv.get( factorValue ).get( probe )[0] = Double.NaN;
                     }
-                    cpv.get(factorValue).get(probe)[1] = pvalue;
+                    cpv.get( factorValue ).get( probe )[1] = pvalue;
 
                 }
             }
@@ -364,89 +353,77 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         List<String> r = new ArrayList<>();
 
         // unroll
-        for (ExperimentalFactor ef : apv.keySet()) {
-            int n = apv.get(ef).keySet().size();
-            DoubleArrayList a = new DoubleArrayList(n);
-            DoubleArrayList b = new DoubleArrayList(n);
+        // ANOVA effects
+        for ( ExperimentalFactor ef : apv.keySet() ) {
+            int n = apv.get( ef ).size();
+            DoubleArrayList a = new DoubleArrayList( n );
+            DoubleArrayList b = new DoubleArrayList( n );
 
-            for (CompositeSequence cs : apv.get(ef).keySet()) {
-                Double[] pvs = apv.get(ef).get(cs);
-                a.add(pvs[0]);
-                b.add(pvs[1]);
+            for ( CompositeSequence cs : apv.get( ef ).keySet() ) {
+                Double[] pvs = apv.get( ef ).get( cs );
+                a.add( pvs[0] );
+                b.add( pvs[1] );
             }
 
-            String corr = String.format("%.5f", Distance.spearmanRankCorrelation(a, b));
-            r.add(corr);
+            String corr = String.format( "%.5f", Distance.spearmanRankCorrelation( a, b ) );
+            r.add( corr );
         }
 
-        for (FactorValue fv : cpv.keySet()) {
-            int n = cpv.get(fv).keySet().size();
-            DoubleArrayList a = new DoubleArrayList(n);
-            DoubleArrayList b = new DoubleArrayList(n);
-            for (CompositeSequence cs : cpv.get(fv).keySet()) {
-                Double[] pvs = cpv.get(fv).get(cs);
-                a.add(pvs[0] == null ? Double.NaN : pvs[0]);
-                b.add(pvs[1] == null ? Double.NaN : pvs[1]);
+        // Contrasts
+        for ( FactorValue fv : cpv.keySet() ) {
+            int n = cpv.get( fv ).size();
+            DoubleArrayList a = new DoubleArrayList( n );
+            DoubleArrayList b = new DoubleArrayList( n );
+            for ( CompositeSequence cs : cpv.get( fv ).keySet() ) {
+                Double[] pvs = cpv.get( fv ).get( cs );
+                a.add( pvs[0] == null ? Double.NaN : pvs[0] );
+                b.add( pvs[1] == null ? Double.NaN : pvs[1] );
             }
 
-            String corr = String.format("%.5f", Distance.spearmanRankCorrelation(a, b));
-            r.add(corr);
+            String corr = String.format( "%.5f", Distance.spearmanRankCorrelation( a, b ) );
+            r.add( corr );
         }
         return r;
     }
 
     /**
      * Gets annotations for this experiment, if the array designs have not already been seen in this run.
-     *
-     * @param ee
      */
-    private void getGeneAnnotations(ExpressionExperiment ee) {
-        Collection<ArrayDesign> arrayDesigns = this.getEeService().getArrayDesignsUsed(ee);
-        for (ArrayDesign ad : arrayDesigns) {
-            if (seenArrays.contains(ad)) continue;
-            ad = this.arrayDesignService.thaw(ad);
-            genes.putAll(compositeSequenceService.getGenes(ad.getCompositeSequences()));
-            seenArrays.add(ad);
+    private void getGeneAnnotations( ExpressionExperiment ee ) {
+        Collection<ArrayDesign> arrayDesigns = eeService.getArrayDesignsUsed( ee );
+        for ( ArrayDesign ad : arrayDesigns ) {
+            if ( seenArrays.contains( ad ) ) continue;
+            ad = this.arrayDesignService.thaw( ad );
+            genes.putAll( compositeSequenceService.getGenes( ad.getCompositeSequences() ) );
+            seenArrays.add( ad );
         }
     }
 
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
-     */
-    private Writer initOutputFile(String fileName) throws IOException {
-        File f = new File(Settings.getDownloadPath() + fileName);
-        if (f.exists()) {
+    private Writer initOutputFile( String fileName ) throws IOException {
+        File f = downloadPath.resolve( fileName ).toFile();
+        if ( f.exists() ) {
             f.delete();
         }
         f.createNewFile();
-        log.info("New file: " + f.getAbsolutePath());
-        return new FileWriter(f);
+        log.info( "New file: " + f.getAbsolutePath() );
+        return new FileWriter( f );
     }
 
-    /**
-     * @param revisedResultDetails
-     * @param ef
-     * @param r
-     * @param c
-     * @return c
-     */
-    private int tally(Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
-                      ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c) {
+    private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
+            ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
         Double pval = r.getCorrectedPvalue();
 
-        if (pval != null && pval < summaryQvalThreshold) {
+        if ( pval != null && pval < summaryQvalThreshold ) {
             c++;
         }
         /*
          * Map of probe -> factor -> pval
          */
         CompositeSequence probe = r.getProbe();
-        if (!revisedResultDetails.containsKey(probe)) {
-            revisedResultDetails.put(probe, new HashMap<ExperimentalFactor, Double>());
+        if ( !revisedResultDetails.containsKey( probe ) ) {
+            revisedResultDetails.put( probe, new HashMap<ExperimentalFactor, Double>() );
         }
-        revisedResultDetails.get(probe).put(ef, pval);
+        revisedResultDetails.get( probe ).put( ef, pval );
         return c;
     }
 }

@@ -1,33 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>ubc.pavlab</groupId>
+		<artifactId>pavlab-starter-parent</artifactId>
+		<version>1.2.19</version>
+	</parent>
+
 	<groupId>GemmaAnalysis</groupId>
 	<artifactId>GemmaAnalysis</artifactId>
-	<name />
+	<name/>
 	<version>1.0.0-SNAPSHOT</version>
-	<description />
+	<description/>
 
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.target>1.8</maven.compiler.target>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<gemma.version>1.29.0-SNAPSHOT</gemma.version>
+		<gemma.version>1.31.13</gemma.version>
 	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>appassembler-maven-plugin</artifactId>
+				<version>2.1.0</version>
 				<configuration>
-					<archive>
-						<manifest>
+					<repositoryName>lib</repositoryName>
+					<repositoryLayout>flat</repositoryLayout>
+					<copyConfigurationDirectory>true</copyConfigurationDirectory>
+					<platforms>
+						<platform>unix</platform>
+					</platforms>
+					<programs>
+						<program>
+							<id>gemma-analysis-cli</id>
 							<mainClass>ubic.gemma.contrib.apps.GemmaAnalysisCLI</mainClass>
-						</manifest>
-					</archive>
+						</program>
+					</programs>
+					<extraJvmArguments>
+						--add-opens=java.base/java.lang=ALL-UNNAMED
+					</extraJvmArguments>
 				</configuration>
+				<executions>
+					<execution>
+						<id>make-appassembly</id>
+						<phase>package</phase>
+						<goals>
+							<goal>assemble</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.gmavenplus</groupId>
+				<artifactId>gmavenplus-plugin</artifactId>
+				<version>4.1.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>addSources</goal>
+							<goal>addTestSources</goal>
+							<goal>generateStubs</goal>
+							<goal>compile</goal>
+							<goal>generateTestStubs</goal>
+							<goal>compileTests</goal>
+							<goal>removeStubs</goal>
+							<goal>removeTestStubs</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -42,6 +84,16 @@
 			<artifactId>gemma-cli</artifactId>
 			<version>${gemma.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>gemma</groupId>
+			<artifactId>gemma-groovy-support</artifactId>
+			<version>${gemma.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.groovy</groupId>
+			<artifactId>groovy</artifactId>
+			<version>4.0.26</version>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
@@ -50,26 +102,4 @@
 			<url>https://maven2.pavlab.msl.ubc.ca/</url>
 		</repository>
 	</repositories>
-	<profiles>
-		<profile>
-			<id>local-deploy</id>
-			<activation>
-				<property>
-					<name>deploy.local</name>
-				</property>
-			</activation>
-			<distributionManagement>
-				<repository>
-					<id>repo</id>
-					<name>Pavlab</name>
-					<url>file:///space/maven2</url>
-				</repository>
-				<snapshotRepository>
-					<id>repo</id>
-					<name>Pavlab</name>
-					<url>file:///space/maven2</url>
-				</snapshotRepository>
-			</distributionManagement>
-		</profile>
-	</profiles>
 </project>

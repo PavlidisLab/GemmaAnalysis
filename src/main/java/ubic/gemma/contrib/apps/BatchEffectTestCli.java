@@ -14,16 +14,15 @@
  */
 package ubic.gemma.contrib.apps;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfound;
-import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundValueObject;
+import ubic.gemma.core.analysis.preprocess.batcheffects.BatchConfoundUtils;
+import ubic.gemma.core.analysis.preprocess.svd.SVDResult;
 import ubic.gemma.core.analysis.preprocess.svd.SVDService;
-import ubic.gemma.core.analysis.preprocess.svd.SVDValueObject;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
-import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
 import ubic.gemma.model.expression.experiment.BioAssaySet;
 import ubic.gemma.model.expression.experiment.ExperimentalFactor;
 import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.persistence.util.EntityUtils;
 
 import java.util.Collection;
 import java.util.Map;
@@ -31,21 +30,14 @@ import java.util.Map;
 /**
  * For bulk processing of batch-info-fetching.
  *
- * @author  paul
+ * @author paul
  * @version $Id: BatchEffectTestCli.java,v 1.6 2015/11/12 19:37:12 paul Exp $
  */
 public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.EXPERIMENT;
-    }
+    @Autowired
+    private SVDService svdService;
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
     @Override
     public String getCommandName() {
         return "batchEffectTest";
@@ -56,20 +48,13 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
         return "Test for batch effects";
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
     @Override
     protected void doWork() {
 
-        SVDService svdService = this.getBean( SVDService.class );
-
-        for ( BioAssaySet bas : this.getExpressionExperiments() ) {
+        for ( BioAssaySet bas : expressionExperiments ) {
             if ( bas instanceof ExpressionExperiment ) {
                 ExpressionExperiment ee = ( ExpressionExperiment ) bas;
-                this.getEeService().thawLite( ee );
+                ee = eeService.thawLite( ee );
                 log.info( "Processing: " + ee );
 
                 try {
@@ -78,9 +63,9 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
                     pcaFactorTest( svdService, ee );
 
-                    Collection<BatchConfoundValueObject> results = BatchConfound.test( ee );
+                    Collection<BatchConfound> results = BatchConfoundUtils.test( ee );
 
-                    for ( BatchConfoundValueObject r : results ) {
+                    for ( BatchConfound r : results ) {
                         System.out.println( r );
                     }
 
@@ -104,21 +89,16 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
 
     /**
      * Just extracts information from the SVD and prints it out.
-     *
-     * @param svdService
-     * @param ee
      */
     private void pcaFactorTest( SVDService svdService, ExpressionExperiment ee ) {
-        SVDValueObject svdo = svdService.getSvdFactorAnalysis( ee.getId() );
-        Map<Long, ExperimentalFactor> efMap = EntityUtils
-                .getIdMap( ee.getExperimentalDesign().getExperimentalFactors() );
+        SVDResult svdo = svdService.getSvdFactorAnalysis( ee.getId() );
         /*
          * Compare PCs to batches.
          */
         Map<Integer, Double> dateCorrelations = svdo.getDateCorrelations();
-        Map<Integer, Double> datePvals = svdo.getDatePvals();
-        Map<Integer, Map<Long, Double>> factorCorrelations = svdo.getFactorCorrelations();
-        Map<Integer, Map<Long, Double>> factorPvals = svdo.getFactorPvals();
+        Map<Integer, Double> datePvals = svdo.getDatePVals();
+        Map<Integer, Map<ExperimentalFactor, Double>> factorCorrelations = svdo.getFactorCorrelations();
+        Map<Integer, Map<ExperimentalFactor, Double>> factorPvals = svdo.getFactorPVals();
 
         for ( Integer cmp : dateCorrelations.keySet() ) {
             Double dateCorr = dateCorrelations.get( cmp );
@@ -128,11 +108,11 @@ public class BatchEffectTestCli extends ExpressionExperimentManipulatingCLI {
         }
 
         for ( Integer cmp : factorCorrelations.keySet() ) {
-            for ( Long efId : factorCorrelations.get( cmp ).keySet() ) {
-                Double factorCorr = factorCorrelations.get( cmp ).get( efId );
-                Double factorPval = factorPvals.get( cmp ).get( efId );
-                System.out.println( "PCA\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + efId + "\t"
-                        + efMap.get( efId ).getName() + "\tPC" + cmp + "\t" + String.format( "%.2f", factorCorr )
+            for ( ExperimentalFactor ef : factorCorrelations.get( cmp ).keySet() ) {
+                Double factorCorr = factorCorrelations.get( cmp ).get( ef );
+                Double factorPval = factorPvals.get( cmp ).get( ef );
+                System.out.println( "PCA\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef + "\t"
+                        + ef.getName() + "\tPC" + cmp + "\t" + String.format( "%.2f", factorCorr )
                         + "\t" + String.format( "%.2g", factorPval ) );
             }
         }

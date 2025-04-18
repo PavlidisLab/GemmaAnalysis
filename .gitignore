@@ -43,10 +43,18 @@ core
 target/
 null/
 *.jar
+
+# added
 .DS_Store
+GemmaAnalysis.iml
+.idea/libraries
+.idea/*.xml
+.idea/inspectionProfiles
+.idea/.gitignore
 .settings/org.eclipse.jdt.core.prefs
 src/.DS_Store
 src/main/.DS_Store
 src/main/java/.DS_Store
 src/main/java/chibi/.DS_Store
 src/main/java/chibi/gemmaanalysis/.DS_Store
+

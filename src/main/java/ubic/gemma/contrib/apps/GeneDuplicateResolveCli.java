@@ -1,8 +1,8 @@
 /*
  * The GemmaAnalysis project
- * 
+ *
  * Copyright (c) 2018 University of British Columbia
- * 
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -23,11 +23,13 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.core.genome.gene.service.GeneService;
-import ubic.gemma.core.genome.gene.service.GeneSetService;
 import ubic.gemma.core.loader.genome.gene.ncbi.NcbiGeneHistoryParser;
-import ubic.gemma.core.util.AbstractCLIContextCLI;
+import ubic.gemma.core.util.AbstractCLI;
 import ubic.gemma.model.association.BioSequence2GeneProduct;
 import ubic.gemma.model.association.Gene2GOAssociation;
 import ubic.gemma.model.association.phenotype.PhenotypeAssociation;
@@ -46,12 +48,17 @@ import ubic.gemma.persistence.service.association.phenotype.service.PhenotypeAss
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.service.genome.biosequence.BioSequenceService;
 import ubic.gemma.persistence.service.genome.gene.GeneProductService;
+import ubic.gemma.persistence.service.genome.gene.GeneService;
+import ubic.gemma.persistence.service.genome.gene.GeneSetDao;
+import ubic.gemma.persistence.service.genome.gene.GeneSetService;
+import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociationDao;
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.AnnotationAssociationService;
 import ubic.gemma.persistence.service.genome.sequenceAnalysis.BlatAssociationService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
-import ubic.gemma.persistence.util.Settings;
 
-import java.io.File;
+import javax.annotation.Nullable;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,80 +66,112 @@ import java.util.Map;
 
 /**
  * Identify, diagnose and optionally fix instances where genes are duplicated (due to changes in NCBI IDs)
- * 
+ *
  * @author paul
  */
-public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
+public class GeneDuplicateResolveCli extends AbstractCLI {
 
-    private String filePath = Settings.getDownloadPath();
+    @Autowired
+    private GeneService gs;
+    @Autowired
+    private GeneProductService gps;
+    @Autowired
+    private TaxonService ts;
+    @Autowired
+    private BlatAssociationService blatService;
+    @Autowired
+    private AnnotationAssociationService aaService;
+    @Autowired
+    private CompositeSequenceService csService;
+    @Autowired
+    private BioSequenceService bsService;
+    @Autowired
+    private GeneSetService gsService;
+    @Autowired
+    private PhenotypeAssociationService paService;
+    @Autowired
+    private Gene2GOAssociationService g2goService;
+
+    @Value("${gemma.download.path}")
+    private Path filePath;
 
     private String taxonCommonName = null;
 
     private boolean doFix = false;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.core.util.AbstractCLI#getCommandName()
-     */
+    @Service
+    static class HelperService {
+
+        @Autowired
+        private GeneSetDao geneSetDao;
+
+        @Autowired
+        private AnnotationAssociationDao annotationAssociationDao;
+
+        @Transactional(readOnly = true)
+        public GeneSet thaw( GeneSet gs ) {
+            gs = geneSetDao.load( gs.getId() );
+            if ( gs != null ) {
+                geneSetDao.thaw( gs );
+            }
+            return gs;
+        }
+
+        @Transactional
+        public void update( AnnotationAssociation aa ) {
+            annotationAssociationDao.update( aa );
+        }
+    }
+
+    @Autowired
+    private HelperService helperService;
+
     @Override
     public String getCommandName() {
         return "geneDupResolve";
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.core.util.AbstractCLI#buildOptions()
-     */
+    @Nullable
+    @Override
+    public String getShortDesc() {
+        return null;
+    }
+
     @Override
     protected void buildOptions( Options options ) {
-
         Option pathOption = Option.builder( "f" ).hasArg().argName( "Input File Path" )
                 .desc( "Optional path to the directory where gene_history.gz is; default is in configed download directory" ).longOpt( "file" )
                 .build();
-
         options.addOption( pathOption );
-
         options.addOption( "t", "taxon", true, "Specific taxon for which to update genes" );
-
         options.addOption( "fix", "Fix problems if possible; otherwise just log them" );
-
     }
 
-    GeneService gs;
-    GeneProductService gps;
-    TaxonService ts;
-    BlatAssociationService blatService;
-    AnnotationAssociationService aaService;
-    CompositeSequenceService csService;
-    BioSequenceService bsService;
-    GeneSetService gsService;
+    @Override
+    protected void processOptions( CommandLine c ) {
+        if ( c.hasOption( 'f' ) ) {
+            this.filePath = Paths.get( c.getOptionValue( 'f' ) );
+        }
+        if ( c.hasOption( "t" ) ) {
+            this.taxonCommonName = c.getOptionValue( "t" );
+        }
+        if ( c.hasOption( "fix" ) ) {
+            this.doFix = true;
+        }
+    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.core.util.AbstractCLI#doWork(java.lang.String[])
-     */
+    @Override
+    public CommandGroup getCommandGroup() {
+        return CommandGroup.MISC;
+    }
+
     @Override
     protected void doWork() {
-
-        gs = this.getBean( GeneService.class );
-        gps = this.getBean( GeneProductService.class );
-        ts = this.getBean( TaxonService.class );
-        blatService = this.getBean( BlatAssociationService.class );
-        aaService = this.getBean( AnnotationAssociationService.class );
-        csService = this.getBean( CompositeSequenceService.class );
-        gsService = this.getBean( GeneSetService.class );
-        bsService = this.getBean( BioSequenceService.class );
-
-        PhenotypeAssociationService paService = this.getBean( PhenotypeAssociationService.class );
-
         try {
-            String geneHistoryFile = filePath + File.separatorChar + "gene_history.gz";
+            Path geneHistoryFile = filePath.resolve( "gene_history.gz" );
 
             NcbiGeneHistoryParser history = new NcbiGeneHistoryParser();
-            history.parse( new File( geneHistoryFile ) );
+            history.parse( geneHistoryFile.toFile() );
 
             Collection<Gene> genes;
 
@@ -230,12 +269,12 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                     /*
                      * If we switch existing assocations to a "real" gene, then we have to deal with:
                      * GENE2GO_ASSOCIATION (but easily updated), PHENOTYPE_ASSOCIATION, GENE_SET_MEMBER,
-                     * 
-                     * 
+                     *
+                     *
                      * Then, probe-gene mappings should probably be retained - but this is at the gene product level,
                      * and if the products are
                      * being deleted, this is not a big deal.
-                     * 
+                     *
                      */
                     if ( doFix && canFix && useThisOne != null ) {
                         // Collection<GeneProduct> products = useThisOne.getProducts();
@@ -316,25 +355,15 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
 
     }
 
-    /**
-     * @param d
-     */
-    void fixGOAssociations( Gene d ) {
+    private void fixGOAssociations( Gene d ) {
         // go associations: just delete them
-        Gene2GOAssociationService g2goService = this.getBean( Gene2GOAssociationService.class );
         Collection<Gene2GOAssociation> goassocs = g2goService.findAssociationByGene( d );
         if ( !goassocs.isEmpty() )
             System.err.println( "Removing " + goassocs.size() + " GO associations for discontinued gene " + d );
         g2goService.remove( goassocs );
     }
 
-    /**
-     * @param paService
-     * @param discontinued
-     * @param useThisOne
-     * @param d
-     */
-    void fixPhenotypes( PhenotypeAssociationService paService, Collection<Gene> discontinued, Gene useThisOne, Gene d ) {
+    private void fixPhenotypes( PhenotypeAssociationService paService, Collection<Gene> discontinued, Gene useThisOne, Gene d ) {
         // phenotypes: replace
         Collection<PhenotypeAssociation> pass = paService.findPhenotypeAssociationForGeneId( d.getId() );
         if ( !pass.isEmpty() ) System.err.println(
@@ -345,18 +374,13 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
         }
     }
 
-    /**
-     * @param discontinued
-     * @param useThisOne
-     * @param d
-     */
-    void fixGeneSets( Collection<Gene> discontinued, Gene useThisOne, Gene d ) {
+    private void fixGeneSets( Collection<Gene> discontinued, Gene useThisOne, Gene d ) {
         // gene set: replace
         Collection<GeneSet> geneSets = gsService.findByGene( d );
         if ( !geneSets.isEmpty() ) System.err.println(
                 "Updating " + geneSets.size() + " gene set associations for " + discontinued + " ---> switch to " + useThisOne );
         for ( GeneSet gset : geneSets ) {
-            gsService.thaw( gset );
+            gset = helperService.thaw( gset );
             GeneSetMember toRemoveFromSet = null;
             for ( GeneSetMember gsm : gset.getMembers() ) {
                 if ( gsm.getGene().equals( d ) ) {
@@ -376,14 +400,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
         }
     }
 
-    /**
-     * @param genesWithRemovedProbeAssociations
-     * @param genesWithNoProducts
-     * @param sym
-     * @param useThisOne
-     * @param d
-     */
-    void fixPlatformAssociations( Collection<String> genesWithRemovedProbeAssociations, Collection<Gene> genesWithNoProducts, String sym,
+    private void fixPlatformAssociations( Collection<String> genesWithRemovedProbeAssociations, Collection<Gene> genesWithNoProducts, String sym,
             Gene useThisOne, Gene d ) {
         /*
          * Platforms - remove the associations. We will eventually regenerate them on the new
@@ -424,7 +441,7 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
                                 BioSequence bs = bsService.findByAccession( accessions.iterator().next() );
                                 b2gp.setBioSequence( bs );
 
-                                aaService.update( ( AnnotationAssociation ) b2gp );
+                                helperService.update( ( AnnotationAssociation ) b2gp );
                             } else {
                                 // No existing association to use; we'll delete this one, and then a new one will be made when we update the generic platform.
                                 annotationAssocRemove.add( ( AnnotationAssociation ) b2gp );
@@ -450,29 +467,4 @@ public class GeneDuplicateResolveCli extends AbstractCLIContextCLI {
             aaService.remove( annotationAssocRemove );
         }
     }
-
-    @Override
-    protected void processOptions( CommandLine c ) {
-
-        if ( c.hasOption( 'f' ) ) {
-            this.filePath = c.getOptionValue( 'f' );
-        }
-        if ( c.hasOption( "t" ) ) {
-            this.taxonCommonName = c.getOptionValue( "t" );
-        }
-        if ( c.hasOption( "fix" ) ) {
-            this.doFix = true;
-        }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see ubic.gemma.core.util.AbstractCLIContextCLI#getCommandGroup()
-     */
-    @Override
-    public CommandGroup getCommandGroup() {
-        return CommandGroup.MISC;
-    }
-
 }
