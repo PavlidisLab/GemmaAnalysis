@@ -38,6 +38,9 @@
 							<mainClass>ubic.gemma.contrib.apps.GemmaAnalysisCLI</mainClass>
 						</program>
 					</programs>
+					<extraJvmArguments>
+						--add-opens=java.base/java.lang=ALL-UNNAMED
+					</extraJvmArguments>
 				</configuration>
 				<executions>
 					<execution>
