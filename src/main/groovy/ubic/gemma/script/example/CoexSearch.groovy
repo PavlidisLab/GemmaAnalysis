@@ -1,6 +1,7 @@
 #!/usr/bin/groovy
 package ubic.gemma.script.example
 
+import groovy.cli.commons.CliBuilder
 import ubic.gemma.core.analysis.expression.coexpression.CoexpressionValueObjectExt
 import ubic.gemma.core.analysis.expression.coexpression.GeneCoexpressionSearchService
 import ubic.gemma.groovy.framework.SpringSupport
@@ -11,13 +12,13 @@ import ubic.gemma.persistence.service.genome.taxon.TaxonService
 
 // Tool for downloading coexpression links. See Bug 4158.
 def cli = new CliBuilder(usage: 'groovy CoexSearch [opts] -tgoesr')
-        .arg('o', argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
-        .arg('t', argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
-        .arg('g', argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
-        .arg('e', argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
-        .arg('s', argName: 'stringency', longOpt: 'stringency', required: false, args: 1, 'Minimum support per coex link')
-        .arg('r', argName: 'maxResultsPerGene', longOpt: 'maxResultsPerGene', required: false, args: 1, 'Maximum number of genes per query')
-        .arg('q', argName: 'queryGenesOnly', longOpt: 'queryGenesOnly', required: false, args: 1, 'Output query genes only?')
+cli.o(argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
+cli.t(argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
+cli.g(argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
+cli.e(argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
+cli.s(argName: 'stringency', longOpt: 'stringency', required: false, args: 1, 'Minimum support per coex link')
+cli.r(argName: 'maxResultsPerGene', longOpt: 'maxResultsPerGene', required: false, args: 1, 'Maximum number of genes per query')
+cli.q(argName: 'queryGenesOnly', longOpt: 'queryGenesOnly', required: false, args: 1, 'Output query genes only?')
 
 // ------------ Parse Args
 println "Parsing args ..."
@@ -26,15 +27,15 @@ if (!opts) {
     println "Opts is ${opts}"
     return
 }
-if (opts.hasOption("h")) cli.usage()
+if (opts.h) cli.usage()
 
-outFile = (opts.hasOption("o")) ? new File(opts.getOptionValue("o")) : null
-taxonName = opts.getOptionValue("t")
-geneSymbols = (opts.hasOption("g")) ? new File(opts.getOptionValue("g")).readLines() : null
-eeNames = (opts.hasOption("e")) ? new File(opts.getOptionValue("e")).readLines() : null
-stringency = (opts.hasOption("s")) ? Integer.parseInt(opts.getOptionValue("s")) : 4
-maxResultsPerGene = (opts.hasOption("r")) ? Integer.parseInt(opts.getOptionValue("r")) : 500
-queryGenesOnly = (opts.hasOption("q")) ? Integer.parseInt(opts.getOptionValue("q")) : false
+outFile = (opts.o) ? new File(opts.o as String) : null
+taxonName = opts.t
+geneSymbols = (opts.g) ? new File(opts.g as String).readLines() : null
+eeNames = (opts.e) ? new File(opts.e as String).readLines() : null
+stringency = (opts.s) ? Integer.parseInt(opts.s as String) : 4
+maxResultsPerGene = (opts.r) ? Integer.parseInt(opts.r as String) : 500
+queryGenesOnly = (opts.q) ? Integer.parseInt(opts.q as String) : false
 
 
 // ------------ Register beans
@@ -49,6 +50,7 @@ eeService = sx.getBean(ExpressionExperimentService.class)
 println "Loading IDs ..."
 taxon = taxonService.findByCommonName(taxonName)
 
+def geneIds
 if (geneSymbols != null && geneSymbols.size() > 0) {
     System.out.println "${new Date()}: Attempting to load ${geneSymbols.size()} $taxonName genes..."
     genes = geneSymbols.collect { geneService.findByOfficialSymbol(it, taxon) }

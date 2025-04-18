@@ -1,7 +1,7 @@
 #!/usr/bin/groovy
 package ubic.gemma.script.example
 
-
+import groovy.cli.commons.CliBuilder
 import groovy.time.TimeCategory
 import groovy.time.TimeDuration
 import ubic.gemma.core.analysis.preprocess.MeanVarianceService
@@ -10,15 +10,18 @@ import ubic.gemma.model.expression.experiment.ExpressionExperiment
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService
 
 /* Parse arguments */
-def cli = new CliBuilder(usage: 'groovy CreateMeanVariance.groovy -e FILE')
-        .arg('e', args: 1, 'file that contains EE shortNames, one per line', required: true)
-        .arg('r', longOpt: 'recompute', 'recompute mean-variance?', required: false)
+def cli = new CliBuilder(usage: 'groovy CreateMeanVariance [options] -u *** -p *** -e ***')
+cli.p(longOpt: 'password', args: 1, 'password', required: true)
+cli.u(longOpt: 'username', args: 1, 'username', required: true)
+cli.e(args: 1, 'file that contains EE shortNames, one per line', required: true)
+cli.r(longOpt: 'recompute', 'recompute mean-variance?', required: false)
+cli.h(longOpt: 'help', 'usage information', required: false)
 def opt = cli.parse(args)
 
 username = System.getenv('GEMMA_USERNAME')
 password = System.getenv('GEMMA_PASSWORD')
-forceRecompute = opt.hasOption('r')
-infile = opt.getOptionValue('e')
+forceRecompute = opt.r
+infile = opt.e as String
 eeIds = new File(infile).readLines()
 
 /* Do the actual work */

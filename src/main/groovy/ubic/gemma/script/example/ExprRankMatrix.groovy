@@ -19,44 +19,48 @@
 
 package ubic.gemma.script.example
 
+import groovy.cli.commons.CliBuilder
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix
+import ubic.gemma.core.analysis.service.ExpressionDataMatrixService
 import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.expression.experiment.ExpressionExperiment
 import ubic.gemma.model.genome.Gene
+import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService
+import ubic.gemma.persistence.service.genome.gene.GeneService
+import ubic.gemma.persistence.service.genome.taxon.TaxonService
 
 /**
  * Parse params
  */
-cli = new CliBuilder(usage: 'groovy ExprRankMatrix.groovy')
-        .arg('h', longOpt: 'help', 'Usage: groovy ExprMatrix -togiv')
-        .arg('o', argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
-        .arg('t', argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
-        .arg('g', argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
-        .arg('i', longOpt: 'filterNonSpecific', 'Filter non-specific probes')
-        .arg('e', argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
+cli = new CliBuilder()
+cli.h(longOpt: 'help', 'Usage: groovy ExprMatrix -togiv')
+cli.o(argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
+cli.t(argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
+cli.g(argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
+cli.i(longOpt: 'filterNonSpecific', 'Filter non-specific probes')
+cli.e(argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
 
 opts = cli.parse(args)
 if (!opts) return
-if (opts.hasOption("h")) cli.usage()
+if (opts.h) cli.usage()
 
-geneSymbols = (opts.hasOption("g")) ? new File(opts.getOptionValue("g")).readLines() : null
+geneSymbols = (opts.g) ? new File(opts.g as String).readLines() : null
 filterNonSpecific = opts.i
 if (filterNonSpecific) {
     System.out.println "Filtering non-specific probes"
 }
 
-taxonName = opts.getOptionValue("t")
-eeNames = (opts.hasOption("e")) ? new File(opts.getOptionValue("e")).readLines() : null
+taxonName = opts.t as String
+eeNames = (opts.e) ? new File(opts.e as String).readLines() : null
 
 /**
  * Gemma services
  */
 sx = new SpringSupport()
-taxonService = sx.getBean("taxonService")
-geneService = sx.getBean("geneService")
-csService = sx.getBean("compositeSequenceService")
-eeService = sx.getBean("expressionExperimentService")
-expressionDataMatrixService = sx.getBean("expressionDataMatrixService")
+taxonService = sx.getBean(TaxonService.class)
+geneService = sx.getBean(GeneService.class)
+eeService = sx.getBean(ExpressionExperimentService.class)
+expressionDataMatrixService = sx.getBean(ExpressionDataMatrixService.class)
 
 taxon = taxonService.findByCommonName(taxonName)
 
@@ -103,7 +107,7 @@ ids = new HashSet()
 DenseDoubleMatrix<Gene, ExpressionExperiment> rankMatrix = expressionDataMatrixService.getRankMatrix(
         genes, ees, ProcessedExpressionDataVectorDao.RankMethod.mean)
 
-f = opts.getOptionValue("o")
+f = opts.o
 outFile = new File(f)
 outFile.delete()
 println "${new Date()}: Writing results to $f"
