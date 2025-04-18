@@ -20,11 +20,10 @@ package ubic.gemma.contrib.apps;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
+import org.springframework.beans.factory.annotation.Autowired;
 import ubic.basecode.dataStructure.matrix.CompressedSparseDoubleMatrix;
 import ubic.gemma.core.apps.GemmaCLI;
-import ubic.gemma.core.genome.gene.service.GeneService;
 import ubic.gemma.core.util.AbstractCLI;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
@@ -35,6 +34,7 @@ import ubic.gemma.model.genome.biosequence.BioSequence;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.service.expression.experiment.ExpressionExperimentService;
+import ubic.gemma.persistence.service.genome.gene.GeneService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
 import javax.annotation.Nullable;
@@ -53,25 +53,68 @@ import java.util.Map;
  * @author pavlidis
  * @version $Id: SummaryStatistics.java,v 1.14 2015/11/12 19:37:11 paul Exp $
  */
-public class SummaryStatistics extends AbstractCLI {
+public class SummaryStatisticsCli extends AbstractCLI {
 
     private static final int MAX_EXPS = 5;
 
     private static final int MAX_GENES = 100000;
 
+    @Autowired
     private ExpressionExperimentService expressionExperimentService;
-    private String taxonName;
+    @Autowired
+    private GeneService geneService;
+    @Autowired
     private TaxonService taxonService;
+    @Autowired
     private CompositeSequenceService compositeSequenceService;
+    @Autowired
+    private ArrayDesignService adService;
 
+    private String taxonName;
     private String outFileName;
+
+    @Override
+    public String getCommandName() {
+        return "summaryStatistics";
+    }
+
+    @Nullable
+    @Override
+    public String getShortDesc() {
+        return null;
+    }
+
+    @Override
+    public GemmaCLI.CommandGroup getCommandGroup() {
+        return GemmaCLI.CommandGroup.MISC;
+    }
+
+    @Override
+    protected void buildOptions( Options options ) {
+        options.addOption( Option.builder( "o" ).hasArg().argName( "outFile" ).desc( "Output file" ).build() );
+        options.addOption( Option.builder( "t" ).hasArg().argName( "taxon" ).desc( "Taxon common name (e.g., human)" ).build() );
+    }
+
+    @Override
+    protected void processOptions( CommandLine c ) {
+        if ( c.hasOption( 't' ) ) {
+            this.taxonName = c.getOptionValue( 't' );
+        }
+        if ( c.hasOption( 'o' ) ) {
+            this.outFileName = c.getOptionValue( 'o' );
+        }
+    }
+
+    @Override
+    protected void doWork() {
+        Taxon taxon = taxonService.findByCommonName( taxonName );
+        genesPerProbe( taxon );
+    }
 
     /**
      * For each gene, count how many expression experiments it appears in.
-     *
-     * @param taxon
      */
-    public void geneOccurrenceDistributions( Taxon taxon ) {
+    private void geneOccurrenceDistributions( Taxon taxon ) {
 
         Map<Long, Integer> counts = new HashMap<>();
 
@@ -120,10 +163,8 @@ public class SummaryStatistics extends AbstractCLI {
 
     /**
      * For each pair of genes, count how many expression experiments both appear in.
-     *
-     * @param taxon
      */
-    public void genePairOccurrenceDistributions( Taxon taxon ) {
+    private void genePairOccurrenceDistributions( Taxon taxon ) {
 
         Collection<ExpressionExperiment> eeColl = expressionExperimentService.loadAll();
 
@@ -220,7 +261,6 @@ public class SummaryStatistics extends AbstractCLI {
      * @param taxon
      */
     public void genesPerProbe( Taxon taxon ) {
-        ArrayDesignService adService = this.getBean( ArrayDesignService.class );
         Collection<ArrayDesign> allAds = adService.loadAll();
         Collection<ArrayDesign> ads = new HashSet<>();
         for ( ArrayDesign ad : allAds ) {
@@ -275,29 +315,6 @@ public class SummaryStatistics extends AbstractCLI {
         } catch ( IOException e ) {
             e.printStackTrace();
         }
-
-    }
-
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#getCommandName()
-     */
-    @Override
-    public String getCommandName() {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Nullable
-    @Override
-    public String getShortDesc() {
-        return null;
-    }
-
-    @Override
-    public GemmaCLI.CommandGroup getCommandGroup() {
-        return null;
     }
 
     /**
@@ -305,10 +322,8 @@ public class SummaryStatistics extends AbstractCLI {
      *
      * @param taxon
      */
-    public void probesPerGene( Taxon taxon ) {
-        GeneService geneService = this.getBean( GeneService.class );
-
-        Collection<Gene> genes = geneService.getGenesByTaxon( taxon );
+    private void probesPerGene( Taxon taxon ) {
+        Collection<Gene> genes = geneService.loadAll( taxon );
         Map<Long, Integer> counts = new HashMap<>();
         int i = 0;
         for ( Gene gene : genes ) {
@@ -321,64 +336,6 @@ public class SummaryStatistics extends AbstractCLI {
         for ( Long l : counts.keySet() ) {
             System.out.println( l + "\t" + counts.get( l ) );
         }
-    }
-
-    /**
-     * @param compositeSequenceService the compositeSequenceService to set
-     */
-    public void setCompositeSequenceService( CompositeSequenceService compositeSequenceService ) {
-        this.compositeSequenceService = compositeSequenceService;
-    }
-
-    public void setExpressionExperimentService( ExpressionExperimentService ees ) {
-        this.expressionExperimentService = ees;
-    }
-
-    public void setTaxonService( TaxonService taxonService ) {
-        this.taxonService = taxonService;
-    }
-
-    @SuppressWarnings("static-access")
-    @Override
-    protected void buildOptions( Options options ) {
-
-        OptionBuilder.hasArg();
-        OptionBuilder.withArgName( "taxon" );
-        OptionBuilder
-                .withDescription( "Taxon common name (e.g., human)" );
-        Option taxonOption = OptionBuilder.create( 't' );
-        OptionBuilder.hasArg();
-        OptionBuilder.withArgName( "outFile" );
-        OptionBuilder.withDescription( "Output file" );
-        Option outFileOption = OptionBuilder
-                .create( 'o' );
-
-        options.addOption( outFileOption );
-        options.addOption( taxonOption );
-
-    }
-
-    @Override
-    protected void doWork() {
-
-        Taxon taxon = taxonService.findByCommonName( taxonName );
-        genesPerProbe( taxon );
-
-    }
-
-    @Override
-    protected void processOptions( CommandLine c ) {
-
-        if ( c.hasOption( 't' ) ) {
-            this.taxonName = c.getOptionValue( 't' );
-        }
-        if ( c.hasOption( 'o' ) ) {
-            this.outFileName = c.getOptionValue( 'o' );
-        }
-
-        this.taxonService = getBean( TaxonService.class );
-        this.expressionExperimentService = getBean( ExpressionExperimentService.class );
-        this.compositeSequenceService = getBean( CompositeSequenceService.class );
     }
 
     private void printGenesPerProbeCountMap( Map<ArrayDesign, Map<Integer, Integer>> countMap ) throws IOException {

@@ -20,13 +20,12 @@
 package ubic.gemma.contrib.apps;
 
 import cern.colt.list.DoubleArrayList;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.Transformer;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import ubic.basecode.math.Distance;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
-import ubic.gemma.core.analysis.util.ExperimentalDesignUtils;
 import ubic.gemma.core.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.analysis.expression.diff.ContrastResult;
@@ -36,22 +35,20 @@ import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.experiment.BioAssaySet;
-import ubic.gemma.model.expression.experiment.ExperimentalFactor;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.expression.experiment.FactorValue;
+import ubic.gemma.model.expression.experiment.*;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
 import ubic.gemma.persistence.service.expression.designElement.CompositeSequenceService;
 import ubic.gemma.persistence.util.EntityUtils;
-import ubic.gemma.persistence.util.Settings;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Performs differential expression analyses with and without ebayes. Based on BachDiffExCli
@@ -61,26 +58,31 @@ import java.util.*;
 public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     private static final int LOGGING_FREQ = 20000;
 
+    /**
+     * This only affects the summaries that are output.
+     */
+    private static final double summaryQvalThreshold = 0.01;
+
+    @Autowired
     private DiffExAnalyzer lma;
 
+    @Autowired
     private ArrayDesignService arrayDesignService;
 
+    @Autowired
     private CompositeSequenceService compositeSequenceService;
 
+    @Autowired
     private ProcessedExpressionDataVectorService processedExpressionDataVectorService;
+
+    @Value("${gemma.download.path}")
+    private Path downloadPath;
 
     private final Collection<ArrayDesign> seenArrays = new HashSet<>();
 
     private final Map<CompositeSequence, Collection<Gene>> genes = new HashMap<>();
 
-    Transformer geneSymbolTransformer = input -> ( ( Gene ) input ).getOfficialSymbol();
-
-    /**
-     * This only affects the summaries that are output.
-     */
-    private final double summaryQvalThreshold = 0.01;
-
-    Writer summaryFile;
+    private Writer summaryFile;
 
     @Override
     public String getCommandName() {
@@ -92,20 +94,8 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         return "Performs multiple differential expression analyses with and without ebayes, generate comparison stats";
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see ubic.gemma.util.AbstractCLI#doWork(java.lang.String[])
-     */
     @Override
     protected void doWork() {
-
-        this.lma = this.getBean( DiffExAnalyzer.class );
-        this.processedExpressionDataVectorService = this.getBean( ProcessedExpressionDataVectorService.class );
-        this.compositeSequenceService = this.getBean( CompositeSequenceService.class );
-
-        arrayDesignService = this.getBean( ArrayDesignService.class );
-
         try {
             summaryFile = initOutputFile( "limma.proc.summary.txt" );
             summaryFile.write( "State\tEEID\tEENAME\tEFID\tEFNAME\tNUM\tNUMDIFF\n" );
@@ -114,16 +104,14 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 if ( !( bas instanceof ExpressionExperiment ) ) {
                     continue;
                 }
-                eeService.thawLite( ( ExpressionExperiment ) bas );
+                bas = eeService.thawLite( ( ExpressionExperiment ) bas );
                 processExperiment( ( ExpressionExperiment ) bas );
             }
             summaryFile.close();
 
         } catch ( Exception e ) {
             log.error( e, e );
-
         }
-
     }
 
     protected void processExperiment( ExpressionExperiment ee ) {
@@ -224,14 +212,16 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                     }
 
                 }
-                summaryBuf.append( "Ebayes\t" + ee.getId() + "\t" + ee.getShortName() + "\t" + ef.getId() + "\t"
-                        + ef.getName() + "\t" + results.size() + "\t" + c + "\n" );
+                summaryBuf.append( "Ebayes\t" ).append( ee.getId() ).append( "\t" )
+                        .append( ee.getShortName() ).append( "\t" )
+                        .append( ef.getId() ).append( "\t" ).append( ef.getName() ).append( "\t" )
+                        .append( results.size() ).append( "\t" ).append( c ).append( "\n" );
             }
 
             List<String> correlations = compare( beforeResults, eBayesResults );
-            summaryBuf.append(
-                    "Correlations\t" + ee.getId() + "\t" + ee.getShortName() + "\t" +
-                            StringUtils.join( correlations, " " ) + "\n" );
+            summaryBuf.append( "Correlations\t" ).append( ee.getId() ).append( "\t" )
+                    .append( ee.getShortName() ).append( "\t" )
+                    .append( StringUtils.join( correlations, " " ) ).append( "\n" );
 
             /*
              * Print out details
@@ -248,11 +238,9 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
                 String geneSymbs = "";
                 String geneIds = "";
                 if ( genes.containsKey( c ) ) {
-                    Collection<Gene> g = new HashSet<>();
-                    g.addAll( genes.get( c ) );
-                    CollectionUtils.transform( g, geneSymbolTransformer );
-                    geneSymbs = StringUtils.join( g, "|" );
-                    geneIds = StringUtils.join( EntityUtils.getIds( genes.get( c ) ), "|" );
+                    LinkedHashSet<Gene> g = new LinkedHashSet<>( genes.get( c ) );
+                    geneSymbs = g.stream().map( Gene::getOfficialSymbol ).collect( Collectors.joining( "|" ) );
+                    geneIds = StringUtils.join( EntityUtils.getIds( g ), "|" );
                 }
 
                 for ( ExperimentalFactor ef : factorsToAnalyze ) {
@@ -281,8 +269,6 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
     }
 
     /**
-     * @param beforeResults
-     * @param eBayesResults
      * @return vector of rank correlations.
      */
     private List<String> compare( DifferentialExpressionAnalysis beforeResults, DifferentialExpressionAnalysis eBayesResults ) {
@@ -369,7 +355,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         // unroll
         // ANOVA effects
         for ( ExperimentalFactor ef : apv.keySet() ) {
-            int n = apv.get( ef ).keySet().size();
+            int n = apv.get( ef ).size();
             DoubleArrayList a = new DoubleArrayList( n );
             DoubleArrayList b = new DoubleArrayList( n );
 
@@ -385,7 +371,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
         // Contrasts
         for ( FactorValue fv : cpv.keySet() ) {
-            int n = cpv.get( fv ).keySet().size();
+            int n = cpv.get( fv ).size();
             DoubleArrayList a = new DoubleArrayList( n );
             DoubleArrayList b = new DoubleArrayList( n );
             for ( CompositeSequence cs : cpv.get( fv ).keySet() ) {
@@ -402,8 +388,6 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
 
     /**
      * Gets annotations for this experiment, if the array designs have not already been seen in this run.
-     *
-     * @param ee
      */
     private void getGeneAnnotations( ExpressionExperiment ee ) {
         Collection<ArrayDesign> arrayDesigns = eeService.getArrayDesignsUsed( ee );
@@ -415,13 +399,8 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         }
     }
 
-    /**
-     * @param fileName
-     * @return
-     * @throws IOException
-     */
     private Writer initOutputFile( String fileName ) throws IOException {
-        File f = new File( Settings.getDownloadPath() + fileName );
+        File f = downloadPath.resolve( fileName ).toFile();
         if ( f.exists() ) {
             f.delete();
         }
@@ -430,13 +409,6 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
         return new FileWriter( f );
     }
 
-    /**
-     * @param revisedResultDetails
-     * @param ef
-     * @param r
-     * @param c
-     * @return c
-     */
     private int tally( Map<CompositeSequence, Map<ExperimentalFactor, Double>> revisedResultDetails,
             ExperimentalFactor ef, DifferentialExpressionAnalysisResult r, int c ) {
         Double pval = r.getCorrectedPvalue();

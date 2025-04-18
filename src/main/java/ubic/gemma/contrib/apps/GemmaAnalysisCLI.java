@@ -18,61 +18,17 @@
  */
 package ubic.gemma.contrib.apps;
 
-import ubic.gemma.core.util.AbstractCLI;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
+import ubic.gemma.core.apps.GemmaCLI;
 
 /**
- * Generic command line information for GemmaAnalysis. This doesn't do anything but print some help.
- * FIXME make this like the other one
- *
+ * This is not necessary, you can just run {@link GemmaCLI} directly.
  * @author paul
  * @author raymond
- * @version $Id: GemmaAnalysisCLI.java,v 1.3 2015/11/30 23:50:56 paul Exp $
+ * @author poirigui
  */
 public class GemmaAnalysisCLI {
-    private static final String[] apps = { "ubic.gemma.contrib.apps.LimmaDiffExCli", "ubic.gemma.contrib.apps.FactorValueCharacteristicAnalysis"  };
 
-    /**
-     * @param args
-     */
     public static void main( String[] args ) {
-        System.err.println( "============ GemmaAnalysis command line tools ============" );
-
-        System.err
-                .print( "You've evoked the GemmaAnalysis CLI in a mode that doesn't do anything.\n"
-                        + "To operate Gemma tools, run a command like:\n\njava [jre options] -classpath /path/to/gemmaAnalysisCli.jar [class name] [options]\n\n"
-                        + "Here is a list of the classnames for some available tools:\n\n" );
-        Arrays.sort( apps );
-        for ( String a : apps ) {
-            String desc = "";
-            try {
-                Class<?> aclazz = Class.forName( a );
-                Object cliinstance = aclazz.newInstance();
-                Method method = aclazz.getMethod( "getShortDesc");
-                desc = ( String ) method.invoke( cliinstance, new Object[] {} );
-            } catch ( ClassNotFoundException e ) {
-                e.printStackTrace();
-            } catch ( IllegalArgumentException e ) {
-                e.printStackTrace();
-            } catch ( IllegalAccessException e ) {
-                e.printStackTrace();
-            } catch ( InvocationTargetException e ) {
-                e.printStackTrace();
-            } catch ( SecurityException e ) {
-                e.printStackTrace();
-            } catch ( NoSuchMethodException e ) {
-                e.printStackTrace();
-            } catch ( InstantiationException e ) {
-                e.printStackTrace();
-            }
-
-            System.err.println( a + " :\t" + desc );
-        }
-        System.err
-                .println( "\nTo get help for a specific tool, use \n\njava -jar /path/to/gemmaAnalysisCli.jar  -help" );
-        System.err.print( "\n" + AbstractCLI.FOOTER + "\n=========================================\n" );
+        GemmaCLI.main( args );
     }
 }

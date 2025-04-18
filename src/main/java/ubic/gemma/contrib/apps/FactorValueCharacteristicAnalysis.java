@@ -15,12 +15,9 @@
 package ubic.gemma.contrib.apps;
 
 import org.apache.commons.lang3.StringUtils;
-import ubic.basecode.ontology.model.OntologyTerm;
-import ubic.basecode.ontology.search.OntologySearchException;
 import ubic.gemma.core.analysis.expression.diff.BaselineSelection;
 import ubic.gemma.core.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.apps.GemmaCLI.CommandGroup;
-import ubic.gemma.core.ontology.OntologyService;
 import ubic.gemma.model.common.description.Characteristic;
 import ubic.gemma.model.expression.experiment.*;
 import ubic.gemma.persistence.service.expression.experiment.ExperimentalDesignService;

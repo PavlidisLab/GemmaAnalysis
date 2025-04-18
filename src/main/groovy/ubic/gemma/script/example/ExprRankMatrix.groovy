@@ -20,34 +20,33 @@
 package ubic.gemma.script.example
 
 import ubic.basecode.dataStructure.matrix.DenseDoubleMatrix
-import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVectorDao
+import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.expression.experiment.ExpressionExperiment
 import ubic.gemma.model.genome.Gene
-import ubic.gemma.script.framework.SpringSupport
 
 /**
  * Parse params
  */
-cli = new CliBuilder()
-cli.h(longOpt: 'help', 'Usage: groovy ExprMatrix -togiv')
-cli.o(argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
-cli.t(argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
-cli.g(argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
-cli.i(longOpt: 'filterNonSpecific', 'Filter non-specific probes')
-cli.e(argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
+cli = new CliBuilder(usage: 'groovy ExprRankMatrix.groovy')
+        .arg('h', longOpt: 'help', 'Usage: groovy ExprMatrix -togiv')
+        .arg('o', argName: 'file name', longOpt: 'outFile', required: true, args: 1, 'Output results to this file')
+        .arg('t', argName: 'common name', longOpt: 'taxon', required: true, args: 1, 'Taxon of genes to fetch')
+        .arg('g', argName: 'file name', longOpt: 'geneFile', required: false, args: 1, 'File containing list of gene official symbols to load')
+        .arg('i', longOpt: 'filterNonSpecific', 'Filter non-specific probes')
+        .arg('e', argName: 'file name', longOpt: 'eeFile', required: false, args: 1, 'File containing list of data sets to load')
 
 opts = cli.parse(args)
 if (!opts) return
 if (opts.hasOption("h")) cli.usage()
 
-geneSymbols = (opts.hasOption("g"))? new File(opts.getOptionValue("g")).readLines() : null
+geneSymbols = (opts.hasOption("g")) ? new File(opts.getOptionValue("g")).readLines() : null
 filterNonSpecific = opts.i
 if (filterNonSpecific) {
     System.out.println "Filtering non-specific probes"
 }
 
 taxonName = opts.getOptionValue("t")
-eeNames = (opts.hasOption("e"))? new File(opts.getOptionValue("e")).readLines() : null
+eeNames = (opts.hasOption("e")) ? new File(opts.getOptionValue("e")).readLines() : null
 
 /**
  * Gemma services
@@ -57,7 +56,7 @@ taxonService = sx.getBean("taxonService")
 geneService = sx.getBean("geneService")
 csService = sx.getBean("compositeSequenceService")
 eeService = sx.getBean("expressionExperimentService")
-expressionDataMatrixService = sx.getBean( "expressionDataMatrixService" )
+expressionDataMatrixService = sx.getBean("expressionDataMatrixService")
 
 taxon = taxonService.findByCommonName(taxonName)
 
@@ -102,7 +101,7 @@ ids = new HashSet()
 
 // main call to expressionDataMatrixService to obtain rank results
 DenseDoubleMatrix<Gene, ExpressionExperiment> rankMatrix = expressionDataMatrixService.getRankMatrix(
-        genes, ees, ProcessedExpressionDataVectorDao.RankMethod.mean )
+        genes, ees, ProcessedExpressionDataVectorDao.RankMethod.mean)
 
 f = opts.getOptionValue("o")
 outFile = new File(f)
@@ -112,13 +111,13 @@ fOut = new BufferedWriter(new PrintWriter(outFile))
 
 // header
 count = 1
-fOut << "Gene\t${ees*.shortName.collect{it}.join('\t')}\n"
+fOut << "Gene\t${ees*.shortName.collect { it }.join('\t')}\n"
 //fOut << "Gene\t${ees*.id.collect{"EEID." + it}.join('\t')}\n"
 for (gene in rankMatrix.getRowNames()) {
     line = "${gene.officialSymbol}"
     for (ee in ees) {
         val = rankMatrix.getByKeys(gene, ee)
-        line += "\t" + ((val != null && !Double.isNaN(val) )? sprintf("%.4f", val) : "NA")
+        line += "\t" + ((val != null && !Double.isNaN(val)) ? sprintf("%.4f", val) : "NA")
     }
     line += "\n"
     fOut << line
