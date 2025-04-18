@@ -20,7 +20,6 @@ package ubic.gemma.script.example
 
 import org.apache.commons.lang3.StringUtils
 import ubic.gemma.core.config.Settings
-import ubic.gemma.groovy.framework.SpringSupport
 import ubic.gemma.model.analysis.expression.diff.ContrastResult
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysisResult
