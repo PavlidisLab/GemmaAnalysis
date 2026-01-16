@@ -19,7 +19,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import ubic.gemma.apps.ExpressionExperimentManipulatingCLI;
 import ubic.gemma.core.analysis.expression.diff.BaselineSelection;
 import ubic.gemma.model.common.description.Characteristic;
-import ubic.gemma.model.expression.experiment.*;
+import ubic.gemma.model.expression.experiment.ExperimentalDesign;
+import ubic.gemma.model.expression.experiment.ExperimentalFactor;
+import ubic.gemma.model.expression.experiment.ExpressionExperiment;
+import ubic.gemma.model.expression.experiment.FactorValue;
 import ubic.gemma.persistence.service.expression.experiment.ExperimentalDesignService;
 
 import java.io.BufferedWriter;
@@ -123,9 +126,9 @@ public class FactorValueCharacteristicAnalysis extends ExpressionExperimentManip
     }
 
     @Override
-    protected void processBioAssaySets( Collection<BioAssaySet> expressionExperiments ) {
+    protected void processExpressionExperiments( Collection<ExpressionExperiment> expressionExperiments ) {
         numExperiments = expressionExperiments.size();
-        super.processBioAssaySets( expressionExperiments );
+        super.processExpressionExperiments( expressionExperiments );
     }
 
     @Override

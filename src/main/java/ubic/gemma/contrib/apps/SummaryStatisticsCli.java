@@ -36,7 +36,6 @@ import ubic.gemma.persistence.service.expression.experiment.ExpressionExperiment
 import ubic.gemma.persistence.service.genome.gene.GeneService;
 import ubic.gemma.persistence.service.genome.taxon.TaxonService;
 
-import javax.annotation.Nullable;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -315,7 +314,7 @@ public class SummaryStatisticsCli extends AbstractCLI {
         Map<Long, Integer> counts = new HashMap<>();
         int i = 0;
         for ( Gene gene : genes ) {
-            Collection<CompositeSequence> compositeSequences = geneService.getCompositeSequencesById( gene.getId() );
+            Collection<CompositeSequence> compositeSequences = geneService.getCompositeSequencesById( gene.getId(), true );
             counts.put( gene.getId(), compositeSequences.size() );
             if ( ++i % 1000 == 0 ) {
                 log.info( "Processed " + i + " genes" );

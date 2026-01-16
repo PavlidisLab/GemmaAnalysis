@@ -27,6 +27,7 @@ import ubic.basecode.math.Distance;
 import ubic.gemma.apps.DifferentialExpressionAnalysisCli;
 import ubic.gemma.core.analysis.expression.diff.DiffExAnalyzer;
 import ubic.gemma.core.analysis.expression.diff.DifferentialExpressionAnalysisConfig;
+import ubic.gemma.core.analysis.preprocess.batcheffects.BatchEffectUtils;
 import ubic.gemma.core.datastructure.matrix.ExpressionDataDoubleMatrix;
 import ubic.gemma.model.analysis.expression.diff.ContrastResult;
 import ubic.gemma.model.analysis.expression.diff.DifferentialExpressionAnalysis;
@@ -35,10 +36,7 @@ import ubic.gemma.model.analysis.expression.diff.ExpressionAnalysisResultSet;
 import ubic.gemma.model.expression.arrayDesign.ArrayDesign;
 import ubic.gemma.model.expression.bioAssayData.ProcessedExpressionDataVector;
 import ubic.gemma.model.expression.designElement.CompositeSequence;
-import ubic.gemma.model.expression.experiment.ExperimentalDesignUtils;
-import ubic.gemma.model.expression.experiment.ExperimentalFactor;
-import ubic.gemma.model.expression.experiment.ExpressionExperiment;
-import ubic.gemma.model.expression.experiment.FactorValue;
+import ubic.gemma.model.expression.experiment.*;
 import ubic.gemma.model.genome.Gene;
 import ubic.gemma.persistence.service.expression.arrayDesign.ArrayDesignService;
 import ubic.gemma.persistence.service.expression.bioAssayData.ProcessedExpressionDataVectorService;
@@ -146,7 +144,7 @@ public class LimmaDiffExCli extends DifferentialExpressionAnalysisCli {
              */
             Collection<ExperimentalFactor> factorsToAnalyze = new HashSet<>();
             for ( ExperimentalFactor ef : experimentalFactors ) {
-                if ( ExperimentalDesignUtils.isBatchFactor( ef ) ) continue;
+                if ( ExperimentFactorUtils.isBatchFactor( ef ) ) continue;
                 factorsToAnalyze.add( ef );
             }
             int j = 0;
